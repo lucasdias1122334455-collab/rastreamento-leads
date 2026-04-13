@@ -6,7 +6,7 @@ const path = require('path');
 const prisma = require('../config/database');
 
 const SESSION_ID = 'default';
-const AUTH_PATH = './whatsapp-auth';
+const AUTH_PATH = '/tmp/whatsapp-auth';
 
 let sock = null;
 let currentStatus = 'disconnected';

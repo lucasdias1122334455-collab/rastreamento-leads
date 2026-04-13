@@ -4,7 +4,8 @@
   "description": "Sistema de rastreamento de leads via WhatsApp",
   "main": "src/app.js",
   "scripts": {
-    "start": "npx prisma db push --accept-data-loss && node src/app.js",
+    "start": "npx prisma generate && npx prisma db push --accept-data-loss && node src/app.js",
+    "postinstall": "npx prisma generate",
     "dev": "nodemon src/app.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

@@ -1,11 +1,14 @@
 const { Router } = require('express');
-const { getStatus, connect, disconnect, sendMessage } = require('../controllers/whatsappController');
+const { getStatus, connect, disconnect, sendMessage, webhook } = require('../controllers/whatsappController');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 
 const router = Router();
 
-router.use(authenticate);
+// Webhook público — chamado pela Evolution API (sem JWT)
+router.post('/webhook', webhook);
 
+// Rotas autenticadas
+router.use(authenticate);
 router.get('/status', getStatus);
 router.post('/connect', requireAdmin, connect);
 router.post('/disconnect', requireAdmin, disconnect);

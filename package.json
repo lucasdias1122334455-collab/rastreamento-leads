@@ -13,7 +13,8 @@
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",
-    "@whiskeysockets/baileys": "^6.7.9",
+    "@whiskeysockets/baileys": "^6.7.4",
+    "axios": "^1.15.0",
     "baileys": "^7.0.0-rc.9",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",

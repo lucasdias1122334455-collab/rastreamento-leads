@@ -94,7 +94,7 @@
           <div id="clients-grid" class="clients-grid"></div>
         </div>
 
-        <!-- Detalhe do Cliente -->
+        <!-- Detalhe do Cliente (lista de leads) -->
         <div id="client-detail-view" class="hidden">
           <div class="page-header">
             <div style="display:flex;align-items:center;gap:1rem">
@@ -108,6 +108,24 @@
             </thead>
             <tbody id="client-leads-tbody"></tbody>
           </table>
+        </div>
+
+        <!-- Conversa do Lead -->
+        <div id="lead-chat-view" class="hidden">
+          <div class="page-header">
+            <div style="display:flex;align-items:center;gap:1rem">
+              <button id="btn-back-lead" class="btn-sm btn-edit">← Voltar</button>
+              <div>
+                <h2 id="chat-lead-name"></h2>
+                <span id="chat-lead-phone" style="font-size:.85rem;color:var(--muted)"></span>
+              </div>
+            </div>
+          </div>
+          <div id="chat-messages" class="chat-messages"></div>
+          <div class="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Digite uma mensagem..." />
+            <button id="chat-send-btn" class="btn-primary">Enviar</button>
+          </div>
         </div>
       </section>
 

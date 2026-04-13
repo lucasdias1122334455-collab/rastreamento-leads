@@ -256,7 +256,7 @@ async function openClientDetail(id, name) {
     const leads = await apiFetch(`/clients/${id}/leads`);
     el('client-leads-tbody').innerHTML = leads.length
       ? leads.map((l) => `
-        <tr>
+        <tr style="cursor:pointer" onclick="openLeadChat(${l.id}, '${(l.name||'').replace(/'/g,"\\'")}', '${l.phone}')">
           <td>${l.name || '<em style="color:var(--muted)">sem nome</em>'}</td>
           <td>${l.phone}</td>
           <td>${statusBadge(l.status)}</td>
@@ -271,6 +271,63 @@ el('btn-back-clients').addEventListener('click', () => {
   hide('client-detail-view');
   show('clients-list-view');
 });
+
+el('btn-back-lead').addEventListener('click', () => {
+  hide('lead-chat-view');
+  show('client-detail-view');
+});
+
+let currentChatLead = null;
+
+async function openLeadChat(leadId, leadName, leadPhone) {
+  currentChatLead = { id: leadId, phone: leadPhone };
+  el('chat-lead-name').textContent = leadName || leadPhone;
+  el('chat-lead-phone').textContent = leadPhone;
+  el('chat-messages').innerHTML = '<p style="text-align:center;color:var(--muted)">Carregando...</p>';
+  hide('client-detail-view');
+  show('lead-chat-view');
+  await loadChatMessages(leadId);
+}
+
+async function loadChatMessages(leadId) {
+  try {
+    const interactions = await apiFetch(`/interactions/leads/${leadId}/interactions`);
+    const msgs = [...interactions].reverse();
+    el('chat-messages').innerHTML = msgs.length
+      ? msgs.map((m) => `
+        <div class="chat-bubble ${m.direction === 'outbound' ? 'outbound' : 'inbound'}">
+          <div class="bubble-content">${m.content}</div>
+          <div class="bubble-meta">${fmtDate(m.createdAt)}${m.user ? ' · ' + m.user.name : ''}</div>
+        </div>`).join('')
+      : '<p style="text-align:center;color:var(--muted)">Nenhuma mensagem ainda.</p>';
+    // scroll para o fim
+    const box = el('chat-messages');
+    box.scrollTop = box.scrollHeight;
+  } catch (err) { console.error(err); }
+}
+
+el('chat-send-btn').addEventListener('click', sendChatMessage);
+el('chat-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChatMessage(); });
+
+async function sendChatMessage() {
+  const text = el('chat-input').value.trim();
+  if (!text || !currentChatLead) return;
+  el('chat-input').value = '';
+  try {
+    await apiFetch(`/interactions/leads/${currentChatLead.id}/interactions`, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'message', direction: 'outbound', content: text }),
+    });
+    // Envia via WhatsApp também
+    try {
+      await apiFetch('/whatsapp/send', {
+        method: 'POST',
+        body: JSON.stringify({ phone: currentChatLead.phone, message: text }),
+      });
+    } catch (_) {}
+    await loadChatMessages(currentChatLead.id);
+  } catch (err) { alert(err.message); }
+}
 
 el('new-client-btn').addEventListener('click', () => openClientModal());
 el('client-modal-cancel').addEventListener('click', () => hide('client-modal'));

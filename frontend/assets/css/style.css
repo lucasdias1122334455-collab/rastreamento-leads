@@ -153,3 +153,16 @@ nav { flex: 1; }
 .client-card-header strong { font-size: 1rem; }
 .client-card-info { display: flex; flex-direction: column; gap: .2rem; font-size: .85rem; color: var(--muted); }
 .client-card-actions { display: flex; gap: .5rem; margin-top: .25rem; }
+
+/* ─── Chat ─── */
+.chat-messages { display:flex; flex-direction:column; gap:.6rem; padding:1rem; background:var(--surface); border-radius:var(--radius); min-height:300px; max-height:500px; overflow-y:auto; margin-bottom:1rem; }
+.chat-bubble { max-width:70%; display:flex; flex-direction:column; gap:.2rem; }
+.chat-bubble.inbound { align-self:flex-start; }
+.chat-bubble.outbound { align-self:flex-end; }
+.bubble-content { padding:.6rem .9rem; border-radius:12px; font-size:.92rem; line-height:1.4; word-break:break-word; }
+.inbound .bubble-content { background:#f0f0f0; color:#111; border-bottom-left-radius:3px; }
+.outbound .bubble-content { background:var(--green); color:#fff; border-bottom-right-radius:3px; }
+.bubble-meta { font-size:.72rem; color:var(--muted); padding:0 .3rem; }
+.outbound .bubble-meta { text-align:right; }
+.chat-input-area { display:flex; gap:.75rem; }
+.chat-input-area input { flex:1; padding:.65rem 1rem; border:1px solid var(--border); border-radius:var(--radius); font-size:.95rem; font-family:inherit; }

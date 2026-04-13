@@ -48,7 +48,7 @@ async function webhook(req, res) {
   res.sendStatus(200);
 
   try {
-    const { event, data } = req.body;
+    const { event, instance, data } = req.body;
     if (event !== 'messages.upsert') return;
     if (!data || data?.key?.fromMe) return;
 
@@ -62,13 +62,25 @@ async function webhook(req, res) {
       '[mídia]';
     const pushName = data.pushName || null;
 
+    // Identifica o cliente pela instância
+    let clientId = null;
+    if (instance) {
+      const client = await prisma.client.findUnique({ where: { instanceName: instance } });
+      if (client) clientId = client.id;
+    }
+
     let lead = await prisma.lead.findUnique({ where: { phone } });
     if (!lead) {
       lead = await prisma.lead.create({
-        data: { phone, name: pushName, source: 'whatsapp', status: 'new', stage: 'awareness' },
+        data: { phone, name: pushName, source: 'whatsapp', status: 'new', stage: 'awareness', clientId },
       });
-    } else if (pushName && !lead.name) {
-      await prisma.lead.update({ where: { id: lead.id }, data: { name: pushName } });
+    } else {
+      const updates = {};
+      if (pushName && !lead.name) updates.name = pushName;
+      if (clientId && !lead.clientId) updates.clientId = clientId;
+      if (Object.keys(updates).length) {
+        await prisma.lead.update({ where: { id: lead.id }, data: updates });
+      }
     }
 
     await prisma.interaction.create({
@@ -81,7 +93,7 @@ async function webhook(req, res) {
       },
     });
 
-    console.log(`[Webhook] Mensagem de ${phone} (${pushName}): ${content}`);
+    console.log(`[Webhook] Mensagem de ${phone} (${pushName}) via ${instance}: ${content}`);
   } catch (err) {
     console.error('[Webhook] Erro:', err.message);
   }

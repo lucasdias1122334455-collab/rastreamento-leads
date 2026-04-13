@@ -76,6 +76,7 @@ function navigateTo(page) {
 
   if (page === 'dashboard') loadDashboard();
   if (page === 'leads') loadLeads(1);
+  if (page === 'clients') loadClients();
   if (page === 'whatsapp') loadWAStatus();
 }
 
@@ -203,6 +204,131 @@ async function deleteLead(id) {
     await apiFetch(`/leads/${id}`, { method: 'DELETE' });
     loadLeads(currentPage);
   } catch (err) { alert(err.message); }
+}
+
+// ─── Clientes ────────────────────────────────────────────────────────────────
+
+async function loadClients() {
+  try {
+    const clients = await apiFetch('/clients');
+    const grid = el('clients-grid');
+    if (!clients.length) {
+      grid.innerHTML = '<p style="color:var(--muted)">Nenhum cliente cadastrado ainda.</p>';
+      return;
+    }
+    grid.innerHTML = clients.map((c) => `
+      <div class="client-card">
+        <div class="client-card-header">
+          <strong>${c.name}</strong>
+          <span class="wa-dot disconnected" id="dot-${c.id}" title="Verificando..."></span>
+        </div>
+        <div class="client-card-info">
+          ${c.phone ? `<span>${c.phone}</span>` : ''}
+          ${c.email ? `<span>${c.email}</span>` : ''}
+          <span>${c._count?.leads || 0} leads</span>
+        </div>
+        <div class="client-card-actions">
+          <button class="btn-sm btn-primary" onclick="openClientQR(${c.id}, '${c.name}')">WhatsApp</button>
+          <button class="btn-sm btn-edit" onclick="openEditClient(${c.id})">Editar</button>
+          <button class="btn-sm btn-del" onclick="deleteClient(${c.id})">Excluir</button>
+        </div>
+      </div>
+    `).join('');
+
+    // Carrega status de cada cliente em paralelo
+    clients.forEach(async (c) => {
+      try {
+        const { status } = await apiFetch(`/clients/${c.id}/whatsapp`);
+        const dot = el(`dot-${c.id}`);
+        if (dot) dot.className = `wa-dot ${status === 'connected' ? 'connected' : 'disconnected'}`;
+      } catch (_) {}
+    });
+  } catch (err) { console.error(err); }
+}
+
+el('new-client-btn').addEventListener('click', () => openClientModal());
+el('client-modal-cancel').addEventListener('click', () => hide('client-modal'));
+el('qr-modal-close').addEventListener('click', () => { clearInterval(qrPollTimer); hide('qr-modal'); });
+
+function openClientModal(client = null) {
+  el('client-modal-title').textContent = client ? 'Editar Cliente' : 'Novo Cliente';
+  el('client-id').value = client?.id || '';
+  el('client-name').value = client?.name || '';
+  el('client-phone').value = client?.phone || '';
+  el('client-email').value = client?.email || '';
+  el('client-notes').value = client?.notes || '';
+  show('client-modal');
+}
+
+el('client-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = el('client-id').value;
+  const body = {
+    name: el('client-name').value,
+    phone: el('client-phone').value,
+    email: el('client-email').value,
+    notes: el('client-notes').value,
+  };
+  try {
+    if (id) {
+      await apiFetch(`/clients/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+    } else {
+      await apiFetch('/clients', { method: 'POST', body: JSON.stringify(body) });
+    }
+    hide('client-modal');
+    loadClients();
+  } catch (err) { alert(err.message); }
+});
+
+async function openEditClient(id) {
+  try {
+    const client = await apiFetch(`/clients/${id}`);
+    openClientModal(client);
+  } catch (err) { alert(err.message); }
+}
+
+async function deleteClient(id) {
+  if (!confirm('Excluir este cliente e todas as instâncias WhatsApp?')) return;
+  try {
+    await apiFetch(`/clients/${id}`, { method: 'DELETE' });
+    loadClients();
+  } catch (err) { alert(err.message); }
+}
+
+let qrPollTimer = null;
+
+async function openClientQR(id, name) {
+  el('qr-modal-title').textContent = `WhatsApp — ${name}`;
+  el('qr-modal-status').textContent = 'Verificando conexão...';
+  el('qr-modal-img-wrap').innerHTML = '';
+  show('qr-modal');
+
+  clearInterval(qrPollTimer);
+  let ticks = 0;
+
+  async function checkQR() {
+    ticks++;
+    try {
+      const { status, qrCode } = await apiFetch(`/clients/${id}/whatsapp`);
+      const labels = { connected: 'Conectado', connecting: 'Conectando...', disconnected: 'Desconectado' };
+      el('qr-modal-status').textContent = `Status: ${labels[status] || status}`;
+
+      if (status === 'connected') {
+        el('qr-modal-img-wrap').innerHTML = '<p style="color:#22c55e;font-size:1.2rem">✓ Conectado!</p>';
+        clearInterval(qrPollTimer);
+        loadClients();
+      } else if (qrCode) {
+        el('qr-modal-img-wrap').innerHTML = `<img src="${qrCode}" style="width:220px;border-radius:8px" alt="QR Code"/>`;
+      } else {
+        el('qr-modal-img-wrap').innerHTML = '<p style="color:var(--muted)">Aguardando QR Code...</p>';
+      }
+
+      if (ticks >= 40) clearInterval(qrPollTimer);
+    } catch (_) {}
+  }
+
+  await checkQR();
+  qrPollTimer = setInterval(checkQR, 2000);
 }
 
 // ─── WhatsApp ─────────────────────────────────────────────────────────────────

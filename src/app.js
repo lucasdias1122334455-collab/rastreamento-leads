@@ -7,6 +7,7 @@ const leadRoutes = require('./routes/leads');
 const interactionRoutes = require('./routes/interactions');
 const whatsappRoutes = require('./routes/whatsapp');
 const dashboardRoutes = require('./routes/dashboard');
+const clientRoutes = require('./routes/clients');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -21,6 +22,7 @@ app.use('/api/leads', leadRoutes);
 app.use('/api/interactions', interactionRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/clients', clientRoutes);
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));

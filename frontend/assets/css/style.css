@@ -145,3 +145,11 @@ nav { flex: 1; }
 }
 .modal-actions { display: flex; justify-content: flex-end; gap: .75rem; margin-top: 1.5rem; }
 .modal-actions button { padding: .55rem 1.1rem; border-radius: var(--radius); border: 1px solid var(--border); cursor: pointer; font-size: .9rem; }
+
+/* ─── Clientes ─── */
+.clients-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+.client-card { background: var(--surface); border-radius: var(--radius); padding: 1.25rem; box-shadow: 0 1px 4px rgba(0,0,0,.06); display: flex; flex-direction: column; gap: .75rem; }
+.client-card-header { display: flex; justify-content: space-between; align-items: center; }
+.client-card-header strong { font-size: 1rem; }
+.client-card-info { display: flex; flex-direction: column; gap: .2rem; font-size: .85rem; color: var(--muted); }
+.client-card-actions { display: flex; gap: .5rem; margin-top: .25rem; }

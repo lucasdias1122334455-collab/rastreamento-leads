@@ -23,21 +23,38 @@ model User {
   @@map("users")
 }
 
+model Client {
+  id           Int      @id @default(autoincrement())
+  name         String
+  phone        String?
+  email        String?
+  notes        String?
+  instanceName String   @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  leads Lead[]
+
+  @@map("clients")
+}
+
 model Lead {
   id           Int      @id @default(autoincrement())
   name         String?
   phone        String   @unique
   email        String?
-  source       String?  // whatsapp | manual | import
-  status       String   @default("new") // new | contacted | qualified | converted | lost
-  stage        String   @default("awareness") // awareness | interest | decision | action
+  source       String?
+  status       String   @default("new")
+  stage        String   @default("awareness")
   notes        String?
-  tags         String?  // JSON array armazenado como string
+  tags         String?
   assignedToId Int?
+  clientId     Int?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   assignedTo   User?         @relation(fields: [assignedToId], references: [id])
+  client       Client?       @relation(fields: [clientId], references: [id])
   interactions Interaction[]
 
   @@map("leads")
@@ -47,10 +64,10 @@ model Interaction {
   id        Int      @id @default(autoincrement())
   leadId    Int
   userId    Int?
-  type      String   // message | call | note | status_change
-  direction String?  // inbound | outbound
+  type      String
+  direction String?
   content   String
-  metadata  String?  // JSON com dados extras (ex: mensagem do WhatsApp)
+  metadata  String?
   createdAt DateTime @default(now())
 
   lead Lead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
@@ -62,7 +79,7 @@ model Interaction {
 model WhatsAppSession {
   id        Int      @id @default(autoincrement())
   sessionId String   @unique
-  status    String   @default("disconnected") // disconnected | connecting | connected
+  status    String   @default("disconnected")
   qrCode    String?
   phone     String?
   createdAt DateTime @default(now())

@@ -33,6 +33,7 @@
       <nav>
         <a href="#" class="nav-item active" data-page="dashboard">Dashboard</a>
         <a href="#" class="nav-item" data-page="leads">Leads</a>
+        <a href="#" class="nav-item" data-page="clients">Clientes</a>
         <a href="#" class="nav-item" data-page="whatsapp">WhatsApp</a>
       </nav>
       <div class="sidebar-footer">
@@ -83,6 +84,15 @@
         <div class="pagination" id="pagination"></div>
       </section>
 
+      <!-- Clientes -->
+      <section id="page-clients" class="page hidden">
+        <div class="page-header">
+          <h2>Clientes</h2>
+          <button id="new-client-btn" class="btn-primary">+ Novo Cliente</button>
+        </div>
+        <div id="clients-grid" class="clients-grid"></div>
+      </section>
+
       <!-- WhatsApp -->
       <section id="page-whatsapp" class="page hidden">
         <h2>Conexão WhatsApp</h2>
@@ -102,6 +112,40 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <!-- Modal Cliente -->
+  <div id="client-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3 id="client-modal-title">Novo Cliente</h3>
+      <form id="client-form">
+        <input type="hidden" id="client-id" />
+        <label>Nome *</label>
+        <input type="text" id="client-name" placeholder="Nome do cliente" required />
+        <label>Telefone</label>
+        <input type="text" id="client-phone" placeholder="5566999999999" />
+        <label>Email</label>
+        <input type="email" id="client-email" placeholder="email@cliente.com" />
+        <label>Notas</label>
+        <textarea id="client-notes" rows="2" placeholder="Observações..."></textarea>
+        <div class="modal-actions">
+          <button type="button" id="client-modal-cancel">Cancelar</button>
+          <button type="submit" class="btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal QR Code Cliente -->
+  <div id="qr-modal" class="modal hidden">
+    <div class="modal-content" style="text-align:center">
+      <h3 id="qr-modal-title">Conectar WhatsApp</h3>
+      <p id="qr-modal-status"></p>
+      <div id="qr-modal-img-wrap"></div>
+      <div class="modal-actions" style="justify-content:center">
+        <button type="button" id="qr-modal-close" class="btn-primary">Fechar</button>
+      </div>
+    </div>
   </div>
 
   <!-- Modal Novo Lead -->

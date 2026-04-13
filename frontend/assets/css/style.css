@@ -166,3 +166,70 @@ nav { flex: 1; }
 .outbound .bubble-meta { text-align:right; }
 .chat-input-area { display:flex; gap:.75rem; }
 .chat-input-area input { flex:1; padding:.65rem 1rem; border:1px solid var(--border); border-radius:var(--radius); font-size:.95rem; font-family:inherit; }
+
+/* ─── Responsivo Mobile ─── */
+@media (max-width: 768px) {
+
+  /* Layout */
+  #app-screen { flex-direction: column; }
+
+  /* Sidebar vira navbar no topo */
+  .sidebar {
+    width: 100%; height: auto; flex-direction: row;
+    padding: 0; align-items: center;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .sidebar-header { padding: .75rem 1rem; border-bottom: none; flex-shrink: 0; }
+  .logo { font-size: 1rem; }
+  nav { display: flex; flex-direction: row; overflow-x: auto; flex: 1; }
+  .nav-item {
+    padding: .75rem .9rem; white-space: nowrap; border-left: none;
+    border-bottom: 3px solid transparent; font-size: .82rem;
+  }
+  .nav-item:hover, .nav-item.active {
+    border-left-color: transparent; border-bottom-color: var(--green);
+  }
+  .sidebar-footer {
+    flex-direction: row; align-items: center; padding: .5rem .75rem;
+    gap: .5rem; flex-shrink: 0;
+  }
+  #user-name { display: none; }
+
+  /* Content */
+  .content { padding: 1rem; }
+  .page h2 { font-size: 1.2rem; margin-bottom: 1rem; }
+
+  /* Stats */
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: .6rem; }
+  .stat-value { font-size: 1.5rem; }
+
+  /* Page header */
+  .page-header { flex-wrap: wrap; gap: .5rem; }
+  .page-header h2 { font-size: 1.1rem; }
+
+  /* Filtros */
+  .filters { flex-direction: column; gap: .5rem; }
+
+  /* Tabela — scroll horizontal */
+  .leads-table { display: block; overflow-x: auto; white-space: nowrap; font-size: .82rem; }
+  .leads-table th, .leads-table td { padding: .6rem .75rem; }
+
+  /* Clients grid */
+  .clients-grid { grid-template-columns: 1fr; }
+
+  /* Modal */
+  .modal-content { margin: 1rem; padding: 1.5rem; max-width: 100%; }
+
+  /* Chat */
+  .chat-messages { max-height: calc(100vh - 280px); }
+  .chat-bubble { max-width: 85%; }
+
+  /* QR code */
+  #qr-image { max-width: 200px; }
+  .wa-status-card { padding: 1.25rem; }
+}
+
+@media (max-width: 400px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .nav-item { padding: .65rem .7rem; font-size: .78rem; }
+}

@@ -1,3 +1,14 @@
+const { execSync } = require('child_process');
+
+// Sincroniza schema do banco antes de tudo
+try {
+  console.log('[DB] Sincronizando schema...');
+  execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit' });
+  console.log('[DB] Schema sincronizado.');
+} catch (e) {
+  console.error('[DB] Falha ao sincronizar schema:', e.message);
+}
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');

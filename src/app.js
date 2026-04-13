@@ -32,23 +32,99 @@ app.use(errorHandler);
 
 app.listen(PORT, async () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
+  console.log(`[DB] DATABASE_URL: ${process.env.DATABASE_URL?.substring(0, 40)}...`);
 
+  const { PrismaClient } = require('@prisma/client');
+  const prisma = new PrismaClient();
+
+  // Cria tabelas se não existirem (PostgreSQL)
   try {
-    const { PrismaClient } = require('@prisma/client');
+    console.log('[DB] Criando tabelas...');
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'agent',
+        active BOOLEAN NOT NULL DEFAULT true,
+        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+        "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS clients (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        phone TEXT,
+        email TEXT,
+        notes TEXT,
+        "instanceName" TEXT NOT NULL UNIQUE,
+        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+        "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS leads (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+        phone TEXT NOT NULL UNIQUE,
+        email TEXT,
+        source TEXT,
+        status TEXT NOT NULL DEFAULT 'new',
+        stage TEXT NOT NULL DEFAULT 'awareness',
+        notes TEXT,
+        tags TEXT,
+        "assignedToId" INTEGER REFERENCES users(id),
+        "clientId" INTEGER REFERENCES clients(id),
+        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+        "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS interactions (
+        id SERIAL PRIMARY KEY,
+        "leadId" INTEGER NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+        "userId" INTEGER REFERENCES users(id),
+        type TEXT NOT NULL,
+        direction TEXT,
+        content TEXT NOT NULL,
+        metadata TEXT,
+        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS whatsapp_sessions (
+        id SERIAL PRIMARY KEY,
+        "sessionId" TEXT NOT NULL UNIQUE,
+        status TEXT NOT NULL DEFAULT 'disconnected',
+        "qrCode" TEXT,
+        phone TEXT,
+        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+        "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    console.log('[DB] Tabelas criadas com sucesso.');
+  } catch (e) {
+    console.error('[DB] Erro ao criar tabelas:', e.message);
+  }
+
+  // Cria admin padrão
+  try {
     const bcrypt = require('bcryptjs');
-    const prisma = new PrismaClient();
     const existing = await prisma.user.findUnique({ where: { email: 'admin@sistema.com' } });
     if (!existing) {
       const hash = await bcrypt.hash('admin123', 10);
       await prisma.user.create({
         data: { name: 'Administrador', email: 'admin@sistema.com', password: hash, role: 'admin' }
       });
-      console.log('Admin criado automaticamente!');
+      console.log('[DB] Admin criado automaticamente!');
     }
-    await prisma.$disconnect();
   } catch (e) {
-    console.error('Erro ao criar admin:', e);
+    console.error('[DB] Erro ao criar admin:', e.message);
   }
+
+  await prisma.$disconnect();
 });
 
 module.exports = app;

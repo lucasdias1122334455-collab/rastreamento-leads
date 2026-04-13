@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rastreamento de Leads — WhatsApp</title>
+  <link rel="stylesheet" href="/assets/css/style.css" />
+</head>
+<body>
+  <!-- Login -->
+  <div id="login-screen" class="screen">
+    <div class="login-card">
+      <h1>Rastreamento de Leads</h1>
+      <p class="subtitle">WhatsApp CRM</p>
+      <form id="login-form">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="admin@sistema.com" required />
+        <label>Senha</label>
+        <input type="password" id="password" placeholder="••••••••" required />
+        <button type="submit">Entrar</button>
+        <p id="login-error" class="error hidden"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- App -->
+  <div id="app-screen" class="screen hidden">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="logo">Leads WA</span>
+        <span id="wa-indicator" class="wa-dot disconnected" title="WhatsApp desconectado"></span>
+      </div>
+      <nav>
+        <a href="#" class="nav-item active" data-page="dashboard">Dashboard</a>
+        <a href="#" class="nav-item" data-page="leads">Leads</a>
+        <a href="#" class="nav-item" data-page="whatsapp">WhatsApp</a>
+      </nav>
+      <div class="sidebar-footer">
+        <span id="user-name"></span>
+        <button id="logout-btn">Sair</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <!-- Dashboard -->
+      <section id="page-dashboard" class="page">
+        <h2>Dashboard</h2>
+        <div class="stats-grid">
+          <div class="stat-card"><span class="stat-value" id="stat-total">—</span><span class="stat-label">Total de Leads</span></div>
+          <div class="stat-card"><span class="stat-value" id="stat-today">—</span><span class="stat-label">Novos Hoje</span></div>
+          <div class="stat-card"><span class="stat-value" id="stat-converted">—</span><span class="stat-label">Convertidos</span></div>
+          <div class="stat-card"><span class="stat-value" id="stat-whatsapp">—</span><span class="stat-label">Via WhatsApp</span></div>
+        </div>
+        <h3>Interações Recentes</h3>
+        <div id="recent-interactions" class="interaction-list"></div>
+      </section>
+
+      <!-- Leads -->
+      <section id="page-leads" class="page hidden">
+        <div class="page-header">
+          <h2>Leads</h2>
+          <button id="new-lead-btn" class="btn-primary">+ Novo Lead</button>
+        </div>
+        <div class="filters">
+          <input type="text" id="search-input" placeholder="Buscar por nome, telefone..." />
+          <select id="filter-status">
+            <option value="">Todos os status</option>
+            <option value="new">Novo</option>
+            <option value="contacted">Contactado</option>
+            <option value="qualified">Qualificado</option>
+            <option value="converted">Convertido</option>
+            <option value="lost">Perdido</option>
+          </select>
+        </div>
+        <table class="leads-table">
+          <thead>
+            <tr>
+              <th>Nome</th><th>Telefone</th><th>Status</th><th>Etapa</th><th>Origem</th><th>Criado</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="leads-tbody"></tbody>
+        </table>
+        <div class="pagination" id="pagination"></div>
+      </section>
+
+      <!-- WhatsApp -->
+      <section id="page-whatsapp" class="page hidden">
+        <h2>Conexão WhatsApp</h2>
+        <div class="wa-status-card">
+          <p>Status: <strong id="wa-status-text">Carregando...</strong></p>
+          <div id="qr-container" class="hidden">
+            <p>Escaneie o QR Code com o WhatsApp do seu celular:</p>
+            <img id="qr-image" src="" alt="QR Code" />
+          </div>
+          <div class="wa-actions">
+            <button id="btn-connect" class="btn-primary">Conectar</button>
+            <button id="btn-disconnect" class="btn-danger hidden">Desconectar</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal Novo Lead -->
+  <div id="lead-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3 id="modal-title">Novo Lead</h3>
+      <form id="lead-form">
+        <input type="hidden" id="lead-id" />
+        <label>Nome</label>
+        <input type="text" id="lead-name" placeholder="Nome do lead" />
+        <label>Telefone *</label>
+        <input type="text" id="lead-phone" placeholder="5511999999999" required />
+        <label>Email</label>
+        <input type="email" id="lead-email" placeholder="email@exemplo.com" />
+        <label>Status</label>
+        <select id="lead-status">
+          <option value="new">Novo</option>
+          <option value="contacted">Contactado</option>
+          <option value="qualified">Qualificado</option>
+          <option value="converted">Convertido</option>
+          <option value="lost">Perdido</option>
+        </select>
+        <label>Etapa</label>
+        <select id="lead-stage">
+          <option value="awareness">Consciência</option>
+          <option value="interest">Interesse</option>
+          <option value="decision">Decisão</option>
+          <option value="action">Ação</option>
+        </select>
+        <label>Notas</label>
+        <textarea id="lead-notes" rows="3" placeholder="Observações sobre o lead..."></textarea>
+        <div class="modal-actions">
+          <button type="button" id="modal-cancel">Cancelar</button>
+          <button type="submit" class="btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/assets/js/app.js"></script>
+</body>
+</html>

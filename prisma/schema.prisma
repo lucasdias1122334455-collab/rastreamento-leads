@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("agent") // admin | agent
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  leads        Lead[]
+  interactions Interaction[]
+
+  @@map("users")
+}
+
+model Lead {
+  id           Int      @id @default(autoincrement())
+  name         String?
+  phone        String   @unique
+  email        String?
+  source       String?  // whatsapp | manual | import
+  status       String   @default("new") // new | contacted | qualified | converted | lost
+  stage        String   @default("awareness") // awareness | interest | decision | action
+  notes        String?
+  tags         String?  // JSON array armazenado como string
+  assignedToId Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  assignedTo   User?         @relation(fields: [assignedToId], references: [id])
+  interactions Interaction[]
+
+  @@map("leads")
+}
+
+model Interaction {
+  id        Int      @id @default(autoincrement())
+  leadId    Int
+  userId    Int?
+  type      String   // message | call | note | status_change
+  direction String?  // inbound | outbound
+  content   String
+  metadata  String?  // JSON com dados extras (ex: mensagem do WhatsApp)
+  createdAt DateTime @default(now())
+
+  lead Lead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("interactions")
+}
+
+model WhatsAppSession {
+  id        Int      @id @default(autoincrement())
+  sessionId String   @unique
+  status    String   @default("disconnected") // disconnected | connecting | connected
+  qrCode    String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("whatsapp_sessions")
+}

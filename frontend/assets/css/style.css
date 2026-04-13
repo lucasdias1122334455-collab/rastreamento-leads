@@ -131,6 +131,9 @@ nav { flex: 1; }
 .wa-status-card p { margin-bottom: 1rem; }
 #qr-image { max-width: 260px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 1rem; }
 .wa-actions { display: flex; gap: .75rem; }
+.qr-loading-text { color: var(--muted); font-size: .95rem; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+.dots { animation: blink 1.2s step-start infinite; }
 
 /* ─── Modal ─── */
 .modal { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 100; }

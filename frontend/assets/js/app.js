@@ -223,18 +223,47 @@ function applyWAStatus({ status, qrCode }) {
 
   if (qrCode) {
     el('qr-image').src = qrCode;
+    hide('qr-loading');
     show('qr-container');
+  } else if (status === 'connecting') {
+    hide('qr-container');
+    show('qr-loading');
   } else {
     hide('qr-container');
+    hide('qr-loading');
   }
 
   if (status === 'connected') { hide('btn-connect'); show('btn-disconnect'); }
   else { show('btn-connect'); hide('btn-disconnect'); }
 }
 
+let fastPollTimer = null;
+
+function startFastPoll() {
+  if (fastPollTimer) return;
+  let ticks = 0;
+  fastPollTimer = setInterval(async () => {
+    ticks++;
+    try {
+      const data = await apiFetch('/whatsapp/status');
+      if (data) applyWAStatus(data);
+      if (data?.qrCode || data?.status === 'connected' || ticks >= 20) {
+        clearInterval(fastPollTimer);
+        fastPollTimer = null;
+      }
+    } catch {
+      clearInterval(fastPollTimer);
+      fastPollTimer = null;
+    }
+  }, 1500);
+}
+
 el('btn-connect').addEventListener('click', async () => {
-  try { await apiFetch('/whatsapp/connect', { method: 'POST' }); loadWAStatus(); }
-  catch (err) { alert(err.message); }
+  try {
+    await apiFetch('/whatsapp/connect', { method: 'POST' });
+    loadWAStatus();
+    startFastPoll();
+  } catch (err) { alert(err.message); }
 });
 
 el('btn-disconnect').addEventListener('click', async () => {

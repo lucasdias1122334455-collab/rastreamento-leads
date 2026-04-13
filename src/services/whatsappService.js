@@ -1,6 +1,8 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('baileys');
 const { Boom } = require('@hapi/boom');
 const qrcode = require('qrcode');
+const fs = require('fs');
+const path = require('path');
 const prisma = require('../config/database');
 
 const SESSION_ID = 'default';
@@ -9,6 +11,17 @@ const AUTH_PATH = './whatsapp-auth';
 let sock = null;
 let currentStatus = 'disconnected';
 let currentQR = null;
+let userInitiatedDisconnect = false;
+
+function clearAuthFiles() {
+  try {
+    if (fs.existsSync(AUTH_PATH)) {
+      fs.readdirSync(AUTH_PATH).forEach((f) => fs.unlinkSync(path.join(AUTH_PATH, f)));
+    }
+  } catch (e) {
+    console.error('[WhatsApp] Erro ao limpar arquivos de auth:', e.message);
+  }
+}
 
 function getStatus() {
   return { status: currentStatus, qrCode: currentQR };
@@ -86,16 +99,26 @@ async function connect() {
 
     if (connection === 'close') {
       const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
+      const wasUserInitiated = userInitiatedDisconnect;
+      userInitiatedDisconnect = false;
+
       sock = null;
       currentStatus = 'disconnected';
       currentQR = null;
       await updateSessionInDB('disconnected');
 
-      if (reason !== DisconnectReason.loggedOut) {
+      if (reason === DisconnectReason.loggedOut) {
+        if (wasUserInitiated) {
+          console.log('[WhatsApp] Sessão encerrada pelo usuário');
+        } else {
+          // Sessão rejeitada pelo WhatsApp (expirada/inválida) — limpa credenciais e reconecta para gerar novo QR
+          console.log('[WhatsApp] Sessão inválida — limpando credenciais e reconectando...');
+          clearAuthFiles();
+          setTimeout(connect, 2000);
+        }
+      } else {
         console.log('[WhatsApp] Reconectando...');
         setTimeout(connect, 5000);
-      } else {
-        console.log('[WhatsApp] Sessão encerrada pelo usuário');
       }
     }
   });
@@ -109,6 +132,7 @@ async function connect() {
 
 async function disconnect() {
   if (sock) {
+    userInitiatedDisconnect = true;
     await sock.logout();
     sock = null;
   }

@@ -33,34 +33,6 @@ app.use(errorHandler);
 app.listen(PORT, async () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 
-  // Garante que as tabelas existam (migrations manuais via SQL)
-  try {
-    const { PrismaClient } = require('@prisma/client');
-    const prismaRaw = new PrismaClient();
-
-    await prismaRaw.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS clients (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        phone TEXT,
-        email TEXT,
-        notes TEXT,
-        instanceName TEXT NOT NULL UNIQUE,
-        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    try {
-      await prismaRaw.$executeRawUnsafe(`ALTER TABLE leads ADD COLUMN clientId INTEGER REFERENCES clients(id)`);
-    } catch (_) { /* coluna já existe */ }
-
-    console.log('[DB] Tabelas verificadas.');
-    await prismaRaw.$disconnect();
-  } catch (e) {
-    console.error('[DB] Erro ao verificar tabelas:', e.message);
-  }
-
   try {
     const { PrismaClient } = require('@prisma/client');
     const bcrypt = require('bcryptjs');

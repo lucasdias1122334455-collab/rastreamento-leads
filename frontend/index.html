@@ -86,11 +86,29 @@
 
       <!-- Clientes -->
       <section id="page-clients" class="page hidden">
-        <div class="page-header">
-          <h2>Clientes</h2>
-          <button id="new-client-btn" class="btn-primary">+ Novo Cliente</button>
+        <div id="clients-list-view">
+          <div class="page-header">
+            <h2>Clientes</h2>
+            <button id="new-client-btn" class="btn-primary">+ Novo Cliente</button>
+          </div>
+          <div id="clients-grid" class="clients-grid"></div>
         </div>
-        <div id="clients-grid" class="clients-grid"></div>
+
+        <!-- Detalhe do Cliente -->
+        <div id="client-detail-view" class="hidden">
+          <div class="page-header">
+            <div style="display:flex;align-items:center;gap:1rem">
+              <button id="btn-back-clients" class="btn-sm btn-edit">← Voltar</button>
+              <h2 id="client-detail-name"></h2>
+            </div>
+          </div>
+          <table class="leads-table">
+            <thead>
+              <tr><th>Nome</th><th>Telefone</th><th>Status</th><th>Mensagens</th><th>Criado</th></tr>
+            </thead>
+            <tbody id="client-leads-tbody"></tbody>
+          </table>
+        </div>
       </section>
 
       <!-- WhatsApp -->

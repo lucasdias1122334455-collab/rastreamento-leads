@@ -217,7 +217,7 @@ async function loadClients() {
       return;
     }
     grid.innerHTML = clients.map((c) => `
-      <div class="client-card">
+      <div class="client-card" onclick="openClientDetail(${c.id}, '${c.name.replace(/'/g, "\\'")}')" style="cursor:pointer">
         <div class="client-card-header">
           <strong>${c.name}</strong>
           <span class="wa-dot disconnected" id="dot-${c.id}" title="Verificando..."></span>
@@ -227,8 +227,8 @@ async function loadClients() {
           ${c.email ? `<span>${c.email}</span>` : ''}
           <span>${c._count?.leads || 0} leads</span>
         </div>
-        <div class="client-card-actions">
-          <button class="btn-sm btn-primary" onclick="openClientQR(${c.id}, '${c.name}')">WhatsApp</button>
+        <div class="client-card-actions" onclick="event.stopPropagation()">
+          <button class="btn-sm btn-primary" onclick="openClientQR(${c.id}, '${c.name.replace(/'/g, "\\'")}')">WhatsApp</button>
           <button class="btn-sm btn-edit" onclick="openEditClient(${c.id})">Editar</button>
           <button class="btn-sm btn-del" onclick="deleteClient(${c.id})">Excluir</button>
         </div>
@@ -245,6 +245,32 @@ async function loadClients() {
     });
   } catch (err) { console.error(err); }
 }
+
+async function openClientDetail(id, name) {
+  el('client-detail-name').textContent = name;
+  el('client-leads-tbody').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Carregando...</td></tr>';
+  hide('clients-list-view');
+  show('client-detail-view');
+
+  try {
+    const leads = await apiFetch(`/clients/${id}/leads`);
+    el('client-leads-tbody').innerHTML = leads.length
+      ? leads.map((l) => `
+        <tr>
+          <td>${l.name || '<em style="color:var(--muted)">sem nome</em>'}</td>
+          <td>${l.phone}</td>
+          <td>${statusBadge(l.status)}</td>
+          <td>${l._count?.interactions || 0}</td>
+          <td>${fmtDate(l.createdAt)}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">Nenhum lead ainda.</td></tr>';
+  } catch (err) { console.error(err); }
+}
+
+el('btn-back-clients').addEventListener('click', () => {
+  hide('client-detail-view');
+  show('clients-list-view');
+});
 
 el('new-client-btn').addEventListener('click', () => openClientModal());
 el('client-modal-cancel').addEventListener('click', () => hide('client-modal'));

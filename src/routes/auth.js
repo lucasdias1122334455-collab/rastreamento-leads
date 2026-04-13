@@ -1,6 +1,15 @@
+const { Router } = require('express');
+const { login, me } = require('../controllers/authController');
+const { authenticate } = require('../middleware/auth');
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
+
+const router = Router();
+
+router.post('/login', login);
+router.get('/me', authenticate, me);
+
 router.post('/setup', async (req, res) => {
-  const { PrismaClient } = require('@prisma/client');
-  const bcrypt = require('bcryptjs');
   const prisma = new PrismaClient();
   try {
     const hash = await bcrypt.hash('admin123', 10);
@@ -16,3 +25,5 @@ router.post('/setup', async (req, res) => {
     await prisma.$disconnect();
   }
 });
+
+module.exports = router;

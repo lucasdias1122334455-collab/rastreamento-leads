@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",
+    "prisma": "^5.10.0",
     "@whiskeysockets/baileys": "^6.7.4",
     "axios": "^1.15.0",
     "baileys": "^7.0.0-rc.9",
@@ -26,7 +27,6 @@
     "qrcode": "^1.5.3"
   },
   "devDependencies": {
-    "nodemon": "^3.1.0",
-    "prisma": "^5.10.0"
+    "nodemon": "^3.1.0"
   }
 }

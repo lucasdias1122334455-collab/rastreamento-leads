@@ -148,6 +148,7 @@ nav { flex: 1; }
 .conv-msg.system { background: rgba(0,0,0,.08); align-self: center; font-size: .75rem; color: #555; border-radius: 99px; padding: .25rem .75rem; }
 .conv-msg-time { font-size: .68rem; color: var(--muted); margin-top: .25rem; text-align: right; }
 .conv-msg-sender { font-size: .72rem; font-weight: 700; color: var(--green-dark); margin-bottom: .2rem; }
+.conv-back-btn { display: none; }
 .page h2 { font-size: 1.5rem; margin-bottom: 1.5rem; }
 .page h3 { font-size: 1.1rem; margin: 1.5rem 0 .75rem; }
 
@@ -354,8 +355,9 @@ nav { flex: 1; }
   /* Botão voltar no header das colunas */
   .conv-col-header { display: flex; align-items: center; gap: .5rem; }
   .conv-back-btn {
-    background: none; border: none; color: var(--green); font-size: 1rem;
-    cursor: pointer; padding: 0; line-height: 1; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: none; border: none; color: var(--green); font-size: 1.4rem;
+    cursor: pointer; padding: 0 .25rem; line-height: 1; font-weight: 700;
   }
 
   /* Msgs */

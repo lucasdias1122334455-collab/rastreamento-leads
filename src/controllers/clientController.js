@@ -2,7 +2,8 @@ const prisma = require('../config/database');
 const evolutionService = require('../services/evolutionService');
 
 function toInstanceName(name) {
-  return 'c_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 30) + '_' + Date.now();
+  // Nome fixo baseado no nome do cliente — sem timestamp para evitar duplicatas
+  return 'c_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 40);
 }
 
 async function listClients(req, res, next) {
@@ -82,9 +83,24 @@ async function getClientWhatsAppStatus(req, res, next) {
 
     const status = await evolutionService.getClientStatus(client.instanceName);
     let qrCode = null;
-    if (status !== 'connected') {
+
+    // Só gera QR se status for connecting (já iniciou conexão) — não no disconnected
+    if (status === 'connecting') {
       try { qrCode = await evolutionService.getClientQRCode(client.instanceName); } catch (_) {}
     }
+    res.json({ status, qrCode });
+  } catch (err) { next(err); }
+}
+
+async function connectClientWhatsApp(req, res, next) {
+  try {
+    const client = await prisma.client.findUnique({ where: { id: Number(req.params.id) } });
+    if (!client) return res.status(404).json({ error: 'Cliente não encontrado' });
+
+    // Inicia conexão e retorna QR
+    let qrCode = null;
+    try { qrCode = await evolutionService.getClientQRCode(client.instanceName); } catch (_) {}
+    const status = await evolutionService.getClientStatus(client.instanceName);
     res.json({ status, qrCode });
   } catch (err) { next(err); }
 }
@@ -100,4 +116,4 @@ async function getClientLeads(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { listClients, createClient, getClient, updateClient, deleteClient, getClientWhatsAppStatus, getClientLeads };
+module.exports = { listClients, createClient, getClient, updateClient, deleteClient, getClientWhatsAppStatus, connectClientWhatsApp, getClientLeads };

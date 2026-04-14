@@ -35,6 +35,7 @@
         <a href="#" class="nav-item" data-page="leads">Leads</a>
         <a href="#" class="nav-item" data-page="clients">Clientes</a>
         <a href="#" class="nav-item" data-page="whatsapp">WhatsApp</a>
+        <a href="#" class="nav-item" data-page="conversions">Conversões</a>
         <a href="#" class="nav-item" data-page="meta-stats">Meta Ads</a>
         <a href="#" class="nav-item nav-admin hidden" data-page="users">Usuários</a>
       </nav>
@@ -147,6 +148,53 @@
             <button id="btn-connect" class="btn-primary">Conectar</button>
             <button id="btn-disconnect" class="btn-danger hidden">Desconectar</button>
           </div>
+        </div>
+      </section>
+
+      <!-- Conversões -->
+      <section id="page-conversions" class="page hidden">
+        <h2>Métricas de Conversão</h2>
+
+        <!-- Cards resumo -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-value" id="conv-today-val">—</span>
+            <span class="stat-label">Hoje — Valor</span>
+            <span class="stat-sub" id="conv-today-count"></span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="conv-week-val">—</span>
+            <span class="stat-label">Semana — Valor</span>
+            <span class="stat-sub" id="conv-week-count"></span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="conv-month-val">—</span>
+            <span class="stat-label">Mês — Valor</span>
+            <span class="stat-sub" id="conv-month-count"></span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="conv-alltime-val">—</span>
+            <span class="stat-label">Total Geral</span>
+            <span class="stat-sub" id="conv-alltime-count"></span>
+          </div>
+        </div>
+
+        <!-- Abas diário / semanal / mensal -->
+        <div class="conv-tabs" style="margin-top:2rem">
+          <button class="conv-tab active" data-tab="monthly">Por Mês</button>
+          <button class="conv-tab" data-tab="weekly">Por Semana</button>
+          <button class="conv-tab" data-tab="daily">Por Dia</button>
+        </div>
+
+        <div id="conv-chart-wrap" class="conv-chart-wrap">
+          <div id="conv-bar-chart" class="bar-chart conv-bar-chart"></div>
+        </div>
+
+        <div id="conv-table-wrap" style="margin-top:1.5rem;overflow-x:auto">
+          <table class="leads-table">
+            <thead><tr><th id="conv-col-period">Período</th><th>Conversões</th><th>Valor Total</th><th>Ticket Médio</th></tr></thead>
+            <tbody id="conv-tbody"></tbody>
+          </table>
         </div>
       </section>
 
@@ -269,6 +317,8 @@
           <option value="decision">Decisão</option>
           <option value="action">Ação</option>
         </select>
+        <label>Valor da Conversão (R$) <span style="font-size:.8rem;color:var(--muted)">opcional</span></label>
+        <input type="number" id="lead-value" placeholder="0,00" min="0" step="0.01" />
         <label>Notas</label>
         <textarea id="lead-notes" rows="3" placeholder="Observações sobre o lead..."></textarea>
         <div class="modal-actions">

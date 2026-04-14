@@ -92,6 +92,7 @@ function navigateTo(page) {
   if (page === 'whatsapp') loadWAStatus();
   if (page === 'users') loadUsers();
   if (page === 'meta-stats') loadMetaStats();
+  if (page === 'conversions') loadConversions();
 }
 
 document.querySelectorAll('.nav-item').forEach((a) => {
@@ -175,6 +176,7 @@ function openModal(lead = null) {
   el('lead-email').value = lead?.email || '';
   el('lead-status').value = lead?.status || 'new';
   el('lead-stage').value = lead?.stage || 'awareness';
+  el('lead-value').value = lead?.value ?? '';
   el('lead-notes').value = lead?.notes || '';
   show('lead-modal');
 }
@@ -190,6 +192,7 @@ el('lead-form').addEventListener('submit', async (e) => {
     email: el('lead-email').value,
     status: el('lead-status').value,
     stage: el('lead-stage').value,
+    value: el('lead-value').value,
     notes: el('lead-notes').value,
   };
   try {
@@ -503,6 +506,72 @@ function startWAStatusPolling() {
     } catch {}
   }, 5000);
 }
+
+// ─── Conversões ───────────────────────────────────────────────────────────────
+
+let convData = null;
+let activeConvTab = 'monthly';
+
+function fmtBRL(v) {
+  return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+async function loadConversions() {
+  try {
+    convData = await apiFetch('/dashboard/conversion-values');
+
+    // Cards resumo
+    const s = convData.summary;
+    el('conv-today-val').textContent  = s.today.formatted;
+    el('conv-today-count').textContent  = `${s.today.count} conversão(ões)`;
+    el('conv-week-val').textContent   = s.week.formatted;
+    el('conv-week-count').textContent   = `${s.week.count} conversão(ões)`;
+    el('conv-month-val').textContent  = s.month.formatted;
+    el('conv-month-count').textContent  = `${s.month.count} conversão(ões)`;
+    el('conv-alltime-val').textContent = s.allTime.formatted;
+    el('conv-alltime-count').textContent = `${s.allTime.count} total`;
+
+    renderConvTab(activeConvTab);
+  } catch (err) { console.error(err); }
+}
+
+function renderConvTab(tab) {
+  activeConvTab = tab;
+  document.querySelectorAll('.conv-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+
+  const rows = tab === 'daily' ? convData.daily
+             : tab === 'weekly' ? convData.weekly
+             : convData.monthly;
+
+  const labelKey = tab === 'daily' ? 'date' : tab === 'weekly' ? 'week' : 'month';
+  el('conv-col-period').textContent = tab === 'daily' ? 'Dia' : tab === 'weekly' ? 'Semana' : 'Mês';
+
+  // Gráfico de barras
+  const maxVal = Math.max(...rows.map(r => r.value), 1);
+  el('conv-bar-chart').innerHTML = rows.map(r => `
+    <div class="bar-item">
+      <div class="bar-fill bar-fill-blue" style="height:${Math.max((r.value / maxVal) * 100, r.value > 0 ? 4 : 0)}%">
+        ${r.value > 0 ? `<span class="bar-value" style="font-size:.6rem">${r.count}</span>` : ''}
+      </div>
+      <div class="bar-label">${r[labelKey]}</div>
+    </div>
+  `).join('');
+
+  // Tabela
+  el('conv-tbody').innerHTML = rows.map(r => {
+    const ticket = r.count > 0 ? fmtBRL(r.value / r.count) : '—';
+    return `<tr>
+      <td>${r[labelKey]}</td>
+      <td><strong>${r.count}</strong></td>
+      <td style="color:#22c55e;font-weight:700">${fmtBRL(r.value)}</td>
+      <td>${ticket}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:2rem">Nenhuma conversão com valor registrado ainda.</td></tr>';
+}
+
+document.querySelectorAll('.conv-tab').forEach(b => {
+  b.addEventListener('click', () => { if (convData) renderConvTab(b.dataset.tab); });
+});
 
 // ─── Meta Stats ───────────────────────────────────────────────────────────────
 

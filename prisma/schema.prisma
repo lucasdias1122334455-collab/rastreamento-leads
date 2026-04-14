@@ -50,6 +50,7 @@ model Lead {
   stage        String   @default("awareness")
   notes        String?
   tags         String?
+  value        Float?
   assignedToId Int?
   clientId     Int?
   createdAt    DateTime @default(now())

@@ -49,6 +49,89 @@ async function getStats(req, res, next) {
   }
 }
 
+async function getConversionValues(req, res, next) {
+  try {
+    const now = new Date();
+
+    // Limites de tempo
+    const startOfDay   = new Date(now); startOfDay.setHours(0,0,0,0);
+    const startOfWeek  = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0,0,0,0);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Leads convertidos em cada período (com valor)
+    const [dayLeads, weekLeads, monthLeads, allTime] = await Promise.all([
+      prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: startOfDay } }, select: { value: true, source: true } }),
+      prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: startOfWeek } }, select: { value: true, source: true } }),
+      prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: startOfMonth } }, select: { value: true, source: true } }),
+      prisma.lead.findMany({ where: { status: 'converted' }, select: { value: true, source: true, updatedAt: true } }),
+    ]);
+
+    const sum = (leads) => leads.reduce((acc, l) => acc + (l.value || 0), 0);
+    const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    // Últimos 30 dias agrupados por dia
+    const last30 = new Date(now); last30.setDate(now.getDate() - 29); last30.setHours(0,0,0,0);
+    const last30Leads = await prisma.lead.findMany({
+      where: { status: 'converted', updatedAt: { gte: last30 } },
+      select: { value: true, updatedAt: true, source: true },
+    });
+
+    // Agrupa por dia
+    const dailyMap = {};
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(last30); d.setDate(d.getDate() + i);
+      const key = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      dailyMap[key] = { count: 0, value: 0 };
+    }
+    last30Leads.forEach(l => {
+      const key = new Date(l.updatedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      if (dailyMap[key]) { dailyMap[key].count++; dailyMap[key].value += (l.value || 0); }
+    });
+
+    // Agrupa por semana (últimas 8 semanas)
+    const weeklyMap = {};
+    for (let i = 7; i >= 0; i--) {
+      const d = new Date(now); d.setDate(now.getDate() - i * 7);
+      const weekStart = new Date(d); weekStart.setDate(d.getDate() - d.getDay()); weekStart.setHours(0,0,0,0);
+      const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6);
+      const key = `${weekStart.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}`;
+      weeklyMap[key] = { count: 0, value: 0, weekStart, weekEnd };
+    }
+    allTime.forEach(l => {
+      const date = new Date(l.updatedAt);
+      Object.entries(weeklyMap).forEach(([key, w]) => {
+        if (date >= w.weekStart && date <= w.weekEnd) { w.count++; w.value += (l.value || 0); }
+      });
+    });
+
+    // Agrupa por mês (últimos 6 meses)
+    const monthlyMap = {};
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+      monthlyMap[key] = { count: 0, value: 0, year: d.getFullYear(), month: d.getMonth() };
+    }
+    allTime.forEach(l => {
+      const d = new Date(l.updatedAt);
+      Object.entries(monthlyMap).forEach(([key, m]) => {
+        if (d.getFullYear() === m.year && d.getMonth() === m.month) { m.count++; m.value += (l.value || 0); }
+      });
+    });
+
+    res.json({
+      summary: {
+        today:   { count: dayLeads.length,   value: sum(dayLeads),   formatted: fmt(sum(dayLeads)) },
+        week:    { count: weekLeads.length,   value: sum(weekLeads),  formatted: fmt(sum(weekLeads)) },
+        month:   { count: monthLeads.length,  value: sum(monthLeads), formatted: fmt(sum(monthLeads)) },
+        allTime: { count: allTime.length,     value: sum(allTime),    formatted: fmt(sum(allTime)) },
+      },
+      daily:   Object.entries(dailyMap).map(([date, d]) => ({ date, ...d })),
+      weekly:  Object.entries(weeklyMap).map(([week, d]) => ({ week, count: d.count, value: d.value })),
+      monthly: Object.entries(monthlyMap).map(([month, d]) => ({ month, count: d.count, value: d.value })),
+    });
+  } catch (err) { next(err); }
+}
+
 async function getMetaStats(req, res, next) {
   try {
     const now = new Date();
@@ -143,4 +226,4 @@ async function getMetaStats(req, res, next) {
   }
 }
 
-module.exports = { getStats, getMetaStats };
+module.exports = { getStats, getMetaStats, getConversionValues };

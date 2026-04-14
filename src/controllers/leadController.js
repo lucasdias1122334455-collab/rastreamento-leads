@@ -54,7 +54,7 @@ async function getById(req, res, next) {
 
 async function create(req, res, next) {
   try {
-    const { name, phone, email, source, status, stage, notes, tags, assignedToId } = req.body;
+    const { name, phone, email, source, status, stage, notes, tags, assignedToId, value } = req.body;
     if (!phone) return res.status(400).json({ error: 'Telefone é obrigatório' });
 
     const lead = await prisma.lead.create({
@@ -68,6 +68,7 @@ async function create(req, res, next) {
         notes,
         tags: tags ? JSON.stringify(tags) : null,
         assignedToId: assignedToId ? Number(assignedToId) : null,
+        value: value !== undefined && value !== '' ? Number(value) : null,
       },
     });
 
@@ -82,7 +83,7 @@ async function create(req, res, next) {
 
 async function update(req, res, next) {
   try {
-    const { name, email, status, stage, notes, tags, assignedToId } = req.body;
+    const { name, email, status, stage, notes, tags, assignedToId, value } = req.body;
     const id = Number(req.params.id);
 
     const data = {};
@@ -93,6 +94,7 @@ async function update(req, res, next) {
     if (notes !== undefined) data.notes = notes;
     if (tags !== undefined) data.tags = JSON.stringify(tags);
     if (assignedToId !== undefined) data.assignedToId = assignedToId ? Number(assignedToId) : null;
+    if (value !== undefined) data.value = value !== '' ? Number(value) : null;
 
     const lead = await prisma.lead.update({ where: { id }, data });
     res.json(lead);

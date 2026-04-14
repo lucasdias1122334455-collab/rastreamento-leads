@@ -39,6 +39,16 @@ async function webhook(req, res) {
           const content = msg.text?.body || '[mídia]';
           const pushName = contacts.find(c => c.wa_id === phone)?.profile?.name || null;
 
+          // Dados do anúncio (Click-to-WhatsApp)
+          const referral = msg.referral || null;
+          const adData = referral ? {
+            adId: referral.source_id || null,
+            adHeadline: referral.headline || null,
+            adBody: referral.body || null,
+            adSourceUrl: referral.source_url || null,
+            adSourceType: referral.source_type || null,
+          } : null;
+
           // Identifica o cliente pelo Phone Number ID
           let clientId = null;
           if (phoneNumberId) {
@@ -50,13 +60,23 @@ async function webhook(req, res) {
 
           let lead = await prisma.lead.findUnique({ where: { phone } });
           if (!lead) {
+            const tags = adData ? JSON.stringify(adData) : null;
             lead = await prisma.lead.create({
-              data: { phone, name: pushName, source: 'whatsapp_meta', status: 'new', stage: 'awareness', clientId }
+              data: {
+                phone,
+                name: pushName,
+                source: 'whatsapp_meta',
+                status: 'new',
+                stage: 'awareness',
+                clientId,
+                tags,
+              }
             });
           } else {
             const updates = {};
             if (pushName && !lead.name) updates.name = pushName;
             if (clientId && !lead.clientId) updates.clientId = clientId;
+            if (adData && !lead.tags) updates.tags = JSON.stringify(adData);
             if (Object.keys(updates).length) {
               await prisma.lead.update({ where: { id: lead.id }, data: updates });
             }
@@ -68,11 +88,16 @@ async function webhook(req, res) {
               type: 'message',
               direction: 'inbound',
               content,
-              metadata: JSON.stringify({ source: 'meta', rawMessage: msg })
+              metadata: JSON.stringify({
+                source: 'meta',
+                phoneNumberId,
+                referral: adData,
+                rawMessage: msg,
+              })
             }
           });
 
-          console.log(`[Meta] Mensagem de ${phone} (${pushName}): ${content}`);
+          console.log(`[Meta] Mensagem de ${phone} (${pushName})${adData ? ` | Anúncio: ${adData.adHeadline}` : ''}: ${content}`);
         }
       }
     }

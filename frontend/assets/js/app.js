@@ -91,6 +91,7 @@ function navigateTo(page) {
   if (page === 'clients') loadClients();
   if (page === 'whatsapp') loadWAStatus();
   if (page === 'users') loadUsers();
+  if (page === 'meta-stats') loadMetaStats();
 }
 
 document.querySelectorAll('.nav-item').forEach((a) => {
@@ -501,6 +502,76 @@ function startWAStatusPolling() {
       applyWAStatus(data);
     } catch {}
   }, 5000);
+}
+
+// ─── Meta Stats ───────────────────────────────────────────────────────────────
+
+async function loadMetaStats() {
+  try {
+    const data = await apiFetch('/dashboard/meta-stats');
+
+    // Cards de resumo
+    el('meta-stat-total').textContent = data.total;
+    el('meta-stat-converted').textContent = data.converted;
+    el('meta-stat-rate').textContent = data.conversionRate + '%';
+    el('meta-stat-new').textContent = data.byStatus.new || 0;
+
+    // Gráfico de barras últimos 7 dias
+    const maxDay = Math.max(...data.byDay.map(d => d.count), 1);
+    el('meta-bar-chart').innerHTML = data.byDay.map(d => `
+      <div class="bar-item">
+        <div class="bar-fill" style="height:${Math.max((d.count / maxDay) * 100, 2)}%">
+          <span class="bar-value">${d.count}</span>
+        </div>
+        <div class="bar-label">${d.date}</div>
+      </div>
+    `).join('');
+
+    // Tabela de origens
+    const sourceLabels = {
+      whatsapp_meta: '📱 Meta Ads (Click-to-WhatsApp)',
+      whatsapp: '📱 WhatsApp QR Code',
+      manual: '✍️ Manual',
+      null: '❓ Desconhecido',
+    };
+    const total = Object.values(data.allSources).reduce((a, b) => a + b, 0) || 1;
+    el('meta-sources-table').innerHTML = `
+      <div class="sources-grid">
+        ${Object.entries(data.allSources).map(([src, count]) => `
+          <div class="source-item">
+            <div class="source-label">${sourceLabels[src] || src}</div>
+            <div class="source-bar-wrap">
+              <div class="source-bar-fill" style="width:${(count / total * 100).toFixed(0)}%"></div>
+            </div>
+            <div class="source-count"><strong>${count}</strong> <span style="color:var(--muted);font-size:.8rem">(${(count/total*100).toFixed(0)}%)</span></div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    // Tabela por anúncio
+    el('meta-ads-tbody').innerHTML = data.byAd.length
+      ? data.byAd.map(ad => `
+        <tr>
+          <td>
+            <strong>${ad.name}</strong>
+            ${ad.adId ? `<div style="font-size:.75rem;color:var(--muted)">ID: ${ad.adId}</div>` : ''}
+          </td>
+          <td><strong>${ad.total}</strong></td>
+          <td>${ad.new}</td>
+          <td>${ad.qualified}</td>
+          <td style="color:#22c55e"><strong>${ad.converted}</strong></td>
+          <td style="color:#e74c3c">${ad.lost}</td>
+          <td>
+            <span class="conv-rate ${parseFloat(ad.conversionRate) >= 10 ? 'rate-good' : parseFloat(ad.conversionRate) >= 5 ? 'rate-mid' : 'rate-low'}">
+              ${ad.conversionRate}%
+            </span>
+          </td>
+        </tr>
+      `).join('')
+      : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">Nenhum lead do Meta ainda. Configure os anúncios Click-to-WhatsApp.</td></tr>';
+
+  } catch (err) { console.error(err); }
 }
 
 // ─── Perfil ───────────────────────────────────────────────────────────────────

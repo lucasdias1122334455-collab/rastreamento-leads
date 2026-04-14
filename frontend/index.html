@@ -35,6 +35,7 @@
         <a href="#" class="nav-item" data-page="leads">Leads</a>
         <a href="#" class="nav-item" data-page="clients">Clientes</a>
         <a href="#" class="nav-item" data-page="whatsapp">WhatsApp</a>
+        <a href="#" class="nav-item" data-page="meta-stats">Meta Ads</a>
         <a href="#" class="nav-item nav-admin hidden" data-page="users">Usuários</a>
       </nav>
       <div class="sidebar-footer">
@@ -146,6 +147,46 @@
             <button id="btn-connect" class="btn-primary">Conectar</button>
             <button id="btn-disconnect" class="btn-danger hidden">Desconectar</button>
           </div>
+        </div>
+      </section>
+
+      <!-- Meta Ads Métricas -->
+      <section id="page-meta-stats" class="page hidden">
+        <h2>Métricas Meta Ads</h2>
+
+        <!-- Cards de resumo -->
+        <div class="stats-grid" id="meta-summary-cards">
+          <div class="stat-card"><span class="stat-value" id="meta-stat-total">—</span><span class="stat-label">Leads do Meta</span></div>
+          <div class="stat-card"><span class="stat-value" id="meta-stat-converted">—</span><span class="stat-label">Convertidos</span></div>
+          <div class="stat-card"><span class="stat-value" id="meta-stat-rate">—</span><span class="stat-label">Taxa de Conversão</span></div>
+          <div class="stat-card"><span class="stat-value" id="meta-stat-new">—</span><span class="stat-label">Novos (sem contato)</span></div>
+        </div>
+
+        <!-- Leads por dia (últimos 7 dias) -->
+        <h3 style="margin-top:2rem">Leads por Dia (últimos 7 dias)</h3>
+        <div id="meta-bar-chart" class="bar-chart"></div>
+
+        <!-- Leads por origem total -->
+        <h3 style="margin-top:2rem">Origem de Todos os Leads</h3>
+        <div id="meta-sources-table"></div>
+
+        <!-- Por anúncio -->
+        <h3 style="margin-top:2rem">Performance por Anúncio</h3>
+        <div style="overflow-x:auto">
+          <table class="leads-table" id="meta-ads-table">
+            <thead>
+              <tr>
+                <th>Anúncio</th>
+                <th>Total Leads</th>
+                <th>Novos</th>
+                <th>Qualificados</th>
+                <th>Convertidos</th>
+                <th>Perdidos</th>
+                <th>Conversão %</th>
+              </tr>
+            </thead>
+            <tbody id="meta-ads-tbody"></tbody>
+          </table>
         </div>
       </section>
 

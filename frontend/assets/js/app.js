@@ -321,7 +321,7 @@ async function loadClients() {
       <div class="client-card" onclick="openClientDetail(${c.id}, '${c.name.replace(/'/g, "\\'")}')" style="cursor:pointer">
         <div class="client-card-header">
           <strong>${c.name}</strong>
-          <span class="wa-dot disconnected" id="dot-${c.id}" title="Verificando..."></span>
+          ${c.metaPhoneNumberId ? '<span class="meta-badge">Meta</span>' : ''}
         </div>
         <div class="client-card-info">
           ${c.phone ? `<span>${c.phone}</span>` : ''}
@@ -329,21 +329,12 @@ async function loadClients() {
           <span>${c._count?.leads || 0} leads</span>
         </div>
         <div class="client-card-actions" onclick="event.stopPropagation()">
-          <button class="btn-sm btn-primary" onclick="openClientQR(${c.id}, '${c.name.replace(/'/g, "\\'")}')">WhatsApp</button>
           <button class="btn-sm btn-edit" onclick="openEditClient(${c.id})">Editar</button>
           <button class="btn-sm btn-del" onclick="deleteClient(${c.id})">Excluir</button>
         </div>
       </div>
     `).join('');
 
-    // Carrega status de cada cliente em paralelo
-    clients.forEach(async (c) => {
-      try {
-        const { status } = await apiFetch(`/clients/${c.id}/whatsapp`);
-        const dot = el(`dot-${c.id}`);
-        if (dot) dot.className = `wa-dot ${status === 'connected' ? 'connected' : 'disconnected'}`;
-      } catch (_) {}
-    });
   } catch (err) { console.error(err); }
 }
 
@@ -587,13 +578,7 @@ el('btn-disconnect').addEventListener('click', async () => {
 });
 
 function startWAStatusPolling() {
-  clearInterval(waStatusInterval);
-  waStatusInterval = setInterval(async () => {
-    try {
-      const data = await apiFetch('/whatsapp/status');
-      applyWAStatus(data);
-    } catch {}
-  }, 5000);
+  // WhatsApp QR removido — usando apenas Meta Business API
 }
 
 // ─── Conversões ───────────────────────────────────────────────────────────────

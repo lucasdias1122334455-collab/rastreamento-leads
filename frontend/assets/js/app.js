@@ -87,7 +87,7 @@ function navigateTo(page) {
   document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
 
   if (page === 'dashboard') { loadDashboard(); loadFunnel(); }
-  if (page === 'leads') loadLeads(1);
+  if (page === 'leads') { loadClientFilter(); loadLeads(1); }
   if (page === 'clients') loadClients();
   if (page === 'whatsapp') loadWAStatus();
   if (page === 'users') loadUsers();
@@ -179,11 +179,22 @@ async function loadDashboard() {
 
 // ─── Leads ────────────────────────────────────────────────────────────────────
 
+async function loadClientFilter() {
+  try {
+    const clients = await apiFetch('/clients');
+    const select = el('filter-client');
+    const current = select.value;
+    select.innerHTML = '<option value="">Todos os clientes</option>' +
+      clients.map(c => `<option value="${c.id}" ${c.id == current ? 'selected' : ''}>${c.name}</option>`).join('');
+  } catch (_) {}
+}
+
 async function loadLeads(page = 1) {
   currentPage = page;
   const search = el('search-input').value;
   const status = el('filter-status').value;
-  const params = new URLSearchParams({ page, limit: 20, ...(search && { search }), ...(status && { status }) });
+  const clientId = el('filter-client').value;
+  const params = new URLSearchParams({ page, limit: 20, ...(search && { search }), ...(status && { status }), ...(clientId && { clientId }) });
 
   try {
     const data = await apiFetch(`/leads?${params}`);
@@ -194,13 +205,14 @@ async function loadLeads(page = 1) {
         <td>${statusBadge(l.status)}</td>
         <td>${stageLabel(l.stage)}</td>
         <td>${l.source || '—'}</td>
+        <td>${l.client ? `<span class="client-tag">${l.client.name}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
         <td>${fmtDate(l.createdAt)}</td>
         <td style="display:flex;gap:.4rem;">
           <button class="btn-sm btn-edit" onclick="openEditModal(${l.id})">Editar</button>
           <button class="btn-sm btn-del" onclick="deleteLead(${l.id})">Excluir</button>
         </td>
       </tr>
-    `).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">Nenhum lead encontrado.</td></tr>';
+    `).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:2rem">Nenhum lead encontrado.</td></tr>';
 
     renderPagination(data.pages, page);
   } catch (err) {
@@ -216,6 +228,7 @@ function renderPagination(pages, current) {
 
 el('search-input').addEventListener('input', () => loadLeads(1));
 el('filter-status').addEventListener('change', () => loadLeads(1));
+el('filter-client').addEventListener('change', () => loadLeads(1));
 
 // ─── Lead Modal ───────────────────────────────────────────────────────────────
 

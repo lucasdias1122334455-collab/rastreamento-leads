@@ -19,8 +19,21 @@ model User {
 
   leads        Lead[]
   interactions Interaction[]
+  clients      UserClient[]
 
   @@map("users")
+}
+
+model UserClient {
+  id       Int @id @default(autoincrement())
+  userId   Int
+  clientId Int
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clientId])
+  @@map("user_clients")
 }
 
 model Client {
@@ -36,6 +49,7 @@ model Client {
   updatedAt    DateTime @updatedAt
 
   leads Lead[]
+  users UserClient[]
 
   @@map("clients")
 }

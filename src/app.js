@@ -110,6 +110,14 @@ app.listen(PORT, async () => {
         "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
       )
     `);
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS user_clients (
+        id SERIAL PRIMARY KEY,
+        "userId" INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        "clientId" INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+        UNIQUE("userId", "clientId")
+      )
+    `);
     // Migrações seguras — adiciona colunas se não existirem
     await prisma.$executeRawUnsafe(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS value NUMERIC DEFAULT NULL`);
     await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "metaPhoneNumberId" TEXT`);

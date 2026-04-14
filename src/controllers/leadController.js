@@ -5,12 +5,13 @@ const VALID_STAGES = ['awareness', 'interest', 'decision', 'action'];
 
 async function list(req, res, next) {
   try {
-    const { status, stage, search, page = 1, limit = 20 } = req.query;
+    const { status, stage, search, clientId, page = 1, limit = 20 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
     const where = {};
     if (status) where.status = status;
     if (stage) where.stage = stage;
+    if (clientId) where.clientId = Number(clientId);
     if (search) {
       where.OR = [
         { name: { contains: search } },
@@ -25,7 +26,10 @@ async function list(req, res, next) {
         skip,
         take: Number(limit),
         orderBy: { createdAt: 'desc' },
-        include: { assignedTo: { select: { id: true, name: true } } },
+        include: {
+          assignedTo: { select: { id: true, name: true } },
+          client: { select: { id: true, name: true } },
+        },
       }),
       prisma.lead.count({ where }),
     ]);

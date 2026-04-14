@@ -10,6 +10,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const clientRoutes = require('./routes/clients');
 const metaRoutes = require('./routes/meta');
 const userRoutes = require('./routes/users');
+const conversationsRoutes = require('./routes/conversations');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -27,6 +28,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/meta', metaRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/conversations', conversationsRoutes);
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));

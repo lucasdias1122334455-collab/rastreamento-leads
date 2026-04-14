@@ -35,6 +35,7 @@
         <a href="#" class="nav-item" data-page="leads">Leads</a>
         <a href="#" class="nav-item" data-page="clients">Clientes</a>
         <a href="#" class="nav-item" data-page="whatsapp">WhatsApp</a>
+        <a href="#" class="nav-item" data-page="conversations">Conversas</a>
         <a href="#" class="nav-item" data-page="conversions">Conversões</a>
         <a href="#" class="nav-item" data-page="meta-stats">Meta Ads</a>
         <a href="#" class="nav-item nav-admin hidden" data-page="users">Usuários</a>
@@ -261,6 +262,28 @@
             </thead>
             <tbody id="meta-ads-tbody"></tbody>
           </table>
+        </div>
+      </section>
+
+      <!-- Conversas -->
+      <section id="page-conversations" class="page hidden" style="padding:0;height:calc(100vh - 0px)">
+        <div class="conv-layout">
+          <!-- Coluna 1: Anúncios/Pastas -->
+          <div class="conv-ads" id="conv-ads-list">
+            <div class="conv-col-header">📂 Pastas</div>
+            <div id="conv-ads-items"></div>
+          </div>
+          <!-- Coluna 2: Leads da pasta -->
+          <div class="conv-leads" id="conv-leads-col">
+            <div class="conv-col-header" id="conv-leads-header">Selecione uma pasta</div>
+            <div id="conv-leads-list"><p class="conv-empty">← Selecione uma pasta</p></div>
+          </div>
+          <!-- Coluna 3: Conversa -->
+          <div class="conv-chat" id="conv-chat-col">
+            <div class="conv-col-header" id="conv-chat-header">Conversa</div>
+            <div id="conv-chat-info" class="conv-chat-info hidden"></div>
+            <div id="conv-messages" class="conv-messages"><p class="conv-empty" style="margin-top:3rem">← Selecione um lead</p></div>
+          </div>
         </div>
       </section>
 

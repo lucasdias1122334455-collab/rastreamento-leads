@@ -93,6 +93,7 @@ function navigateTo(page) {
   if (page === 'users') loadUsers();
   if (page === 'meta-stats') loadMetaStats();
   if (page === 'conversions') loadConversions();
+  if (page === 'conversations') loadConversations();
 }
 
 document.querySelectorAll('.nav-item').forEach((a) => {
@@ -738,6 +739,120 @@ async function loadMetaStats() {
       `).join('')
       : '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:2rem">Nenhum lead do Meta ainda. Configure os anúncios Click-to-WhatsApp.</td></tr>';
 
+  } catch (err) { console.error(err); }
+}
+
+// ─── Conversas ────────────────────────────────────────────────────────────────
+
+let convPollTimer = null;
+let convActiveLeadId = null;
+
+async function loadConversations() {
+  try {
+    const groups = await apiFetch('/conversations/ads');
+    const container = el('conv-ads-items');
+    if (!groups.length) {
+      container.innerHTML = '<p class="conv-empty">Nenhuma conversa ainda.</p>';
+      return;
+    }
+    const sourceIcon = (src) => src === 'whatsapp_meta' ? '📢' : src === 'manual' ? '✍️' : '📱';
+    container.innerHTML = groups.map(g => `
+      <div class="conv-ad-item" onclick="selectConvAd('${encodeURIComponent(g.key)}', this, '${g.key}')">
+        <div class="conv-ad-title">${sourceIcon(g.source)} ${g.key}</div>
+        <div class="conv-ad-meta">${g.total} leads · ${g.converted} convertidos</div>
+      </div>
+    `).join('');
+  } catch (err) { console.error(err); }
+}
+
+async function selectConvAd(encodedKey, el_clicked, label) {
+  document.querySelectorAll('.conv-ad-item').forEach(i => i.classList.remove('active'));
+  el_clicked.classList.add('active');
+  el('conv-leads-header').textContent = label;
+  el('conv-leads-list').innerHTML = '<p class="conv-empty">Carregando...</p>';
+  el('conv-messages').innerHTML = '<p class="conv-empty" style="margin-top:3rem">← Selecione um lead</p>';
+  el('conv-chat-header').textContent = 'Conversa';
+  el('conv-chat-info').classList.add('hidden');
+  convActiveLeadId = null;
+
+  try {
+    const leads = await apiFetch(`/conversations/leads?adKey=${encodedKey}`);
+    if (!leads.length) {
+      el('conv-leads-list').innerHTML = '<p class="conv-empty">Nenhum lead nesta pasta.</p>';
+      return;
+    }
+    el('conv-leads-list').innerHTML = leads.map(l => {
+      const lastMsg = l.interactions?.[0];
+      const preview = lastMsg ? lastMsg.content.replace('[mídia]', '📷 Mídia') : 'Sem mensagens';
+      const time = lastMsg ? fmtDate(lastMsg.createdAt) : fmtDate(l.createdAt);
+      return `
+        <div class="conv-lead-item" onclick="selectConvLead(${l.id}, this)">
+          <div class="conv-lead-name">${l.name || l.phone}</div>
+          <div class="conv-lead-preview">${preview}</div>
+          <div class="conv-lead-meta">
+            ${statusBadge(l.status)}
+            ${l.client ? `<span class="client-tag">${l.client.name}</span>` : ''}
+            <span>${time}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) { console.error(err); }
+}
+
+async function selectConvLead(id, el_clicked) {
+  document.querySelectorAll('.conv-lead-item').forEach(i => i.classList.remove('active'));
+  el_clicked.classList.add('active');
+  convActiveLeadId = id;
+  el('conv-messages').innerHTML = '<p class="conv-empty" style="margin-top:3rem">Carregando...</p>';
+
+  if (convPollTimer) clearInterval(convPollTimer);
+  await renderConvChat(id);
+  convPollTimer = setInterval(() => { if (convActiveLeadId === id) renderConvChat(id); }, 5000);
+}
+
+async function renderConvChat(id) {
+  try {
+    const lead = await apiFetch(`/conversations/lead/${id}`);
+
+    // Info do lead
+    el('conv-chat-header').textContent = lead.name || lead.phone;
+    const info = el('conv-chat-info');
+    info.classList.remove('hidden');
+    info.innerHTML = `
+      <div class="conv-chat-info-item">📞 <strong>${lead.phone}</strong></div>
+      ${lead.client ? `<div class="conv-chat-info-item">🏢 <strong>${lead.client.name}</strong></div>` : ''}
+      <div class="conv-chat-info-item">${statusBadge(lead.status)}</div>
+      ${lead.assignedTo ? `<div class="conv-chat-info-item">👤 <strong>${lead.assignedTo.name}</strong></div>` : ''}
+      <div class="conv-chat-info-item" style="margin-left:auto">
+        <button class="btn-sm btn-primary" onclick="navigateTo('leads');setTimeout(()=>openLeadModal(${lead.id}),300)">Editar Lead</button>
+      </div>
+    `;
+
+    // Mensagens
+    if (!lead.interactions.length) {
+      el('conv-messages').innerHTML = '<p class="conv-empty" style="margin-top:3rem;text-align:center">Nenhuma mensagem ainda.</p>';
+      return;
+    }
+
+    el('conv-messages').innerHTML = lead.interactions.map(i => {
+      const dir = i.direction === 'outbound' ? 'outbound' : i.type === 'note' ? 'system' : 'inbound';
+      const content = i.content === '[mídia]' ? '📷 Mídia recebida' : i.content;
+      const time = new Date(i.createdAt).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+      return `
+        <div class="conv-msg ${dir}">
+          ${dir === 'system' ? `<em>${content}</em>` : `
+            ${dir === 'outbound' ? '<div class="conv-msg-sender">Agente</div>' : ''}
+            ${content}
+          `}
+          <div class="conv-msg-time">${time}</div>
+        </div>
+      `;
+    }).join('');
+
+    // Rola para o final
+    const msgs = el('conv-messages');
+    msgs.scrollTop = msgs.scrollHeight;
   } catch (err) { console.error(err); }
 }
 

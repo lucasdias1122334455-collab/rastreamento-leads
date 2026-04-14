@@ -46,4 +46,41 @@ async function me(req, res, next) {
   }
 }
 
-module.exports = { login, me };
+async function updateProfile(req, res, next) {
+  try {
+    const { name, email, password, currentPassword } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+    // Valida senha atual antes de qualquer alteração
+    if (!currentPassword) {
+      return res.status(400).json({ error: 'Informe sua senha atual para salvar alterações' });
+    }
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) return res.status(401).json({ error: 'Senha atual incorreta' });
+
+    // Verifica se o novo email já está em uso por outro usuário
+    if (email && email !== user.email) {
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing) return res.status(400).json({ error: 'Email já está em uso' });
+    }
+
+    const data = {};
+    if (name) data.name = name;
+    if (email) data.email = email;
+    if (password) {
+      if (password.length < 6) return res.status(400).json({ error: 'Nova senha deve ter pelo menos 6 caracteres' });
+      data.password = await bcrypt.hash(password, 10);
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: req.user.id },
+      data,
+      select: { id: true, name: true, email: true, role: true },
+    });
+    res.json(updated);
+  } catch (err) { next(err); }
+}
+
+module.exports = { login, me, updateProfile };

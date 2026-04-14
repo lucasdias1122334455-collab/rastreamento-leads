@@ -1,5 +1,5 @@
 const { Router } = require('express');
-const { login, me } = require('../controllers/authController');
+const { login, me, updateProfile } = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
@@ -8,6 +8,7 @@ const router = Router();
 
 router.post('/login', login);
 router.get('/me', authenticate, me);
+router.put('/profile', authenticate, updateProfile);
 
 router.post('/setup', async (req, res) => {
   const prisma = new PrismaClient();

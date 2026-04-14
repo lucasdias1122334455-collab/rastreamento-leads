@@ -503,6 +503,47 @@ function startWAStatusPolling() {
   }, 5000);
 }
 
+// ─── Perfil ───────────────────────────────────────────────────────────────────
+
+el('profile-btn').addEventListener('click', () => {
+  el('profile-name').value = currentUser?.name || '';
+  el('profile-email').value = currentUser?.email || '';
+  el('profile-new-password').value = '';
+  el('profile-current-password').value = '';
+  el('profile-error').classList.add('hidden');
+  el('profile-success').classList.add('hidden');
+  show('profile-modal');
+});
+
+el('profile-modal-cancel').addEventListener('click', () => hide('profile-modal'));
+
+el('profile-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  el('profile-error').classList.add('hidden');
+  el('profile-success').classList.add('hidden');
+
+  const body = {
+    name: el('profile-name').value,
+    email: el('profile-email').value,
+    currentPassword: el('profile-current-password').value,
+  };
+  const newPwd = el('profile-new-password').value;
+  if (newPwd) body.password = newPwd;
+
+  try {
+    const updated = await apiFetch('/auth/profile', { method: 'PUT', body: JSON.stringify(body) });
+    currentUser = { ...currentUser, ...updated };
+    el('user-name').textContent = updated.name;
+    el('profile-success').textContent = 'Perfil atualizado com sucesso!';
+    el('profile-success').classList.remove('hidden');
+    el('profile-current-password').value = '';
+    el('profile-new-password').value = '';
+  } catch (err) {
+    el('profile-error').textContent = err.message;
+    el('profile-error').classList.remove('hidden');
+  }
+});
+
 // ─── Usuários ─────────────────────────────────────────────────────────────────
 
 async function loadUsers() {

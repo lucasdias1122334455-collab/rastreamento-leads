@@ -38,7 +38,7 @@
         <a href="#" class="nav-item nav-admin hidden" data-page="users">Usuários</a>
       </nav>
       <div class="sidebar-footer">
-        <span id="user-name"></span>
+        <button id="profile-btn" class="profile-btn" title="Editar perfil"><span id="user-name"></span> ✏️</button>
         <button id="logout-btn">Sair</button>
       </div>
     </aside>
@@ -257,6 +257,29 @@
         </select>
         <div class="modal-actions">
           <button type="button" id="user-modal-cancel">Cancelar</button>
+          <button type="submit" class="btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Perfil -->
+  <div id="profile-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3>Meu Perfil</h3>
+      <form id="profile-form">
+        <label>Nome</label>
+        <input type="text" id="profile-name" placeholder="Seu nome" required />
+        <label>Email</label>
+        <input type="email" id="profile-email" placeholder="seu@email.com" required />
+        <label>Nova Senha <span style="font-size:.8rem;color:var(--muted)">(deixe em branco para manter)</span></label>
+        <input type="password" id="profile-new-password" placeholder="Nova senha (mín. 6 caracteres)" />
+        <label>Senha Atual <span style="font-size:.8rem;color:#e74c3c">*obrigatória para salvar</span></label>
+        <input type="password" id="profile-current-password" placeholder="Sua senha atual" required />
+        <p id="profile-error" class="error hidden"></p>
+        <p id="profile-success" class="hidden" style="color:#22c55e;font-size:.9rem;margin-top:.5rem"></p>
+        <div class="modal-actions">
+          <button type="button" id="profile-modal-cancel">Cancelar</button>
           <button type="submit" class="btn-primary">Salvar</button>
         </div>
       </form>

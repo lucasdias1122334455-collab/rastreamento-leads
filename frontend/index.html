@@ -266,8 +266,11 @@
       </section>
 
       <!-- Conversas -->
-      <section id="page-conversations" class="page hidden" style="padding:0;height:calc(100vh - 0px)">
-        <div class="conv-layout">
+      <section id="page-conversations" class="page hidden" style="padding:0;height:100vh;display:flex;flex-direction:column">
+        <div class="conv-client-bar" id="conv-client-bar">
+          <button class="conv-client-btn active" data-client-id="" onclick="selectConvClient('', this)">Todos</button>
+        </div>
+        <div class="conv-layout" style="flex:1;overflow:hidden">
           <!-- Coluna 1: Anúncios/Pastas -->
           <div class="conv-ads" id="conv-ads-list">
             <div class="conv-col-header">📂 Pastas</div>
@@ -286,6 +289,7 @@
           </div>
         </div>
       </section>
+
 
       <!-- Usuários (admin only) -->
       <section id="page-users" class="page hidden">

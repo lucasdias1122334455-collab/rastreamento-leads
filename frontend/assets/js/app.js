@@ -746,10 +746,38 @@ async function loadMetaStats() {
 
 let convPollTimer = null;
 let convActiveLeadId = null;
+let convActiveClientId = '';
 
 async function loadConversations() {
   try {
-    const groups = await apiFetch('/conversations/ads');
+    // Carrega clientes para a barra
+    const clients = await apiFetch('/clients');
+    const bar = el('conv-client-bar');
+    bar.innerHTML = `<button class="conv-client-btn active" data-client-id="" onclick="selectConvClient('', this)">Todos</button>` +
+      clients.map(c => `<button class="conv-client-btn" data-client-id="${c.id}" onclick="selectConvClient('${c.id}', this)">${c.name}</button>`).join('');
+
+    await loadConvAds();
+  } catch (err) { console.error(err); }
+}
+
+async function selectConvClient(clientId, btn) {
+  document.querySelectorAll('.conv-client-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  convActiveClientId = clientId;
+  el('conv-ads-items').innerHTML = '<p class="conv-empty">Carregando...</p>';
+  el('conv-leads-list').innerHTML = '<p class="conv-empty">← Selecione uma pasta</p>';
+  el('conv-messages').innerHTML = '<p class="conv-empty" style="margin-top:3rem">← Selecione um lead</p>';
+  el('conv-leads-header').textContent = 'Selecione uma pasta';
+  el('conv-chat-header').textContent = 'Conversa';
+  el('conv-chat-info').classList.add('hidden');
+  convActiveLeadId = null;
+  await loadConvAds();
+}
+
+async function loadConvAds() {
+  try {
+    const qs = convActiveClientId ? `?clientId=${convActiveClientId}` : '';
+    const groups = await apiFetch(`/conversations/ads${qs}`);
     const container = el('conv-ads-items');
     if (!groups.length) {
       container.innerHTML = '<p class="conv-empty">Nenhuma conversa ainda.</p>';
@@ -757,7 +785,7 @@ async function loadConversations() {
     }
     const sourceIcon = (src) => src === 'whatsapp_meta' ? '📢' : src === 'manual' ? '✍️' : '📱';
     container.innerHTML = groups.map(g => `
-      <div class="conv-ad-item" onclick="selectConvAd('${encodeURIComponent(g.key)}', this, '${g.key}')">
+      <div class="conv-ad-item" onclick="selectConvAd('${encodeURIComponent(g.key)}', this, '${g.key.replace(/'/g, "\\'")}')">
         <div class="conv-ad-title">${sourceIcon(g.source)} ${g.key}</div>
         <div class="conv-ad-meta">${g.total} leads · ${g.converted} convertidos</div>
       </div>
@@ -776,7 +804,8 @@ async function selectConvAd(encodedKey, el_clicked, label) {
   convActiveLeadId = null;
 
   try {
-    const leads = await apiFetch(`/conversations/leads?adKey=${encodedKey}`);
+    const clientParam = convActiveClientId ? `&clientId=${convActiveClientId}` : '';
+    const leads = await apiFetch(`/conversations/leads?adKey=${encodedKey}${clientParam}`);
     if (!leads.length) {
       el('conv-leads-list').innerHTML = '<p class="conv-empty">Nenhum lead nesta pasta.</p>';
       return;

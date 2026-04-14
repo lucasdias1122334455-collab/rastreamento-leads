@@ -13,7 +13,12 @@ function getAdKey(lead) {
 
 async function getAdGroups(req, res, next) {
   try {
+    const { clientId } = req.query;
+    const where = {};
+    if (clientId) where.clientId = Number(clientId);
+
     const leads = await prisma.lead.findMany({
+      where,
       select: { id: true, tags: true, source: true, status: true },
     });
 
@@ -34,9 +39,12 @@ async function getAdGroups(req, res, next) {
 
 async function getLeadsByAd(req, res, next) {
   try {
-    const { adKey } = req.query;
+    const { adKey, clientId } = req.query;
+    const where = {};
+    if (clientId) where.clientId = Number(clientId);
 
     const allLeads = await prisma.lead.findMany({
+      where,
       orderBy: { updatedAt: 'desc' },
       select: {
         id: true, name: true, phone: true, status: true, stage: true,

@@ -113,6 +113,11 @@ nav { flex: 1; }
 /* ─── Content ─── */
 .content { flex: 1; overflow-y: auto; padding: 2rem; }
 
+/* ─── Conversas (barra clientes + 3 colunas) ─── */
+.conv-client-bar { display: flex; gap: .5rem; padding: .625rem 1rem; background: var(--sidebar-bg); overflow-x: auto; flex-shrink: 0; border-bottom: 2px solid rgba(255,255,255,.07); }
+.conv-client-btn { background: rgba(255,255,255,.07); border: none; color: var(--sidebar-text); border-radius: 99px; padding: .35rem .9rem; font-size: .82rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background .15s; }
+.conv-client-btn:hover { background: rgba(255,255,255,.14); color: #fff; }
+.conv-client-btn.active { background: var(--green); color: #fff; }
 /* ─── Conversas (3 colunas) ─── */
 #page-conversations.page { padding: 0; }
 .conv-layout { display: flex; height: 100vh; overflow: hidden; }

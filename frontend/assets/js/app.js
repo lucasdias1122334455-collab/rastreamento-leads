@@ -793,15 +793,34 @@ async function loadConvAds() {
   } catch (err) { console.error(err); }
 }
 
+function isMobile() { return window.innerWidth <= 768; }
+
+function convMobileShow(panel) {
+  // panel: 'ads' | 'leads' | 'chat'
+  const ads = el('conv-ads-list');
+  const leads = el('conv-leads-col');
+  const chat = el('conv-chat-col');
+  ads.classList.remove('mob-hidden'); leads.classList.remove('mob-active'); chat.classList.remove('mob-active');
+  if (panel === 'leads') { ads.classList.add('mob-hidden'); leads.classList.add('mob-active'); }
+  if (panel === 'chat')  { ads.classList.add('mob-hidden'); chat.classList.add('mob-active'); }
+}
+
+function convMobileBack(to) {
+  if (!isMobile()) return;
+  if (to === 'ads')   convMobileShow('ads');
+  if (to === 'leads') convMobileShow('leads');
+}
+
 async function selectConvAd(encodedKey, el_clicked, label) {
   document.querySelectorAll('.conv-ad-item').forEach(i => i.classList.remove('active'));
   el_clicked.classList.add('active');
-  el('conv-leads-header').textContent = label;
+  el('conv-leads-header-text').textContent = label;
   el('conv-leads-list').innerHTML = '<p class="conv-empty">Carregando...</p>';
   el('conv-messages').innerHTML = '<p class="conv-empty" style="margin-top:3rem">← Selecione um lead</p>';
-  el('conv-chat-header').textContent = 'Conversa';
+  el('conv-chat-header-text').textContent = 'Conversa';
   el('conv-chat-info').classList.add('hidden');
   convActiveLeadId = null;
+  if (isMobile()) convMobileShow('leads');
 
   try {
     const clientParam = convActiveClientId ? `&clientId=${convActiveClientId}` : '';
@@ -834,6 +853,7 @@ async function selectConvLead(id, el_clicked) {
   el_clicked.classList.add('active');
   convActiveLeadId = id;
   el('conv-messages').innerHTML = '<p class="conv-empty" style="margin-top:3rem">Carregando...</p>';
+  if (isMobile()) convMobileShow('chat');
 
   if (convPollTimer) clearInterval(convPollTimer);
   await renderConvChat(id);
@@ -845,7 +865,7 @@ async function renderConvChat(id) {
     const lead = await apiFetch(`/conversations/lead/${id}`);
 
     // Info do lead
-    el('conv-chat-header').textContent = lead.name || lead.phone;
+    el('conv-chat-header-text').textContent = lead.name || lead.phone;
     const info = el('conv-chat-info');
     info.classList.remove('hidden');
     info.innerHTML = `

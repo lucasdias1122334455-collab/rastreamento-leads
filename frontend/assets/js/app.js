@@ -22,7 +22,7 @@ function hide(id) { document.getElementById(id).classList.add('hidden'); }
 function el(id) { return document.getElementById(id); }
 
 function statusBadge(status) {
-  const labels = { new: 'Novo', contacted: 'Contactado', qualified: 'Qualificado', converted: 'Convertido', lost: 'Perdido' };
+  const labels = { new: 'Novo', contacted: 'Contactado', qualified: 'Qualificado', converted: 'Convertido', lost: 'Perdido', disqualified: 'Desclassificado' };
   return `<span class="status-badge status-${status}">${labels[status] || status}</span>`;
 }
 

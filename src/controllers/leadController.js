@@ -1,6 +1,6 @@
 const prisma = require('../config/database');
 
-const VALID_STATUSES = ['new', 'contacted', 'qualified', 'converted', 'lost'];
+const VALID_STATUSES = ['new', 'contacted', 'qualified', 'converted', 'lost', 'disqualified'];
 const VALID_STAGES = ['awareness', 'interest', 'decision', 'action'];
 
 async function list(req, res, next) {

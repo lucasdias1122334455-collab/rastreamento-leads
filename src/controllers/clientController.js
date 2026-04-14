@@ -97,7 +97,13 @@ async function connectClientWhatsApp(req, res, next) {
     const client = await prisma.client.findUnique({ where: { id: Number(req.params.id) } });
     if (!client) return res.status(404).json({ error: 'Cliente não encontrado' });
 
-    // Inicia conexão e retorna QR
+    // Se instância não existe, recria automaticamente
+    const currentStatus = await evolutionService.getClientStatus(client.instanceName);
+    if (currentStatus === 'disconnected') {
+      try { await evolutionService.createClientInstance(client.instanceName); } catch (_) {}
+    }
+
+    // Gera QR code
     let qrCode = null;
     try { qrCode = await evolutionService.getClientQRCode(client.instanceName); } catch (_) {}
     const status = await evolutionService.getClientStatus(client.instanceName);

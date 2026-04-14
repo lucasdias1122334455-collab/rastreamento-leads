@@ -409,7 +409,10 @@ async function openClientQR(id, name) {
   async function checkQR() {
     ticks++;
     try {
-      const { status, qrCode } = await apiFetch(`/clients/${id}/whatsapp`);
+      // Primeira chamada usa o endpoint de conexão, demais usam status
+      const endpoint = ticks === 1 ? `/clients/${id}/whatsapp/connect` : `/clients/${id}/whatsapp`;
+      const method = ticks === 1 ? 'POST' : 'GET';
+      const { status, qrCode } = await apiFetch(endpoint, { method });
       const labels = { connected: 'Conectado', connecting: 'Conectando...', disconnected: 'Desconectado' };
       el('qr-modal-status').textContent = `Status: ${labels[status] || status}`;
 

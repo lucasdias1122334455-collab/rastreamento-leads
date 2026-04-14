@@ -357,6 +357,7 @@ function openClientModal(client = null) {
   el('client-phone').value = client?.phone || '';
   el('client-email').value = client?.email || '';
   el('client-notes').value = client?.notes || '';
+  el('client-meta-phone-id').value = client?.metaPhoneNumberId || '';
   show('client-modal');
 }
 
@@ -368,6 +369,7 @@ el('client-form').addEventListener('submit', async (e) => {
     phone: el('client-phone').value,
     email: el('client-email').value,
     notes: el('client-notes').value,
+    metaPhoneNumberId: el('client-meta-phone-id').value || null,
   };
   try {
     if (id) {

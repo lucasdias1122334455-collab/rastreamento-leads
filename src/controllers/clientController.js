@@ -51,10 +51,12 @@ async function getClient(req, res, next) {
 
 async function updateClient(req, res, next) {
   try {
-    const { name, phone, email, notes } = req.body;
+    const { name, phone, email, notes, metaPhoneNumberId } = req.body;
+    const data = { name, phone, email, notes };
+    if (metaPhoneNumberId !== undefined) data.metaPhoneNumberId = metaPhoneNumberId || null;
     const client = await prisma.client.update({
       where: { id: Number(req.params.id) },
-      data: { name, phone, email, notes },
+      data,
     });
     res.json(client);
   } catch (err) { next(err); }

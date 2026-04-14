@@ -76,6 +76,8 @@ nav { flex: 1; }
 .source-bar-wrap { background: var(--bg); border-radius: 99px; height: 8px; overflow: hidden; }
 .source-bar-fill { height: 100%; background: var(--green); border-radius: 99px; transition: width .5s; }
 .source-count { font-size: .9rem; }
+.meta-section { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius); padding: 1rem; margin-top: .5rem; }
+.meta-section-title { font-weight: 600; margin-bottom: .75rem; font-size: .95rem; }
 .conv-rate { padding: .2rem .6rem; border-radius: 99px; font-size: .82rem; font-weight: 700; }
 .rate-good { background: #dcfce7; color: #15803d; }
 .rate-mid { background: #fef9c3; color: #a16207; }

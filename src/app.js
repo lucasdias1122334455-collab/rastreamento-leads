@@ -110,8 +110,10 @@ app.listen(PORT, async () => {
         "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
       )
     `);
-    // Adiciona coluna value se não existir (migração segura)
+    // Migrações seguras — adiciona colunas se não existirem
     await prisma.$executeRawUnsafe(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS value NUMERIC DEFAULT NULL`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "metaPhoneNumberId" TEXT`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "metaAccessToken" TEXT`);
     console.log('[DB] Tabelas criadas com sucesso.');
   } catch (e) {
     console.error('[DB] Erro ao criar tabelas:', e.message);

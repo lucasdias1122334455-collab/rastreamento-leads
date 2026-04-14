@@ -55,7 +55,27 @@
           <div class="stat-card"><span class="stat-value" id="stat-converted">—</span><span class="stat-label">Convertidos</span></div>
           <div class="stat-card"><span class="stat-value" id="stat-whatsapp">—</span><span class="stat-label">Via WhatsApp</span></div>
         </div>
-        <h3>Interações Recentes</h3>
+        <!-- Funil de vendas -->
+        <h3 style="margin-top:2rem">Funil de Vendas</h3>
+        <div id="funnel-wrap" class="funnel-wrap"></div>
+        <div id="funnel-meta" class="funnel-meta"></div>
+
+        <!-- Leads parados -->
+        <div class="stuck-header">
+          <h3>Leads Parados</h3>
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <label style="font-size:.85rem;color:var(--muted)">sem contato há mais de</label>
+            <select id="stuck-days-select" style="padding:.25rem .5rem;border-radius:var(--radius);border:1px solid var(--border);font-size:.85rem">
+              <option value="1">1 dia</option>
+              <option value="3" selected>3 dias</option>
+              <option value="7">7 dias</option>
+              <option value="14">14 dias</option>
+            </select>
+          </div>
+        </div>
+        <div id="stuck-leads-list" class="stuck-leads-list"></div>
+
+        <h3 style="margin-top:2rem">Interações Recentes</h3>
         <div id="recent-interactions" class="interaction-list"></div>
       </section>
 
@@ -64,6 +84,7 @@
         <div class="page-header">
           <h2>Leads</h2>
           <button id="new-lead-btn" class="btn-primary">+ Novo Lead</button>
+          <button id="export-leads-btn" class="btn-sm btn-edit">⬇ Exportar CSV</button>
         </div>
         <div class="filters">
           <input type="text" id="search-input" placeholder="Buscar por nome, telefone..." />

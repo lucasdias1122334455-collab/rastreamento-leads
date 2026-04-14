@@ -86,7 +86,7 @@ function navigateTo(page) {
   show(`page-${page}`);
   document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
 
-  if (page === 'dashboard') loadDashboard();
+  if (page === 'dashboard') { loadDashboard(); loadFunnel(); }
   if (page === 'leads') loadLeads(1);
   if (page === 'clients') loadClients();
   if (page === 'whatsapp') loadWAStatus();
@@ -98,6 +98,60 @@ function navigateTo(page) {
 document.querySelectorAll('.nav-item').forEach((a) => {
   a.addEventListener('click', (e) => { e.preventDefault(); navigateTo(a.dataset.page); });
 });
+
+// ─── Funil + Leads Parados ────────────────────────────────────────────────────
+
+async function loadFunnel(days) {
+  const d = days || el('stuck-days-select')?.value || 3;
+  try {
+    const data = await apiFetch(`/dashboard/funnel?days=${d}`);
+
+    // Funil visual
+    const maxCount = Math.max(...data.funnel.map(f => f.count), 1);
+    el('funnel-wrap').innerHTML = data.funnel.map((f, i) => {
+      const pct = Math.max((f.count / maxCount) * 100, 8);
+      return `
+        <div class="funnel-step">
+          <div class="funnel-bar" style="width:${pct}%">
+            <span class="funnel-label">${f.label}</span>
+            <span class="funnel-count">${f.count}</span>
+          </div>
+          ${f.dropRate !== null ? `<span class="funnel-drop">▼ ${f.dropRate}% saíram</span>` : ''}
+        </div>`;
+    }).join('');
+
+    el('funnel-meta').innerHTML = `
+      <span>⏱ Tempo médio de conversão: <strong>${data.avgConversionDays ? data.avgConversionDays + ' dias' : '—'}</strong></span>
+      <span>✅ Convertidos: <strong>${data.byStatus.converted || 0}</strong></span>
+      <span>❌ Perdidos: <strong>${data.byStatus.lost || 0}</strong></span>
+    `;
+
+    // Leads parados
+    el('stuck-leads-list').innerHTML = data.stuckLeads.length
+      ? data.stuckLeads.map(l => {
+          const lastContact = l.interactions[0]?.createdAt
+            ? fmtDate(l.interactions[0].createdAt)
+            : 'Nunca';
+          const statusLabels = { new: 'Novo', contacted: 'Contactado', qualified: 'Qualificado' };
+          return `
+            <div class="stuck-lead-item">
+              <div class="stuck-lead-info">
+                <strong>${l.name || l.phone}</strong>
+                ${l.client ? `<span class="stuck-client">${l.client.name}</span>` : ''}
+              </div>
+              <div class="stuck-lead-meta">
+                <span class="status-badge status-${l.status}">${statusLabels[l.status] || l.status}</span>
+                <span style="color:var(--muted);font-size:.82rem">Último contato: ${lastContact}</span>
+              </div>
+              <button class="btn-sm btn-edit" onclick="openEditModal(${l.id})">Ver lead</button>
+            </div>`;
+        }).join('')
+      : `<p style="color:var(--muted);padding:1rem 0">Nenhum lead parado há mais de ${d} dias. 🎉</p>`;
+
+  } catch (err) { console.error(err); }
+}
+
+el('stuck-days-select')?.addEventListener('change', () => loadFunnel());
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
@@ -166,6 +220,23 @@ el('filter-status').addEventListener('change', () => loadLeads(1));
 // ─── Lead Modal ───────────────────────────────────────────────────────────────
 
 el('new-lead-btn').addEventListener('click', () => openModal());
+
+el('export-leads-btn').addEventListener('click', async () => {
+  const status = el('filter-status').value;
+  const params = new URLSearchParams({ ...(status && { status }) });
+  try {
+    const res = await fetch(`/api/dashboard/export-leads?${params}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (err) { alert('Erro ao exportar: ' + err.message); }
+});
 el('modal-cancel').addEventListener('click', closeModal);
 
 function openModal(lead = null) {

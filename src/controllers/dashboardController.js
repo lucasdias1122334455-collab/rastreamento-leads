@@ -226,4 +226,124 @@ async function getMetaStats(req, res, next) {
   }
 }
 
-module.exports = { getStats, getMetaStats, getConversionValues };
+async function getFunnelStats(req, res, next) {
+  try {
+    const days = parseInt(req.query.days) || 3;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+
+    const stageOrder = ['awareness', 'interest', 'decision', 'action'];
+    const stageLabels = { awareness: 'Consciência', interest: 'Interesse', decision: 'Decisão', action: 'Ação' };
+
+    const [byStage, byStatus, avgConversion, stuckLeads] = await Promise.all([
+      // Contagem por etapa (excluindo perdidos)
+      prisma.lead.groupBy({
+        by: ['stage'],
+        where: { status: { not: 'lost' } },
+        _count: { id: true },
+      }),
+
+      // Contagem por status
+      prisma.lead.groupBy({ by: ['status'], _count: { id: true } }),
+
+      // Tempo médio de conversão (em dias)
+      prisma.$queryRawUnsafe(`
+        SELECT AVG(EXTRACT(EPOCH FROM ("updatedAt" - "createdAt")) / 86400) as avg_days
+        FROM leads WHERE status = 'converted'
+      `),
+
+      // Leads parados (sem interação nos últimos X dias, não convertidos, não perdidos)
+      prisma.lead.findMany({
+        where: {
+          status: { notIn: ['converted', 'lost'] },
+          OR: [
+            // Nunca teve interação e foi criado há mais de X dias
+            {
+              interactions: { none: {} },
+              createdAt: { lte: cutoff },
+            },
+            // Última interação foi há mais de X dias
+            {
+              interactions: {
+                every: { createdAt: { lte: cutoff } },
+                some: {},
+              },
+            },
+          ],
+        },
+        select: {
+          id: true, name: true, phone: true, status: true, stage: true, createdAt: true,
+          client: { select: { name: true } },
+          interactions: { orderBy: { createdAt: 'desc' }, take: 1, select: { createdAt: true } },
+        },
+        orderBy: { createdAt: 'asc' },
+        take: 50,
+      }),
+    ]);
+
+    const stageMap = Object.fromEntries(byStage.map(s => [s.stage, s._count.id]));
+    const funnel = stageOrder.map((stage, i) => {
+      const count = stageMap[stage] || 0;
+      const prev = i === 0 ? null : (stageMap[stageOrder[i - 1]] || 0);
+      const dropRate = prev && prev > 0 ? (((prev - count) / prev) * 100).toFixed(0) : null;
+      return { stage, label: stageLabels[stage], count, dropRate };
+    });
+
+    const avgDays = avgConversion[0]?.avg_days ? parseFloat(avgConversion[0].avg_days).toFixed(1) : null;
+    const statusMap = Object.fromEntries(byStatus.map(s => [s.status, s._count.id]));
+
+    res.json({ funnel, avgConversionDays: avgDays, byStatus: statusMap, stuckLeads, stuckDays: days });
+  } catch (err) { next(err); }
+}
+
+async function exportLeads(req, res, next) {
+  try {
+    const { status, stage, source, clientId } = req.query;
+    const where = {};
+    if (status) where.status = status;
+    if (stage) where.stage = stage;
+    if (source) where.source = source;
+    if (clientId) where.clientId = Number(clientId);
+
+    const leads = await prisma.lead.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        client: { select: { name: true } },
+        assignedTo: { select: { name: true } },
+        _count: { select: { interactions: true } },
+      },
+    });
+
+    const statusLabels = { new: 'Novo', contacted: 'Contactado', qualified: 'Qualificado', converted: 'Convertido', lost: 'Perdido' };
+    const stageLabels = { awareness: 'Consciência', interest: 'Interesse', decision: 'Decisão', action: 'Ação' };
+    const sourceLabels = { whatsapp_meta: 'Meta Ads', whatsapp: 'WhatsApp QR', manual: 'Manual' };
+
+    const header = ['ID', 'Nome', 'Telefone', 'Email', 'Status', 'Etapa', 'Origem', 'Cliente', 'Responsável', 'Valor (R$)', 'Interações', 'Criado em'];
+    const rows = leads.map(l => [
+      l.id,
+      l.name || '',
+      l.phone,
+      l.email || '',
+      statusLabels[l.status] || l.status,
+      stageLabels[l.stage] || l.stage,
+      sourceLabels[l.source] || l.source || '',
+      l.client?.name || '',
+      l.assignedTo?.name || '',
+      l.value != null ? l.value.toFixed(2) : '',
+      l._count.interactions,
+      new Date(l.createdAt).toLocaleDateString('pt-BR'),
+    ]);
+
+    const csv = [header, ...rows]
+      .map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';'))
+      .join('\n');
+
+    const bom = '\uFEFF'; // BOM para Excel reconhecer UTF-8
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="leads_${new Date().toISOString().slice(0,10)}.csv"`);
+    res.send(bom + csv);
+  } catch (err) { next(err); }
+}
+
+module.exports = { getStats, getMetaStats, getConversionValues, getFunnelStats, exportLeads };

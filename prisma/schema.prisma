@@ -29,8 +29,10 @@ model Client {
   phone        String?
   email        String?
   notes        String?
-  instanceName String   @unique
-  createdAt    DateTime @default(now())
+  instanceName       String   @unique
+  metaPhoneNumberId  String?
+  metaAccessToken    String?
+  createdAt          DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   leads Lead[]

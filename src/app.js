@@ -8,6 +8,7 @@ const interactionRoutes = require('./routes/interactions');
 const whatsappRoutes = require('./routes/whatsapp');
 const dashboardRoutes = require('./routes/dashboard');
 const clientRoutes = require('./routes/clients');
+const metaRoutes = require('./routes/meta');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -23,6 +24,7 @@ app.use('/api/interactions', interactionRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/clients', clientRoutes);
+app.use('/api/meta', metaRoutes);
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
@@ -60,6 +62,8 @@ app.listen(PORT, async () => {
         email TEXT,
         notes TEXT,
         "instanceName" TEXT NOT NULL UNIQUE,
+        "metaPhoneNumberId" TEXT,
+        "metaAccessToken" TEXT,
         "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
         "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
       )

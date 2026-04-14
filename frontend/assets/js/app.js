@@ -168,7 +168,10 @@ async function loadDashboard() {
         <span class="interaction-badge badge-${i.type}">${i.type}</span>
         <div class="interaction-content">
           <strong>${i.lead?.name || i.lead?.phone || '—'}</strong> — ${i.content}
-          <div class="interaction-meta">${fmtDate(i.createdAt)}${i.user ? ` · ${i.user.name}` : ''}</div>
+          <div class="interaction-meta">
+            ${fmtDate(i.createdAt)}${i.user ? ` · ${i.user.name}` : ''}
+            ${i.lead?.client ? `<span class="client-tag" style="margin-left:6px">${i.lead.client.name}</span>` : ''}
+          </div>
         </div>
       </div>
     `).join('') || '<p style="color:var(--muted)">Nenhuma interação ainda.</p>';
@@ -716,6 +719,11 @@ async function loadMetaStats() {
             <strong>${ad.name}</strong>
             ${ad.adId ? `<div style="font-size:.75rem;color:var(--muted)">ID: ${ad.adId}</div>` : ''}
           </td>
+          <td>
+            ${ad.clients && ad.clients.length
+              ? ad.clients.map(c => `<span class="client-tag">${c}</span>`).join(' ')
+              : '<span style="color:var(--muted);font-size:.8rem">—</span>'}
+          </td>
           <td><strong>${ad.total}</strong></td>
           <td>${ad.new}</td>
           <td>${ad.qualified}</td>
@@ -728,7 +736,7 @@ async function loadMetaStats() {
           </td>
         </tr>
       `).join('')
-      : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">Nenhum lead do Meta ainda. Configure os anúncios Click-to-WhatsApp.</td></tr>';
+      : '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:2rem">Nenhum lead do Meta ainda. Configure os anúncios Click-to-WhatsApp.</td></tr>';
 
   } catch (err) { console.error(err); }
 }

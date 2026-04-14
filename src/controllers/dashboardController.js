@@ -22,7 +22,7 @@ async function getStats(req, res, next) {
         take: 10,
         orderBy: { createdAt: 'desc' },
         include: {
-          lead: { select: { id: true, name: true, phone: true } },
+          lead: { select: { id: true, name: true, phone: true, client: { select: { id: true, name: true } } } },
           user: { select: { id: true, name: true } },
         },
       }),
@@ -141,7 +141,7 @@ async function getMetaStats(req, res, next) {
     // Leads do Meta nos últimos 30 dias
     const metaLeads = await prisma.lead.findMany({
       where: { source: 'whatsapp_meta' },
-      select: { id: true, name: true, phone: true, status: true, tags: true, createdAt: true, clientId: true },
+      select: { id: true, name: true, phone: true, status: true, tags: true, createdAt: true, clientId: true, client: { select: { id: true, name: true } } },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -188,10 +188,11 @@ async function getMetaStats(req, res, next) {
       }
 
       if (!adMap[adKey]) {
-        adMap[adKey] = { adId, total: 0, converted: 0, lost: 0, new: 0, contacted: 0, qualified: 0 };
+        adMap[adKey] = { adId, total: 0, converted: 0, lost: 0, new: 0, contacted: 0, qualified: 0, clients: new Set() };
       }
       adMap[adKey].total++;
       adMap[adKey][lead.status] = (adMap[adKey][lead.status] || 0) + 1;
+      if (lead.client?.name) adMap[adKey].clients.add(lead.client.name);
     }
 
     const adStats = Object.entries(adMap).map(([name, data]) => ({
@@ -204,6 +205,7 @@ async function getMetaStats(req, res, next) {
       contacted: data.contacted || 0,
       qualified: data.qualified || 0,
       conversionRate: data.total > 0 ? ((data.converted || 0) / data.total * 100).toFixed(1) : '0.0',
+      clients: Array.from(data.clients),
     })).sort((a, b) => b.total - a.total);
 
     // Status dos leads Meta

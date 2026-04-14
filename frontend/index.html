@@ -35,6 +35,7 @@
         <a href="#" class="nav-item" data-page="leads">Leads</a>
         <a href="#" class="nav-item" data-page="clients">Clientes</a>
         <a href="#" class="nav-item" data-page="whatsapp">WhatsApp</a>
+        <a href="#" class="nav-item nav-admin hidden" data-page="users">Usuários</a>
       </nav>
       <div class="sidebar-footer">
         <span id="user-name"></span>
@@ -147,6 +148,22 @@
           </div>
         </div>
       </section>
+
+      <!-- Usuários (admin only) -->
+      <section id="page-users" class="page hidden">
+        <div class="page-header">
+          <h2>Usuários da Equipe</h2>
+          <button id="new-user-btn" class="btn-primary">+ Novo Usuário</button>
+        </div>
+        <table class="leads-table">
+          <thead>
+            <tr>
+              <th>Nome</th><th>Email</th><th>Função</th><th>Status</th><th>Criado</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </section>
     </main>
   </div>
 
@@ -215,6 +232,31 @@
         <textarea id="lead-notes" rows="3" placeholder="Observações sobre o lead..."></textarea>
         <div class="modal-actions">
           <button type="button" id="modal-cancel">Cancelar</button>
+          <button type="submit" class="btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Usuário -->
+  <div id="user-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3 id="user-modal-title">Novo Usuário</h3>
+      <form id="user-form">
+        <input type="hidden" id="user-id" />
+        <label>Nome *</label>
+        <input type="text" id="user-name-input" placeholder="Nome completo" required />
+        <label>Email *</label>
+        <input type="email" id="user-email-input" placeholder="email@equipe.com" required />
+        <label>Senha <span id="user-password-hint" style="font-size:.8rem;color:var(--muted)">(obrigatória no cadastro)</span></label>
+        <input type="password" id="user-password-input" placeholder="Mínimo 6 caracteres" />
+        <label>Função</label>
+        <select id="user-role-input">
+          <option value="agent">Agente</option>
+          <option value="admin">Administrador</option>
+        </select>
+        <div class="modal-actions">
+          <button type="button" id="user-modal-cancel">Cancelar</button>
           <button type="submit" class="btn-primary">Salvar</button>
         </div>
       </form>

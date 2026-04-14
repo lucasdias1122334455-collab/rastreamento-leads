@@ -1,5 +1,6 @@
 const API = '/api';
 let token = localStorage.getItem('token');
+let currentUser = null;
 let currentPage = 1;
 let waStatusInterval = null;
 
@@ -35,9 +36,18 @@ function fmtDate(iso) {
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
+function applyUserRole(role) {
+  if (role === 'admin') {
+    document.querySelectorAll('.nav-admin').forEach(el => el.classList.remove('hidden'));
+  } else {
+    document.querySelectorAll('.nav-admin').forEach(el => el.classList.add('hidden'));
+  }
+}
+
 function logout() {
   localStorage.removeItem('token');
   token = null;
+  currentUser = null;
   clearInterval(waStatusInterval);
   hide('app-screen');
   show('login-screen');
@@ -52,8 +62,10 @@ el('login-form').addEventListener('submit', async (e) => {
       body: JSON.stringify({ email: el('email').value, password: el('password').value }),
     });
     token = data.token;
+    currentUser = data.user;
     localStorage.setItem('token', token);
     el('user-name').textContent = data.user.name;
+    applyUserRole(data.user.role);
     hide('login-screen');
     show('app-screen');
     navigateTo('dashboard');
@@ -78,6 +90,7 @@ function navigateTo(page) {
   if (page === 'leads') loadLeads(1);
   if (page === 'clients') loadClients();
   if (page === 'whatsapp') loadWAStatus();
+  if (page === 'users') loadUsers();
 }
 
 document.querySelectorAll('.nav-item').forEach((a) => {
@@ -490,12 +503,90 @@ function startWAStatusPolling() {
   }, 5000);
 }
 
+// ─── Usuários ─────────────────────────────────────────────────────────────────
+
+async function loadUsers() {
+  try {
+    const users = await apiFetch('/users');
+    const roleLabel = { admin: 'Administrador', agent: 'Agente' };
+    el('users-tbody').innerHTML = users.map((u) => `
+      <tr>
+        <td>${u.name}</td>
+        <td>${u.email}</td>
+        <td><span class="status-badge status-${u.role === 'admin' ? 'qualified' : 'contacted'}">${roleLabel[u.role] || u.role}</span></td>
+        <td><span class="status-badge status-${u.active ? 'converted' : 'lost'}">${u.active ? 'Ativo' : 'Inativo'}</span></td>
+        <td>${fmtDate(u.createdAt)}</td>
+        <td style="display:flex;gap:.4rem;">
+          <button class="btn-sm btn-edit" onclick="openEditUser(${u.id})">Editar</button>
+          ${u.id !== currentUser?.id ? `<button class="btn-sm btn-del" onclick="deleteUser(${u.id})">Excluir</button>` : ''}
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Nenhum usuário.</td></tr>';
+  } catch (err) { console.error(err); }
+}
+
+el('new-user-btn').addEventListener('click', () => openUserModal());
+el('user-modal-cancel').addEventListener('click', () => hide('user-modal'));
+
+function openUserModal(user = null) {
+  el('user-modal-title').textContent = user ? 'Editar Usuário' : 'Novo Usuário';
+  el('user-id').value = user?.id || '';
+  el('user-name-input').value = user?.name || '';
+  el('user-email-input').value = user?.email || '';
+  el('user-password-input').value = '';
+  el('user-role-input').value = user?.role || 'agent';
+  el('user-password-hint').textContent = user ? '(deixe em branco para manter)' : '(obrigatória no cadastro)';
+  if (!user) el('user-password-input').setAttribute('required', '');
+  else el('user-password-input').removeAttribute('required');
+  show('user-modal');
+}
+
+el('user-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = el('user-id').value;
+  const body = {
+    name: el('user-name-input').value,
+    email: el('user-email-input').value,
+    role: el('user-role-input').value,
+  };
+  const pwd = el('user-password-input').value;
+  if (pwd) body.password = pwd;
+
+  try {
+    if (id) {
+      await apiFetch(`/users/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+    } else {
+      await apiFetch('/users', { method: 'POST', body: JSON.stringify(body) });
+    }
+    hide('user-modal');
+    loadUsers();
+  } catch (err) { alert(err.message); }
+});
+
+async function openEditUser(id) {
+  try {
+    const users = await apiFetch('/users');
+    const user = users.find(u => u.id === id);
+    if (user) openUserModal(user);
+  } catch (err) { alert(err.message); }
+}
+
+async function deleteUser(id) {
+  if (!confirm('Excluir este usuário?')) return;
+  try {
+    await apiFetch(`/users/${id}`, { method: 'DELETE' });
+    loadUsers();
+  } catch (err) { alert(err.message); }
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 if (token) {
   apiFetch('/auth/me').then((user) => {
     if (!user) return;
+    currentUser = user;
     el('user-name').textContent = user.name;
+    applyUserRole(user.role);
     hide('login-screen');
     show('app-screen');
     navigateTo('dashboard');

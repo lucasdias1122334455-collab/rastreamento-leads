@@ -447,6 +447,11 @@ function openClientModal(client = null) {
   el('client-email').value = client?.email || '';
   el('client-notes').value = client?.notes || '';
   el('client-meta-phone-id').value = client?.metaPhoneNumberId || '';
+  el('client-mp-token').value = client?.mpAccessToken || '';
+  const mpUrl = client?.id
+    ? `https://rastreamento-leads-production.up.railway.app/api/mp/webhook/${client.id}`
+    : 'Salve o cliente para ver a URL';
+  el('client-mp-webhook-url').textContent = mpUrl;
   show('client-modal');
 }
 
@@ -459,6 +464,7 @@ el('client-form').addEventListener('submit', async (e) => {
     email: el('client-email').value,
     notes: el('client-notes').value,
     metaPhoneNumberId: el('client-meta-phone-id').value || null,
+    mpAccessToken: el('client-mp-token').value || null,
   };
   try {
     if (id) {

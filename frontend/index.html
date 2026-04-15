@@ -336,8 +336,15 @@
         <textarea id="client-notes" rows="2" placeholder="Observações..."></textarea>
         <div class="meta-section">
           <p class="meta-section-title">📱 Meta Business API <span style="font-size:.8rem;color:var(--muted);font-weight:400">(opcional — para anúncios Click-to-WhatsApp)</span></p>
-          <label>Phone Number ID <span style="font-size:.8rem;color:var(--muted)">— encontrado no Meta for Developers → WhatsApp → Configuração</span></label>
+          <label>Phone Number ID <span style="font-size:.8rem;color:var(--muted)">— Meta for Developers → WhatsApp → Configuração</span></label>
           <input type="text" id="client-meta-phone-id" placeholder="Ex: 123456789012345" />
+        </div>
+        <div class="mp-section">
+          <p class="mp-section-title">💳 Mercado Pago <span style="font-size:.8rem;color:var(--muted);font-weight:400">(opcional — converte lead automaticamente ao pagar)</span></p>
+          <label>Access Token <span style="font-size:.8rem;color:var(--muted)">— MP → Sua conta → Credenciais → Access Token produção</span></label>
+          <input type="text" id="client-mp-token" placeholder="APP_USR-..." />
+          <label style="margin-top:.75rem">URL do Webhook <span style="font-size:.8rem;color:var(--muted)">— cole isso no Mercado Pago → Webhooks</span></label>
+          <div id="client-mp-webhook-url" class="mp-webhook-url">Salve o cliente para ver a URL</div>
         </div>
         <div class="modal-actions">
           <button type="button" id="client-modal-cancel">Cancelar</button>

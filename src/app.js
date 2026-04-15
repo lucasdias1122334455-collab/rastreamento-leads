@@ -11,6 +11,7 @@ const clientRoutes = require('./routes/clients');
 const metaRoutes = require('./routes/meta');
 const userRoutes = require('./routes/users');
 const conversationsRoutes = require('./routes/conversations');
+const mercadoPagoRoutes = require('./routes/mercadopago');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -29,6 +30,7 @@ app.use('/api/clients', clientRoutes);
 app.use('/api/meta', metaRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/conversations', conversationsRoutes);
+app.use('/api/mp', mercadoPagoRoutes);
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
@@ -135,6 +137,7 @@ app.listen(PORT, async () => {
     await prisma.$executeRawUnsafe(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS value NUMERIC DEFAULT NULL`);
     await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "metaPhoneNumberId" TEXT`);
     await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "metaAccessToken" TEXT`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "mpAccessToken" TEXT`);
     console.log('[DB] Tabelas criadas com sucesso.');
   } catch (e) {
     console.error('[DB] Erro ao criar tabelas:', e.message);

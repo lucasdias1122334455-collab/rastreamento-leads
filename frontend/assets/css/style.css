@@ -98,6 +98,10 @@ nav { flex: 1; }
 
 .meta-section { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius); padding: 1rem; margin-top: .5rem; }
 .meta-section-title { font-weight: 600; margin-bottom: .75rem; font-size: .95rem; }
+.mp-section { background: #fff7ed; border: 1px solid #fed7aa; border-radius: var(--radius); padding: 1rem; margin-top: .75rem; }
+.mp-section-title { font-weight: 600; margin-bottom: .75rem; font-size: .95rem; color: #92400e; }
+.mp-webhook-url { background: #1a1a2e; color: #25D366; font-family: monospace; font-size: .78rem; padding: .5rem .75rem; border-radius: 6px; word-break: break-all; cursor: pointer; user-select: all; }
+.mp-webhook-url:hover { opacity: .85; }
 .conv-rate { padding: .2rem .6rem; border-radius: 99px; font-size: .82rem; font-weight: 700; }
 .rate-good { background: #dcfce7; color: #15803d; }
 .rate-mid { background: #fef9c3; color: #a16207; }

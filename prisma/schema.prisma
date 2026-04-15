@@ -50,6 +50,9 @@ model Client {
   aiScript           String?
   productValue       Float?
   paymentLink        String?
+  website            String?
+  pixelId            String?
+  metaConversionsToken String?
   createdAt          DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

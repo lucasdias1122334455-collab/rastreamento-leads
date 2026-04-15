@@ -142,6 +142,9 @@ app.listen(PORT, async () => {
     await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "aiScript" TEXT`);
     await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "productValue" NUMERIC`);
     await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "paymentLink" TEXT`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "website" TEXT`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "pixelId" TEXT`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "metaConversionsToken" TEXT`);
     console.log('[DB] Tabelas criadas com sucesso.');
   } catch (e) {
     console.error('[DB] Erro ao criar tabelas:', e.message);

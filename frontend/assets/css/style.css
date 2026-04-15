@@ -711,6 +711,16 @@ nav { flex: 1; padding: 0 .625rem; display: flex; flex-direction: column; gap: 2
 }
 .mp-webhook-url:hover { opacity: .75; }
 
+/* ─── PIXEL SECTION ──────────────────────────────────────── */
+.pixel-section {
+  background: rgba(99,102,241,0.05);
+  border: 1px solid rgba(99,102,241,0.2);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-top: .75rem;
+}
+.pixel-section-title { font-weight: 700; margin-bottom: .75rem; font-size: .85rem; color: #818cf8; letter-spacing: 0.08em; text-transform: uppercase; }
+
 /* ─── AI SECTION ─────────────────────────────────────────── */
 .ai-section {
   background: rgba(0,212,184,0.04);

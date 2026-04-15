@@ -1,5 +1,6 @@
 const prisma = require('../config/database');
 const evolutionService = require('../services/evolutionService');
+const metaConversions = require('../services/metaConversionsService');
 
 // Webhook do Mercado Pago — URL única por cliente:
 // POST /api/mp/webhook/:clientId
@@ -114,6 +115,19 @@ async function webhook(req, res) {
     });
 
     console.log(`[MP] Lead ${lead.id} convertido — R$ ${amount}`);
+
+    // Dispara evento Purchase no Meta Pixel se configurado
+    if (client.pixelId && client.metaConversionsToken) {
+      metaConversions.sendPurchaseEvent({
+        pixelId: client.pixelId,
+        accessToken: client.metaConversionsToken,
+        value: amount,
+        phone: lead.phone,
+        email: lead.email || payerEmail,
+        name: lead.name,
+        sourceUrl: client.website,
+      }).catch(() => {});
+    }
 
     // Manda mensagem de confirmação no WhatsApp do lead
     if (client.instanceName && lead.phone) {

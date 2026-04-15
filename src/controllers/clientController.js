@@ -51,7 +51,7 @@ async function getClient(req, res, next) {
 
 async function updateClient(req, res, next) {
   try {
-    const { name, phone, email, notes, metaPhoneNumberId, mpAccessToken, aiEnabled, aiScript, productValue, paymentLink } = req.body;
+    const { name, phone, email, notes, metaPhoneNumberId, mpAccessToken, aiEnabled, aiScript, productValue, paymentLink, website, pixelId, metaConversionsToken } = req.body;
     const data = { name, phone, email, notes };
     if (metaPhoneNumberId !== undefined) data.metaPhoneNumberId = metaPhoneNumberId || null;
     if (mpAccessToken !== undefined) data.mpAccessToken = mpAccessToken || null;
@@ -59,6 +59,9 @@ async function updateClient(req, res, next) {
     if (aiScript !== undefined) data.aiScript = aiScript || null;
     if (productValue !== undefined) data.productValue = productValue ? parseFloat(productValue) : null;
     if (paymentLink !== undefined) data.paymentLink = paymentLink || null;
+    if (website !== undefined) data.website = website || null;
+    if (pixelId !== undefined) data.pixelId = pixelId || null;
+    if (metaConversionsToken !== undefined) data.metaConversionsToken = metaConversionsToken || null;
     const client = await prisma.client.update({
       where: { id: Number(req.params.id) },
       data,

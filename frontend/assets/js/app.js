@@ -461,9 +461,12 @@ function openClientModal(client = null) {
   el('client-ai-enabled').checked = aiEnabled;
   el('client-ai-enabled-label').textContent = aiEnabled ? 'IA ativada ✅' : 'IA desativada';
   el('client-ai-fields').style.display = aiEnabled ? 'block' : 'none';
-  el('client-product-value').value = client?.productValue || '';
   el('client-payment-link').value = client?.paymentLink || '';
   el('client-ai-script').value = client?.aiScript || '';
+  // Campos Pixel
+  el('client-website').value = client?.website || '';
+  el('client-pixel-id').value = client?.pixelId || '';
+  el('client-meta-conversions-token').value = client?.metaConversionsToken || '';
   show('client-modal');
 }
 
@@ -479,8 +482,10 @@ el('client-form').addEventListener('submit', async (e) => {
     mpAccessToken: el('client-mp-token').value || null,
     aiEnabled: el('client-ai-enabled').checked,
     aiScript: el('client-ai-script').value || null,
-    productValue: el('client-product-value').value || null,
     paymentLink: el('client-payment-link').value || null,
+    website: el('client-website').value || null,
+    pixelId: el('client-pixel-id').value || null,
+    metaConversionsToken: el('client-meta-conversions-token').value || null,
   };
   try {
     if (id) {

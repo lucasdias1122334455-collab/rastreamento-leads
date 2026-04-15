@@ -1,5 +1,6 @@
 const evolutionService = require('../services/evolutionService');
 const claudeService = require('../services/claudeService');
+const metaConversions = require('../services/metaConversionsService');
 const prisma = require('../config/database');
 
 async function getStatus(req, res, next) {
@@ -247,6 +248,19 @@ async function runImageAgent({ lead, client, instance, imageBase64, imageMime })
       });
 
       console.log(`[AI] Lead ${lead.phone} CONVERTIDO via comprovante — R$ ${result.value}`);
+
+      // Dispara evento Purchase no Meta Pixel se configurado
+      if (client.pixelId && client.metaConversionsToken) {
+        metaConversions.sendPurchaseEvent({
+          pixelId: client.pixelId,
+          accessToken: client.metaConversionsToken,
+          value: result.value,
+          phone: lead.phone,
+          email: lead.email,
+          name: lead.name,
+          sourceUrl: client.website,
+        }).catch(() => {});
+      }
 
       // Responde confirmando o recebimento
       if (result.reply) {

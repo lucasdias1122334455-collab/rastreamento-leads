@@ -155,10 +155,7 @@ async function runAIAgent({ lead, client, instance }) {
 
     if (!result || !result.reply) return;
 
-    // Envia resposta via WhatsApp
-    await evolutionService.sendClientMessage(instance, lead.phone, result.reply);
-
-    // Salva a resposta
+    // Salva a resposta PRIMEIRO (independente do WhatsApp funcionar)
     await prisma.interaction.create({
       data: {
         leadId: lead.id,
@@ -168,6 +165,13 @@ async function runAIAgent({ lead, client, instance }) {
         metadata: JSON.stringify({ ai: true, notes: result.notes || null }),
       },
     });
+
+    // Tenta enviar pelo WhatsApp (se a instância não estiver conectada, não quebra o fluxo)
+    try {
+      await evolutionService.sendClientMessage(instance, lead.phone, result.reply);
+    } catch (sendErr) {
+      console.warn(`[AI] Falha ao enviar WA para ${lead.phone}:`, sendErr.message);
+    }
 
     console.log(`[AI] Respondeu lead ${lead.phone}: ${result.reply.substring(0, 60)}...`);
 

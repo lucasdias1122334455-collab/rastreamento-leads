@@ -196,6 +196,18 @@ async function getMetaStats(req, res, next) {
       if (lead.client?.name) adMap[adKey].clients.add(lead.client.name);
     }
 
+    // Leads convertidos com valor por anúncio
+    const convertedLeads = await prisma.lead.findMany({
+      where: { source: 'whatsapp_meta', status: 'converted', value: { not: null }, ...clientFilter },
+      select: { tags: true, value: true },
+    });
+    const returnMap = {};
+    for (const l of convertedLeads) {
+      let key = 'Orgânico / Desconhecido';
+      if (l.tags) { try { const p = JSON.parse(l.tags); key = p.adHeadline || p.adId || 'Sem título'; } catch (_) {} }
+      returnMap[key] = (returnMap[key] || 0) + (l.value || 0);
+    }
+
     const adStats = Object.entries(adMap).map(([name, data]) => ({
       name,
       adId: data.adId,
@@ -207,6 +219,7 @@ async function getMetaStats(req, res, next) {
       qualified: data.qualified || 0,
       conversionRate: data.total > 0 ? ((data.converted || 0) / data.total * 100).toFixed(1) : '0.0',
       clients: Array.from(data.clients),
+      revenue: returnMap[name] || 0,
     })).sort((a, b) => b.total - a.total);
 
     // Status dos leads Meta

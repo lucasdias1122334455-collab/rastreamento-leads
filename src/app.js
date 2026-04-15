@@ -120,6 +120,17 @@ app.listen(PORT, async () => {
         UNIQUE("userId", "clientId")
       )
     `);
+    // Tabela de investimento por anúncio
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS ad_spend (
+        id SERIAL PRIMARY KEY,
+        "adKey" TEXT NOT NULL,
+        "clientId" INTEGER REFERENCES clients(id) ON DELETE SET NULL,
+        amount NUMERIC NOT NULL DEFAULT 0,
+        "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+        UNIQUE("adKey", "clientId")
+      )
+    `);
     // Migrações seguras — adiciona colunas se não existirem
     await prisma.$executeRawUnsafe(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS value NUMERIC DEFAULT NULL`);
     await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "metaPhoneNumberId" TEXT`);

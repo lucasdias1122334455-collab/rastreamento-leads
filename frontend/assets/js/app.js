@@ -706,7 +706,13 @@ async function loadMetaStats(clientId = '') {
   }
   try {
     const qs = clientId ? `?clientId=${clientId}` : '';
-    const data = await apiFetch(`/dashboard/meta-stats${qs}`);
+    const [data, spendRows] = await Promise.all([
+      apiFetch(`/dashboard/meta-stats${qs}`),
+      apiFetch('/meta/spend'),
+    ]);
+    // Monta mapa de gastos por adKey
+    const spendMap = {};
+    spendRows.forEach(r => { spendMap[r.adKey] = (spendMap[r.adKey] || 0) + Number(r.amount); });
 
     // Cards de resumo
     el('meta-stat-total').textContent = data.total;
@@ -749,30 +755,43 @@ async function loadMetaStats(clientId = '') {
 
     // Tabela por anúncio
     el('meta-ads-tbody').innerHTML = data.byAd.length
-      ? data.byAd.map(ad => `
-        <tr>
-          <td>
-            <strong>${ad.name}</strong>
-            ${ad.adId ? `<div style="font-size:.75rem;color:var(--muted)">ID: ${ad.adId}</div>` : ''}
-          </td>
-          <td>
-            ${ad.clients && ad.clients.length
-              ? ad.clients.map(c => `<span class="client-tag">${c}</span>`).join(' ')
-              : '<span style="color:var(--muted);font-size:.8rem">—</span>'}
-          </td>
-          <td><strong>${ad.total}</strong></td>
-          <td>${ad.new}</td>
-          <td>${ad.qualified}</td>
-          <td style="color:#22c55e"><strong>${ad.converted}</strong></td>
-          <td style="color:#e74c3c">${ad.lost}</td>
-          <td>
-            <span class="conv-rate ${parseFloat(ad.conversionRate) >= 10 ? 'rate-good' : parseFloat(ad.conversionRate) >= 5 ? 'rate-mid' : 'rate-low'}">
-              ${ad.conversionRate}%
-            </span>
-          </td>
-        </tr>
-      `).join('')
-      : '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:2rem">Nenhum lead do Meta ainda. Configure os anúncios Click-to-WhatsApp.</td></tr>';
+      ? data.byAd.map(ad => {
+          const spent   = spendMap[ad.name] || 0;
+          const revenue = ad.revenue || 0;
+          const roi     = spent > 0 ? ((revenue - spent) / spent * 100).toFixed(0) : null;
+          const roiClass = roi === null ? '' : roi >= 100 ? 'rate-good' : roi >= 0 ? 'rate-mid' : 'rate-low';
+          return `
+          <tr>
+            <td>
+              <strong>${ad.name}</strong>
+              ${ad.adId ? `<div style="font-size:.75rem;color:var(--muted)">ID: ${ad.adId}</div>` : ''}
+            </td>
+            <td>
+              ${ad.clients && ad.clients.length
+                ? ad.clients.map(c => `<span class="client-tag">${c}</span>`).join(' ')
+                : '<span style="color:var(--muted);font-size:.8rem">—</span>'}
+            </td>
+            <td><strong>${ad.total}</strong></td>
+            <td>${ad.new}</td>
+            <td>${ad.qualified}</td>
+            <td style="color:#22c55e"><strong>${ad.converted}</strong></td>
+            <td style="color:#e74c3c">${ad.lost}</td>
+            <td>
+              <span class="conv-rate ${parseFloat(ad.conversionRate) >= 10 ? 'rate-good' : parseFloat(ad.conversionRate) >= 5 ? 'rate-mid' : 'rate-low'}">
+                ${ad.conversionRate}%
+              </span>
+            </td>
+            <td>
+              <input class="spend-input" type="number" min="0" step="0.01" placeholder="0,00"
+                value="${spent > 0 ? spent : ''}"
+                onblur="saveAdSpend('${ad.name.replace(/'/g,"\\'")}', this.value)"
+                style="width:90px;padding:.3rem .5rem;border:1px solid var(--border);border-radius:6px;font-size:.85rem" />
+            </td>
+            <td style="color:#22c55e;font-weight:600">${revenue > 0 ? fmtBRL(revenue) : '—'}</td>
+            <td>${roi !== null ? `<span class="conv-rate ${roiClass}">${roi}%</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+          </tr>`;
+        }).join('')
+      : '<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:2rem">Nenhum lead do Meta ainda. Configure os anúncios Click-to-WhatsApp.</td></tr>';
 
   } catch (err) { console.error(err); }
 }
@@ -938,6 +957,16 @@ async function renderConvChat(id) {
     const msgs = el('conv-messages');
     msgs.scrollTop = msgs.scrollHeight;
   } catch (err) { console.error(err); }
+}
+
+async function saveAdSpend(adKey, value) {
+  try {
+    const clientId = activeClientFilters['meta-client-filter'] || null;
+    await apiFetch('/meta/spend', {
+      method: 'PUT',
+      body: JSON.stringify({ adKey, clientId: clientId || null, amount: parseFloat(value) || 0 }),
+    });
+  } catch (err) { console.error('Erro ao salvar investimento:', err); }
 }
 
 // ─── Perfil ───────────────────────────────────────────────────────────────────

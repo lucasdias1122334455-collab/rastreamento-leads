@@ -172,4 +172,50 @@ function buildPhoneVariants(phone) {
   return [...variants];
 }
 
-module.exports = { webhook };
+// Rota de teste — simula pagamento aprovado sem precisar do MP real
+async function testPayment(req, res) {
+  try {
+    const clientId = Number(req.params.clientId);
+    const { phone, amount, name } = req.body;
+    if (!phone || !amount) return res.status(400).json({ error: 'phone e amount obrigatórios' });
+
+    const client = await prisma.client.findUnique({ where: { id: clientId } });
+    if (!client) return res.status(404).json({ error: 'Cliente não encontrado' });
+
+    const cleanPhone = phone.replace(/\D/g, '');
+    let lead = await prisma.lead.findFirst({ where: { clientId, phone: { contains: cleanPhone } } });
+
+    if (!lead) {
+      lead = await prisma.lead.create({
+        data: { phone: cleanPhone, name: name || 'Lead Teste', source: 'mercadopago', status: 'converted', stage: 'action', clientId, value: parseFloat(amount) },
+      });
+    } else {
+      await prisma.lead.update({ where: { id: lead.id }, data: { status: 'converted', stage: 'action', value: parseFloat(amount) } });
+    }
+
+    await prisma.interaction.create({
+      data: {
+        leadId: lead.id, type: 'note', direction: 'inbound',
+        content: `✅ [TESTE] Pagamento simulado — R$ ${parseFloat(amount).toFixed(2)}`,
+        metadata: JSON.stringify({ source: 'test' }),
+      },
+    });
+
+    // Manda WhatsApp de confirmação se tiver instância conectada
+    if (client.instanceName && lead.phone) {
+      try {
+        const firstName = lead.name ? lead.name.split(' ')[0] : null;
+        const msg = firstName
+          ? `✅ Pagamento confirmado, ${firstName}! Muito obrigado 🙏 Em breve entraremos em contato com os próximos passos.`
+          : `✅ Pagamento confirmado! Muito obrigado 🙏 Em breve entraremos em contato com os próximos passos.`;
+        await evolutionService.sendClientMessage(client.instanceName, lead.phone, msg);
+      } catch (_) {}
+    }
+
+    res.json({ ok: true, lead: { id: lead.id, phone: lead.phone, status: 'converted', value: parseFloat(amount) } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+module.exports = { webhook, testPayment };

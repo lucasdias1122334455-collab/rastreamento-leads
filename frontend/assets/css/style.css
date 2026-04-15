@@ -1008,6 +1008,7 @@ nav { flex: 1; padding: 0 .75rem; display: flex; flex-direction: column; gap: .1
 .conv-msg.inbound  { background: #1a2520; color: var(--text); align-self: flex-start; border-bottom-left-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
 .conv-msg.outbound { background: #004a3d; color: #d4fff8; align-self: flex-end; border-bottom-right-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
 .conv-msg.system   { background: rgba(0, 212, 184, 0.06); align-self: center; font-size: .73rem; color: var(--muted); border-radius: 3px; padding: .25rem .875rem; }
+.conv-msg.conv-msg-converted { background: rgba(0, 212, 184, 0.12); border: 1px solid rgba(0,212,184,.35); align-self: center; color: var(--cyan); font-weight: 600; max-width: 90%; text-align: center; }
 
 .conv-msg-time   { font-size: .67rem; color: var(--muted); margin-top: .3rem; text-align: right; opacity: .75; }
 .conv-msg-sender { font-size: .72rem; font-weight: 700; color: var(--cyan); margin-bottom: .2rem; }

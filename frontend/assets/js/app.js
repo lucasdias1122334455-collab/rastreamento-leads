@@ -962,12 +962,15 @@ async function renderConvChat(id) {
 
     el('conv-messages').innerHTML = lead.interactions.map(i => {
       const dir = i.direction === 'outbound' ? 'outbound' : i.type === 'note' ? 'system' : 'inbound';
-      const content = i.content === '[mídia]' ? '📷 Mídia recebida' : i.content;
+      let content = i.content;
+      if (content === '[mídia]' || content === '[imagem]') content = '📷 Mídia recebida';
+      if (content.includes('[imagem]') && content.includes('comprovante')) content = '🧾 Comprovante de pagamento enviado';
       const time = new Date(i.createdAt).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+      const isConversion = content.includes('Comprovante de pagamento recebido') || content.includes('Pagamento aprovado');
       return `
-        <div class="conv-msg ${dir}">
+        <div class="conv-msg ${dir} ${isConversion ? 'conv-msg-converted' : ''}">
           ${dir === 'system' ? `<em>${content}</em>` : `
-            ${dir === 'outbound' ? '<div class="conv-msg-sender">Agente</div>' : ''}
+            ${dir === 'outbound' ? '<div class="conv-msg-sender">Agente IA</div>' : ''}
             ${content}
           `}
           <div class="conv-msg-time">${time}</div>

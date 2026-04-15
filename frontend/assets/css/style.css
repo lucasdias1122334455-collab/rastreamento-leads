@@ -732,6 +732,39 @@ nav { flex: 1; padding: 0 .75rem; display: flex; flex-direction: column; gap: .1
 }
 .mp-webhook-url:hover { opacity: .75; }
 
+/* ─── AI Section ─── */
+.ai-section {
+  background: rgba(0, 212, 184, 0.04);
+  border: 1px solid rgba(0, 212, 184, 0.18);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-top: .75rem;
+}
+.ai-section-title { font-weight: 700; margin-bottom: .75rem; font-size: .9rem; color: var(--cyan); letter-spacing: 0.05em; text-transform: uppercase; }
+
+/* Toggle switch */
+.ai-toggle-label { display: inline-flex; align-items: center; cursor: pointer; }
+.ai-toggle-label input[type="checkbox"] { display: none; }
+.ai-toggle-track {
+  width: 42px; height: 24px;
+  background: var(--surface-3);
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  position: relative;
+  transition: background .2s;
+}
+.ai-toggle-track::after {
+  content: '';
+  position: absolute;
+  left: 3px; top: 3px;
+  width: 16px; height: 16px;
+  background: var(--muted);
+  border-radius: 50%;
+  transition: left .2s, background .2s;
+}
+.ai-toggle-label input:checked + .ai-toggle-track { background: var(--cyan-dim); border-color: var(--cyan); }
+.ai-toggle-label input:checked + .ai-toggle-track::after { left: 21px; background: var(--cyan); }
+
 /* ─── Clientes Grid ─── */
 .clients-grid {
   display: grid;

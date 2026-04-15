@@ -76,7 +76,16 @@ async function sendClientMessage(instanceName, phone, text) {
   await axios.post(`${BASE_URL}/message/sendText/${instanceName}`, { number, text }, { headers });
 }
 
+async function getMediaBase64(instanceName, messageKey) {
+  const { data } = await axios.post(
+    `${BASE_URL}/chat/getBase64FromMediaMessage/${instanceName}`,
+    { message: { key: messageKey }, convertToMp4: false },
+    { headers }
+  );
+  return data.base64 || null;
+}
+
 module.exports = {
   getStatus, getQRCode, sendMessage, disconnectInstance,
-  createClientInstance, getClientQRCode, getClientStatus, deleteClientInstance, sendClientMessage,
+  createClientInstance, getClientQRCode, getClientStatus, deleteClientInstance, sendClientMessage, getMediaBase64,
 };

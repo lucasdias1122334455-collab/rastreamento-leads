@@ -1,4 +1,5 @@
 const evolutionService = require('../services/evolutionService');
+const claudeService = require('../services/claudeService');
 const prisma = require('../config/database');
 
 async function getStatus(req, res, next) {
@@ -45,7 +46,7 @@ async function sendMessage(req, res, next) {
 }
 
 async function webhook(req, res) {
-  res.sendStatus(200);
+  res.sendStatus(200); // responde rápido pra Evolution não retentar
 
   try {
     const { event, instance, data } = req.body;
@@ -56,19 +57,38 @@ async function webhook(req, res) {
     if (jid.includes('@g.us')) return; // ignora grupos
 
     const phone = jid.replace('@s.whatsapp.net', '');
+    const pushName = data.pushName || null;
+
+    // Detecta tipo de mensagem
+    const isImage = !!(data.message?.imageMessage);
     const content =
       data.message?.conversation ||
       data.message?.extendedTextMessage?.text ||
-      '[mídia]';
-    const pushName = data.pushName || null;
+      (isImage ? '[imagem]' : '[mídia]');
 
-    // Identifica o cliente pela instância
-    let clientId = null;
-    if (instance) {
-      const client = await prisma.client.findUnique({ where: { instanceName: instance } });
-      if (client) clientId = client.id;
+    // Extrai base64 da imagem se vier direto no payload
+    let imageBase64 = null;
+    let imageMime = 'image/jpeg';
+    if (isImage) {
+      imageBase64 = data.message.imageMessage.base64 || null;
+      imageMime = data.message.imageMessage.mimetype || 'image/jpeg';
+
+      // Se não veio base64, tenta buscar via Evolution
+      if (!imageBase64 && instance) {
+        try {
+          imageBase64 = await evolutionService.getMediaBase64(instance, data.key);
+        } catch (_) {}
+      }
     }
 
+    // Identifica o cliente pela instância
+    let client = null;
+    if (instance) {
+      client = await prisma.client.findUnique({ where: { instanceName: instance } });
+    }
+    const clientId = client?.id || null;
+
+    // Busca ou cria o lead
     let lead = await prisma.lead.findUnique({ where: { phone } });
     if (!lead) {
       lead = await prisma.lead.create({
@@ -80,22 +100,165 @@ async function webhook(req, res) {
       if (clientId && !lead.clientId) updates.clientId = clientId;
       if (Object.keys(updates).length) {
         await prisma.lead.update({ where: { id: lead.id }, data: updates });
+        lead = { ...lead, ...updates };
       }
     }
 
+    // Salva a mensagem recebida
     await prisma.interaction.create({
       data: {
         leadId: lead.id,
         type: 'message',
         direction: 'inbound',
         content,
-        metadata: JSON.stringify({ rawMessage: data }),
+        metadata: JSON.stringify({ rawMessage: data, isImage }),
       },
     });
 
-    console.log(`[Webhook] Mensagem de ${phone} (${pushName}) via ${instance}: ${content}`);
+    console.log(`[Webhook] Mensagem de ${phone} (${pushName}) via ${instance || 'default'}: ${content}`);
+
+    // ─── Agente de IA ────────────────────────────────────────────────────────
+    if (client?.aiEnabled) {
+      if (isImage && imageBase64) {
+        // Imagem recebida — Claude analisa se é comprovante de pagamento
+        await runImageAgent({ lead, client, instance, imageBase64, imageMime });
+      } else if (content !== '[mídia]') {
+        // Mensagem de texto — conversa de vendas normal
+        await runAIAgent({ lead, client, instance });
+      }
+    }
+
   } catch (err) {
     console.error('[Webhook] Erro:', err.message);
+  }
+}
+
+// ─── Agente de texto (vendas) ─────────────────────────────────────────────────
+async function runAIAgent({ lead, client, instance }) {
+  try {
+    const messages = await prisma.interaction.findMany({
+      where: { leadId: lead.id, type: 'message' },
+      orderBy: { createdAt: 'asc' },
+      take: 30,
+    });
+
+    const last = messages[messages.length - 1];
+    if (!last || last.direction !== 'inbound') return;
+
+    const result = await claudeService.analyzeConversation({
+      leadName: lead.name,
+      messages,
+      clientScript: client.aiScript || null,
+      productValue: client.productValue || null,
+      paymentLink: client.paymentLink || null,
+    });
+
+    if (!result || !result.reply) return;
+
+    // Envia resposta via WhatsApp
+    await evolutionService.sendClientMessage(instance, lead.phone, result.reply);
+
+    // Salva a resposta
+    await prisma.interaction.create({
+      data: {
+        leadId: lead.id,
+        type: 'message',
+        direction: 'outbound',
+        content: result.reply,
+        metadata: JSON.stringify({ ai: true, notes: result.notes || null }),
+      },
+    });
+
+    console.log(`[AI] Respondeu lead ${lead.phone}: ${result.reply.substring(0, 60)}...`);
+
+    // Intenção de compra → qualifica (conversão real vem do MP ou comprovante)
+    if (result.converted && !['converted', 'qualified'].includes(lead.status)) {
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: { status: 'qualified', stage: 'decision' },
+      });
+      await prisma.interaction.create({
+        data: {
+          leadId: lead.id,
+          type: 'note',
+          direction: 'outbound',
+          content: `🎯 Lead demonstrou intenção de compra — aguardando confirmação de pagamento`,
+          metadata: JSON.stringify({ ai: true, purchaseIntent: true }),
+        },
+      });
+      console.log(`[AI] Lead ${lead.phone} qualificado — intenção de compra detectada`);
+    }
+
+  } catch (err) {
+    console.error('[AI Agent] Erro:', err.message);
+  }
+}
+
+// ─── Agente de imagem (comprovante de pagamento) ──────────────────────────────
+async function runImageAgent({ lead, client, instance, imageBase64, imageMime }) {
+  try {
+    const result = await claudeService.analyzePaymentReceipt({
+      imageBase64,
+      imageMime,
+      leadName: lead.name,
+      productValue: client.productValue || null,
+    });
+
+    if (!result) return;
+
+    if (result.isPaymentReceipt && result.value) {
+      // Comprovante confirmado — marca como convertido com valor real
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: {
+          status: 'converted',
+          stage: 'action',
+          value: result.value,
+        },
+      });
+
+      await prisma.interaction.create({
+        data: {
+          leadId: lead.id,
+          type: 'note',
+          direction: 'outbound',
+          content: `✅ Comprovante de pagamento recebido — R$ ${result.value.toFixed(2)} — Convertido automaticamente`,
+          metadata: JSON.stringify({ ai: true, receipt: true, value: result.value }),
+        },
+      });
+
+      console.log(`[AI] Lead ${lead.phone} CONVERTIDO via comprovante — R$ ${result.value}`);
+
+      // Responde confirmando o recebimento
+      if (result.reply) {
+        await evolutionService.sendClientMessage(instance, lead.phone, result.reply);
+        await prisma.interaction.create({
+          data: {
+            leadId: lead.id,
+            type: 'message',
+            direction: 'outbound',
+            content: result.reply,
+            metadata: JSON.stringify({ ai: true }),
+          },
+        });
+      }
+
+    } else if (result.reply) {
+      // Não era comprovante mas Claude quer responder algo
+      await evolutionService.sendClientMessage(instance, lead.phone, result.reply);
+      await prisma.interaction.create({
+        data: {
+          leadId: lead.id,
+          type: 'message',
+          direction: 'outbound',
+          content: result.reply,
+          metadata: JSON.stringify({ ai: true }),
+        },
+      });
+    }
+
+  } catch (err) {
+    console.error('[AI Image Agent] Erro:', err.message);
   }
 }
 

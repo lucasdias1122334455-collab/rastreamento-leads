@@ -51,10 +51,14 @@ async function getClient(req, res, next) {
 
 async function updateClient(req, res, next) {
   try {
-    const { name, phone, email, notes, metaPhoneNumberId, mpAccessToken } = req.body;
+    const { name, phone, email, notes, metaPhoneNumberId, mpAccessToken, aiEnabled, aiScript, productValue, paymentLink } = req.body;
     const data = { name, phone, email, notes };
     if (metaPhoneNumberId !== undefined) data.metaPhoneNumberId = metaPhoneNumberId || null;
     if (mpAccessToken !== undefined) data.mpAccessToken = mpAccessToken || null;
+    if (aiEnabled !== undefined) data.aiEnabled = Boolean(aiEnabled);
+    if (aiScript !== undefined) data.aiScript = aiScript || null;
+    if (productValue !== undefined) data.productValue = productValue ? parseFloat(productValue) : null;
+    if (paymentLink !== undefined) data.paymentLink = paymentLink || null;
     const client = await prisma.client.update({
       where: { id: Number(req.params.id) },
       data,

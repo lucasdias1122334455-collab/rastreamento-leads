@@ -13,8 +13,8 @@
     "db:seed": "node prisma/seed.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.89.0",
     "@prisma/client": "^5.10.0",
-    "prisma": "^5.10.0",
     "@whiskeysockets/baileys": "^6.7.4",
     "axios": "^1.15.0",
     "baileys": "^7.0.0-rc.9",
@@ -25,6 +25,7 @@
     "jsonwebtoken": "^9.0.2",
     "pino": "^8.19.0",
     "pino-pretty": "^11.0.0",
+    "prisma": "^5.10.0",
     "qrcode": "^1.5.3"
   },
   "devDependencies": {

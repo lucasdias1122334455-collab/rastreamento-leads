@@ -437,6 +437,10 @@ async function sendChatMessage() {
 
 el('new-client-btn').addEventListener('click', () => openClientModal());
 el('client-modal-cancel').addEventListener('click', () => hide('client-modal'));
+el('client-ai-enabled').addEventListener('change', function() {
+  el('client-ai-fields').style.display = this.checked ? 'block' : 'none';
+  el('client-ai-enabled-label').textContent = this.checked ? 'IA ativada ✅' : 'IA desativada';
+});
 el('qr-modal-close').addEventListener('click', () => { clearInterval(qrPollTimer); hide('qr-modal'); });
 
 function openClientModal(client = null) {
@@ -452,6 +456,14 @@ function openClientModal(client = null) {
     ? `https://rastreamento-leads-production.up.railway.app/api/mp/webhook/${client.id}`
     : 'Salve o cliente para ver a URL';
   el('client-mp-webhook-url').textContent = mpUrl;
+  // Campos IA
+  const aiEnabled = Boolean(client?.aiEnabled);
+  el('client-ai-enabled').checked = aiEnabled;
+  el('client-ai-enabled-label').textContent = aiEnabled ? 'IA ativada ✅' : 'IA desativada';
+  el('client-ai-fields').style.display = aiEnabled ? 'block' : 'none';
+  el('client-product-value').value = client?.productValue || '';
+  el('client-payment-link').value = client?.paymentLink || '';
+  el('client-ai-script').value = client?.aiScript || '';
   show('client-modal');
 }
 
@@ -465,6 +477,10 @@ el('client-form').addEventListener('submit', async (e) => {
     notes: el('client-notes').value,
     metaPhoneNumberId: el('client-meta-phone-id').value || null,
     mpAccessToken: el('client-mp-token').value || null,
+    aiEnabled: el('client-ai-enabled').checked,
+    aiScript: el('client-ai-script').value || null,
+    productValue: el('client-product-value').value || null,
+    paymentLink: el('client-payment-link').value || null,
   };
   try {
     if (id) {

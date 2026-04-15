@@ -348,6 +348,24 @@
           <label style="margin-top:.75rem">URL do Webhook <span style="font-size:.8rem;color:var(--muted)">— cole isso no Mercado Pago → Webhooks</span></label>
           <div id="client-mp-webhook-url" class="mp-webhook-url">Salve o cliente para ver a URL</div>
         </div>
+        <div class="ai-section">
+          <p class="ai-section-title">🤖 Agente de IA <span style="font-size:.8rem;color:var(--muted);font-weight:400">(responde leads e detecta conversões automaticamente)</span></p>
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem">
+            <label class="ai-toggle-label">
+              <input type="checkbox" id="client-ai-enabled" />
+              <span class="ai-toggle-track"></span>
+            </label>
+            <span style="font-size:.9rem;color:var(--muted)" id="client-ai-enabled-label">IA desativada</span>
+          </div>
+          <div id="client-ai-fields" style="display:none">
+            <label>Valor do Produto/Serviço (R$) <span style="font-size:.8rem;color:var(--muted)">— para calcular ROI e detectar comprovante</span></label>
+            <input type="number" id="client-product-value" placeholder="Ex: 150.00" min="0" step="0.01" />
+            <label style="margin-top:.75rem">Link de Pagamento <span style="font-size:.8rem;color:var(--muted)">— enviado quando o lead fechar (PIX, MP, site, etc.)</span></label>
+            <input type="text" id="client-payment-link" placeholder="Ex: https://pag.ae/fitlife  ou  PIX: 11999999999" />
+            <label style="margin-top:.75rem">Descrição do Produto <span style="font-size:.8rem;color:var(--muted)">— o que a IA deve falar, benefícios, diferenciais, prova social</span></label>
+            <textarea id="client-ai-script" rows="5" placeholder="Ex:&#10;Somos a Academia FitLife. Plano mensal com acesso ilimitado.&#10;Benefícios: perca peso, ganhe disposição e mais energia no dia a dia.&#10;Diferenciais: equipamentos novos, personal incluso, sem fidelidade.&#10;Prova social: mais de 500 alunos ativos, 98% de satisfação.&#10;Entregamos em todo o Brasil em até 5 dias úteis."></textarea>
+          </div>
+        </div>
         <div class="modal-actions">
           <button type="button" id="client-modal-cancel">Cancelar</button>
           <button type="submit" class="btn-primary">Salvar</button>

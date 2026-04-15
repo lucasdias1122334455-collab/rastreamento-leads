@@ -149,6 +149,12 @@ nav { flex: 1; }
 .conv-msg-time { font-size: .68rem; color: var(--muted); margin-top: .25rem; text-align: right; }
 .conv-msg-sender { font-size: .72rem; font-weight: 700; color: var(--green-dark); margin-bottom: .2rem; }
 .conv-back-btn { display: none; }
+
+/* ─── Barra de filtro de cliente (páginas) ─── */
+.page-client-bar { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.page-client-btn { background: var(--surface); border: 1.5px solid var(--border); color: var(--text); border-radius: 99px; padding: .35rem 1rem; font-size: .83rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all .15s; }
+.page-client-btn:hover { border-color: var(--green); color: var(--green-dark); }
+.page-client-btn.active { background: var(--green); border-color: var(--green); color: #fff; }
 .page h2 { font-size: 1.5rem; margin-bottom: 1.5rem; }
 .page h3 { font-size: 1.1rem; margin: 1.5rem 0 .75rem; }
 

@@ -52,6 +52,7 @@ async function getStats(req, res, next) {
 async function getConversionValues(req, res, next) {
   try {
     const now = new Date();
+    const clientFilter = req.query.clientId ? { clientId: Number(req.query.clientId) } : {};
 
     // Limites de tempo
     const startOfDay   = new Date(now); startOfDay.setHours(0,0,0,0);
@@ -60,10 +61,10 @@ async function getConversionValues(req, res, next) {
 
     // Leads convertidos em cada período (com valor)
     const [dayLeads, weekLeads, monthLeads, allTime] = await Promise.all([
-      prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: startOfDay } }, select: { value: true, source: true } }),
-      prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: startOfWeek } }, select: { value: true, source: true } }),
-      prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: startOfMonth } }, select: { value: true, source: true } }),
-      prisma.lead.findMany({ where: { status: 'converted' }, select: { value: true, source: true, updatedAt: true } }),
+      prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: startOfDay }, ...clientFilter }, select: { value: true, source: true } }),
+      prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: startOfWeek }, ...clientFilter }, select: { value: true, source: true } }),
+      prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: startOfMonth }, ...clientFilter }, select: { value: true, source: true } }),
+      prisma.lead.findMany({ where: { status: 'converted', ...clientFilter }, select: { value: true, source: true, updatedAt: true } }),
     ]);
 
     const sum = (leads) => leads.reduce((acc, l) => acc + (l.value || 0), 0);
@@ -72,7 +73,7 @@ async function getConversionValues(req, res, next) {
     // Últimos 30 dias agrupados por dia
     const last30 = new Date(now); last30.setDate(now.getDate() - 29); last30.setHours(0,0,0,0);
     const last30Leads = await prisma.lead.findMany({
-      where: { status: 'converted', updatedAt: { gte: last30 } },
+      where: { status: 'converted', updatedAt: { gte: last30 }, ...clientFilter },
       select: { value: true, updatedAt: true, source: true },
     });
 
@@ -135,19 +136,19 @@ async function getConversionValues(req, res, next) {
 async function getMetaStats(req, res, next) {
   try {
     const now = new Date();
-    const last30 = new Date(now);
-    last30.setDate(last30.getDate() - 30);
+    const clientFilter = req.query.clientId ? { clientId: Number(req.query.clientId) } : {};
 
-    // Leads do Meta nos últimos 30 dias
+    // Leads do Meta
     const metaLeads = await prisma.lead.findMany({
-      where: { source: 'whatsapp_meta' },
+      where: { source: 'whatsapp_meta', ...clientFilter },
       select: { id: true, name: true, phone: true, status: true, tags: true, createdAt: true, clientId: true, client: { select: { id: true, name: true } } },
       orderBy: { createdAt: 'desc' },
     });
 
-    // Totais gerais de origem
+    // Totais gerais de origem (filtrado por cliente se necessário)
     const bySource = await prisma.lead.groupBy({
       by: ['source'],
+      where: Object.keys(clientFilter).length ? clientFilter : undefined,
       _count: { id: true },
     });
 
@@ -157,7 +158,7 @@ async function getMetaStats(req, res, next) {
     last7.setHours(0, 0, 0, 0);
 
     const recentMetaLeads = await prisma.lead.findMany({
-      where: { source: 'whatsapp_meta', createdAt: { gte: last7 } },
+      where: { source: 'whatsapp_meta', createdAt: { gte: last7 }, ...clientFilter },
       select: { createdAt: true, status: true },
     });
 

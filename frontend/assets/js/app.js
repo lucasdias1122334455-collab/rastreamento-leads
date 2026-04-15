@@ -601,6 +601,31 @@ function startWAStatusPolling() {
   }, 5000);
 }
 
+// ─── Filtro de cliente reutilizável ───────────────────────────────────────────
+
+let activeClientFilters = {}; // { barId: clientId }
+
+async function renderClientFilterBar(barId, onSelect) {
+  try {
+    const clients = await apiFetch('/clients');
+    const bar = el(barId);
+    if (!bar) return;
+    bar.innerHTML =
+      `<button class="page-client-btn active" data-cid="" onclick="selectClientFilter('${barId}',this,'')"  >Todos</button>` +
+      clients.map(c => `<button class="page-client-btn" data-cid="${c.id}" onclick="selectClientFilter('${barId}',this,'${c.id}')">${c.name}</button>`).join('');
+    activeClientFilters[barId] = '';
+    bar._onSelect = onSelect;
+  } catch (_) {}
+}
+
+function selectClientFilter(barId, btn, clientId) {
+  const bar = el(barId);
+  bar.querySelectorAll('.page-client-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeClientFilters[barId] = clientId;
+  if (bar._onSelect) bar._onSelect(clientId);
+}
+
 // ─── Conversões ───────────────────────────────────────────────────────────────
 
 let convData = null;
@@ -610,9 +635,14 @@ function fmtBRL(v) {
   return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-async function loadConversions() {
+async function loadConversions(clientId = '') {
+  // Inicializa barra só na primeira vez
+  if (!el('conv-client-filter')?._onSelect) {
+    renderClientFilterBar('conv-client-filter', (cid) => loadConversions(cid));
+  }
   try {
-    convData = await apiFetch('/dashboard/conversion-values');
+    const qs = clientId ? `?clientId=${clientId}` : '';
+    convData = await apiFetch(`/dashboard/conversion-values${qs}`);
 
     // Cards resumo
     const s = convData.summary;
@@ -669,9 +699,14 @@ document.querySelectorAll('.conv-tab').forEach(b => {
 
 // ─── Meta Stats ───────────────────────────────────────────────────────────────
 
-async function loadMetaStats() {
+async function loadMetaStats(clientId = '') {
+  // Inicializa barra só na primeira vez
+  if (!el('meta-client-filter')?._onSelect) {
+    renderClientFilterBar('meta-client-filter', (cid) => loadMetaStats(cid));
+  }
   try {
-    const data = await apiFetch('/dashboard/meta-stats');
+    const qs = clientId ? `?clientId=${clientId}` : '';
+    const data = await apiFetch(`/dashboard/meta-stats${qs}`);
 
     // Cards de resumo
     el('meta-stat-total').textContent = data.total;

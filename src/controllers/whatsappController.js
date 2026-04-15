@@ -171,6 +171,21 @@ async function runAIAgent({ lead, client, instance }) {
 
     console.log(`[AI] Respondeu lead ${lead.phone}: ${result.reply.substring(0, 60)}...`);
 
+    // Alerta de preço → manda WhatsApp pro responsável do cliente
+    if (result.needsPriceAlert && client.phone && instance) {
+      try {
+        const leadName = lead.name || lead.phone;
+        const alertMsg =
+          `🔔 *Alerta de Lead — Preço Solicitado*\n\n` +
+          `O lead *${leadName}* (${lead.phone}) perguntou sobre o preço de um produto.\n\n` +
+          `Acesse o sistema e responda manualmente para não perder a venda! 💬`;
+        await evolutionService.sendClientMessage(instance, client.phone, alertMsg);
+        console.log(`[AI] Alerta de preço enviado para cliente ${client.phone}`);
+      } catch (alertErr) {
+        console.error('[AI] Erro ao enviar alerta de preço:', alertErr.message);
+      }
+    }
+
     // Intenção de compra → qualifica (conversão real vem do MP ou comprovante)
     if (result.converted && !['converted', 'qualified'].includes(lead.status)) {
       await prisma.lead.update({

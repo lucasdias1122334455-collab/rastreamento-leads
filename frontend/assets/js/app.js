@@ -467,6 +467,11 @@ function openClientModal(client = null) {
   el('client-website').value = client?.website || '';
   el('client-pixel-id').value = client?.pixelId || '';
   el('client-meta-conversions-token').value = client?.metaConversionsToken || '';
+  // URL webhook do site
+  const saleUrl = client?.id
+    ? `https://rastreamento-leads-production.up.railway.app/api/sale/webhook/${client.id}`
+    : 'Salve o cliente para ver a URL';
+  el('client-sale-webhook-url').textContent = saleUrl;
   show('client-modal');
 }
 

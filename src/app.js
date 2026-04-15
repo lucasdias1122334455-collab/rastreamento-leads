@@ -12,6 +12,7 @@ const metaRoutes = require('./routes/meta');
 const userRoutes = require('./routes/users');
 const conversationsRoutes = require('./routes/conversations');
 const mercadoPagoRoutes = require('./routes/mercadopago');
+const saleWebhookRoutes = require('./routes/saleWebhook');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -31,6 +32,7 @@ app.use('/api/meta', metaRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/conversations', conversationsRoutes);
 app.use('/api/mp', mercadoPagoRoutes);
+app.use('/api/sale', saleWebhookRoutes);
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));

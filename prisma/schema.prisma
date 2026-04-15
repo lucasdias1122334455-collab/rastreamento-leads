@@ -45,6 +45,11 @@ model Client {
   instanceName       String   @unique
   metaPhoneNumberId  String?
   metaAccessToken    String?
+  mpAccessToken      String?
+  aiEnabled          Boolean  @default(false)
+  aiScript           String?
+  productValue       Float?
+  paymentLink        String?
   createdAt          DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

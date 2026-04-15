@@ -966,9 +966,9 @@ async function renderConvChat(id) {
       const time = new Date(i.createdAt).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
       const isConversion = content.includes('Comprovante de pagamento recebido') || content.includes('Pagamento aprovado');
 
-      // Detecta imagem/comprovante
-      const isImage = content === '[mídia]' || content === '[imagem]' || content.includes('[imagem]');
-      const isReceipt = isImage && (content.toLowerCase().includes('comprovante') || content.includes('🧾'));
+      // Detecta comprovante de pagamento
+      const isReceipt = content.toLowerCase().includes('comprovante') && i.direction === 'inbound';
+      const isImage = !isReceipt && (content === '[mídia]' || content === '[imagem]' || content.includes('[imagem]'));
 
       let bubble = '';
       if (isReceipt) {

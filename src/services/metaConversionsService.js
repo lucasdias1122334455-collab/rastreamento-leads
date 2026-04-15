@@ -12,6 +12,9 @@ function sha256(value) {
  * Docs: https://developers.facebook.com/docs/marketing-api/conversions-api
  */
 async function sendPurchaseEvent({ pixelId, accessToken, value, currency = 'BRL', phone, email, name, sourceUrl }) {
+  // Remove espaços do pixelId (erro comum ao copiar do Meta)
+  pixelId = String(pixelId).replace(/\s/g, '');
+
   if (!pixelId || !accessToken) {
     console.warn('[MetaPixel] pixelId ou accessToken não configurados — evento não enviado');
     return null;

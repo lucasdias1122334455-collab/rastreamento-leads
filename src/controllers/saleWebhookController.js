@@ -24,29 +24,54 @@ async function saleWebhook(req, res) {
       return;
     }
 
+    // ─── Formato Brendi: busca detalhes do pedido na API deles ───────────────
+    let parsedBody = body;
+    if (body.orderURL && body.eventType) {
+      // Só processa pedidos confirmados
+      if (body.eventType !== 'CONFIRMED') {
+        console.log(`[SaleWebhook] Brendi evento ${body.eventType} ignorado — aguardando CONFIRMED`);
+        return;
+      }
+      try {
+        console.log(`[SaleWebhook] Brendi — buscando detalhes do pedido: ${body.orderURL}`);
+        const orderRes = await fetch(body.orderURL, {
+          headers: { 'client-id': client.brendiClientId || '' },
+        });
+        if (orderRes.ok) {
+          parsedBody = await orderRes.json();
+          console.log(`[SaleWebhook] Brendi — pedido obtido:`, JSON.stringify(parsedBody).substring(0, 300));
+        } else {
+          console.warn(`[SaleWebhook] Brendi — erro ao buscar pedido: ${orderRes.status}`);
+        }
+      } catch (fetchErr) {
+        console.error(`[SaleWebhook] Brendi — falha ao buscar pedido:`, fetchErr.message);
+      }
+    }
+
     // ─── Extrai dados do pedido (compatível com vários formatos) ─────────────
     const amount = parseFloat(
-      body.total || body.amount || body.value || body.order_total ||
-      body.order?.total || body.purchase?.value ||
-      body.data?.total || body.data?.amount || 0
+      parsedBody.total || parsedBody.amount || parsedBody.value || parsedBody.order_total ||
+      parsedBody.totalPrice || parsedBody.subTotal ||
+      parsedBody.order?.total || parsedBody.purchase?.value ||
+      parsedBody.data?.total || parsedBody.data?.amount || 0
     );
 
-    const customer = body.customer || body.buyer || body.payer || body.client ||
-      body.order?.customer || body.data?.customer || body;
+    const customer = parsedBody.customer || parsedBody.buyer || parsedBody.payer || parsedBody.client ||
+      parsedBody.order?.customer || parsedBody.data?.customer || parsedBody;
 
     const rawPhone = customer.phone || customer.telephone || customer.mobile ||
-      customer.celular || customer.telefone || body.phone || body.telephone || '';
+      customer.celular || customer.telefone || parsedBody.phone || parsedBody.telephone || '';
 
-    const email = customer.email || body.email || body.data?.email || null;
+    const email = customer.email || parsedBody.email || parsedBody.data?.email || null;
 
-    const firstName = customer.first_name || customer.firstName || '';
+    const firstName = customer.first_name || customer.firstName || customer.name?.split(' ')[0] || '';
     const lastName = customer.last_name || customer.lastName || '';
     const name = customer.name || customer.nome ||
       (firstName ? `${firstName} ${lastName}`.trim() : null) ||
-      body.name || body.nome || null;
+      parsedBody.name || parsedBody.nome || null;
 
-    const orderId = body.id || body.order_id || body.orderId ||
-      body.order?.id || body.data?.id || null;
+    const orderId = parsedBody.id || parsedBody.order_id || parsedBody.orderId ||
+      body.orderId || parsedBody.order?.id || parsedBody.data?.id || null;
 
     const phone = String(rawPhone).replace(/\D/g, '');
 

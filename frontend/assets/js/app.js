@@ -963,15 +963,36 @@ async function renderConvChat(id) {
     el('conv-messages').innerHTML = lead.interactions.map(i => {
       const dir = i.direction === 'outbound' ? 'outbound' : i.type === 'note' ? 'system' : 'inbound';
       let content = i.content;
-      if (content === '[mídia]' || content === '[imagem]') content = '📷 Mídia recebida';
-      if (content.includes('[imagem]') && content.includes('comprovante')) content = '🧾 Comprovante de pagamento enviado';
       const time = new Date(i.createdAt).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
       const isConversion = content.includes('Comprovante de pagamento recebido') || content.includes('Pagamento aprovado');
+
+      // Detecta imagem/comprovante
+      const isImage = content === '[mídia]' || content === '[imagem]' || content.includes('[imagem]');
+      const isReceipt = isImage && (content.toLowerCase().includes('comprovante') || content.includes('🧾'));
+
+      let bubble = '';
+      if (isReceipt) {
+        bubble = `
+          <a href="/comprovante-teste.html" target="_blank" class="conv-receipt-card">
+            <div class="conv-receipt-preview">
+              <div class="conv-receipt-icon">🧾</div>
+              <div class="conv-receipt-info">
+                <div class="conv-receipt-title">Comprovante de Pagamento</div>
+                <div class="conv-receipt-sub">PIX • R$ 150,00 • Toque para ver</div>
+              </div>
+            </div>
+          </a>`;
+      } else if (content === '[mídia]' || content === '[imagem]') {
+        bubble = '📷 Mídia recebida';
+      } else {
+        bubble = content;
+      }
+
       return `
         <div class="conv-msg ${dir} ${isConversion ? 'conv-msg-converted' : ''}">
           ${dir === 'system' ? `<em>${content}</em>` : `
             ${dir === 'outbound' ? '<div class="conv-msg-sender">Agente IA</div>' : ''}
-            ${content}
+            ${bubble}
           `}
           <div class="conv-msg-time">${time}</div>
         </div>

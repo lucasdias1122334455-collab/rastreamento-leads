@@ -1013,6 +1013,21 @@ nav { flex: 1; padding: 0 .75rem; display: flex; flex-direction: column; gap: .1
 .conv-msg-time   { font-size: .67rem; color: var(--muted); margin-top: .3rem; text-align: right; opacity: .75; }
 .conv-msg-sender { font-size: .72rem; font-weight: 700; color: var(--cyan); margin-bottom: .2rem; }
 
+.conv-receipt-card { display: block; text-decoration: none; }
+.conv-receipt-preview {
+  display: flex; align-items: center; gap: .75rem;
+  background: rgba(0,212,184,0.08);
+  border: 1px solid rgba(0,212,184,0.2);
+  border-radius: 10px;
+  padding: .75rem 1rem;
+  cursor: pointer;
+  transition: background .15s;
+}
+.conv-receipt-preview:hover { background: rgba(0,212,184,0.14); }
+.conv-receipt-icon { font-size: 2rem; line-height: 1; }
+.conv-receipt-title { font-size: .85rem; font-weight: 600; color: var(--text); }
+.conv-receipt-sub { font-size: .75rem; color: var(--cyan); margin-top: .2rem; }
+
 .conv-back-btn { display: none; }
 
 /* ─── Meta stats bar chart ─── */

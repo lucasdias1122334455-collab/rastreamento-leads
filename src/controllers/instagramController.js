@@ -1,5 +1,6 @@
 const prisma = require('../config/database');
 const claudeService = require('../services/claudeService');
+const metaConversions = require('../services/metaConversionsService');
 
 const VERIFY_TOKEN = process.env.INSTAGRAM_VERIFY_TOKEN || 'leadtrack_instagram_2024';
 
@@ -28,8 +29,13 @@ async function receiveMessage(req, res) {
         if (!event.message || event.message.is_echo) continue;
 
         const senderId = event.sender.id;
-        const text = event.message.text || '[mídia]';
         const messageId = event.message.mid;
+
+        // Detecta imagem/anexo
+        const attachment = event.message.attachments?.[0];
+        const isImage = attachment?.type === 'image';
+        const imageUrl = isImage ? attachment?.payload?.url : null;
+        const text = event.message.text || (isImage ? '[imagem]' : '[mídia]');
 
         // Find client by Instagram account ID
         const client = await prisma.client.findFirst({
@@ -84,6 +90,68 @@ async function receiveMessage(req, res) {
         });
 
         console.log(`[Instagram] Lead ${lead.id} — mensagem: ${text.substring(0, 80)}`);
+
+        // ─── Detecção de comprovante de pagamento ────────────────────────────
+        if (isImage && imageUrl && client.instagramToken) {
+          try {
+            // Baixa a imagem e converte para base64
+            const imgRes = await fetch(imageUrl);
+            const imgBuffer = await imgRes.arrayBuffer();
+            const imgBase64 = Buffer.from(imgBuffer).toString('base64');
+            const imgMime = imgRes.headers.get('content-type') || 'image/jpeg';
+
+            const receiptResult = await claudeService.analyzePaymentReceipt({
+              imageBase64: imgBase64,
+              imageMime: imgMime,
+              leadName: lead.name,
+              productValue: client.productValue,
+            });
+
+            if (receiptResult?.isPaymentReceipt) {
+              const value = receiptResult.value || client.productValue || null;
+
+              // Marca lead como convertido
+              await prisma.lead.update({
+                where: { id: lead.id },
+                data: { status: 'converted', stage: 'action', value },
+              });
+
+              // Salva nota
+              await prisma.interaction.create({
+                data: {
+                  leadId: lead.id,
+                  type: 'note',
+                  direction: 'inbound',
+                  content: `✅ Comprovante de pagamento recebido via Instagram${value ? ` — R$ ${value}` : ''}`,
+                  metadata: JSON.stringify({ source: 'instagram', isReceipt: true }),
+                },
+              });
+
+              // Responde no Instagram
+              const replyMsg = receiptResult.reply || `✅ Pagamento confirmado! Muito obrigado 🙏`;
+              await fetch(`https://graph.facebook.com/v19.0/me/messages`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${client.instagramToken}` },
+                body: JSON.stringify({ recipient: { id: senderId }, message: { text: replyMsg }, messaging_type: 'RESPONSE' }),
+              });
+
+              // Salva resposta
+              await prisma.interaction.create({
+                data: { leadId: lead.id, type: 'message', direction: 'outbound', content: replyMsg, metadata: JSON.stringify({ source: 'instagram', ai: true }) },
+              });
+
+              // Meta Pixel
+              if (client.pixelId && client.metaConversionsToken && value) {
+                metaConversions.sendPurchaseEvent({ pixelId: client.pixelId, accessToken: client.metaConversionsToken, value, phone: null, email: lead.email, name: lead.name, sourceUrl: client.website }).catch(() => {});
+              }
+
+              console.log(`[Instagram] Comprovante detectado — Lead ${lead.id} convertido R$ ${value}`);
+              continue; // Não processa mais a mensagem
+            }
+          } catch (receiptErr) {
+            console.error('[Instagram] Erro ao analisar comprovante:', receiptErr.message);
+          }
+        }
 
         // AI response if enabled
         if (client.aiEnabled && client.instagramToken) {

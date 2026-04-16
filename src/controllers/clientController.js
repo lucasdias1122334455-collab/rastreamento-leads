@@ -64,6 +64,8 @@ async function updateClient(req, res, next) {
     if (metaConversionsToken !== undefined) data.metaConversionsToken = metaConversionsToken || null;
     if (req.body.brendiClientId !== undefined) data.brendiClientId = req.body.brendiClientId || null;
     if (req.body.brendiSecret !== undefined) data.brendiSecret = req.body.brendiSecret || null;
+    if (req.body.instagramToken !== undefined) data.instagramToken = req.body.instagramToken || null;
+    if (req.body.instagramAccountId !== undefined) data.instagramAccountId = req.body.instagramAccountId || null;
     const client = await prisma.client.update({
       where: { id: Number(req.params.id) },
       data,

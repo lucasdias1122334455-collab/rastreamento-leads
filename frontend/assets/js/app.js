@@ -958,7 +958,7 @@ async function selectConvLead(id, el_clicked) {
   document.querySelectorAll('.conv-lead-item').forEach(i => i.classList.remove('active'));
   el_clicked.classList.add('active');
   convActiveLeadId = id;
-  el('conv-messages').innerHTML = '<p class="conv-empty" style="margin-top:3rem">Carregando...</p>';
+  if (el('conv-messages')) el('conv-messages').innerHTML = '<p class="conv-empty" style="margin-top:3rem">Carregando...</p>';
   if (isMobile()) convMobileShow('chat');
 
   if (convPollTimer) clearInterval(convPollTimer);
@@ -971,8 +971,9 @@ async function renderConvChat(id) {
     const lead = await apiFetch(`/conversations/lead/${id}`);
 
     // Info do lead
-    el('conv-chat-header-text').textContent = lead.name || lead.phone;
+    if (el('conv-chat-header-text')) el('conv-chat-header-text').textContent = lead.name || lead.phone;
     const info = el('conv-chat-info');
+    if (!info) return;
     info.classList.remove('hidden');
     info.innerHTML = `
       <div class="conv-chat-info-item">📞 <strong>${lead.phone}</strong></div>
@@ -985,12 +986,14 @@ async function renderConvChat(id) {
     `;
 
     // Mensagens
+    const convMsgs = el('conv-messages');
+    if (!convMsgs) return;
     if (!lead.interactions.length) {
-      el('conv-messages').innerHTML = '<p class="conv-empty" style="margin-top:3rem;text-align:center">Nenhuma mensagem ainda.</p>';
+      convMsgs.innerHTML = '<p class="conv-empty" style="margin-top:3rem;text-align:center">Nenhuma mensagem ainda.</p>';
       return;
     }
 
-    el('conv-messages').innerHTML = lead.interactions.map(i => {
+    convMsgs.innerHTML = lead.interactions.map(i => {
       const dir = i.direction === 'outbound' ? 'outbound' : i.type === 'note' ? 'system' : 'inbound';
       let content = i.content;
       const time = new Date(i.createdAt).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
@@ -1031,7 +1034,7 @@ async function renderConvChat(id) {
 
     // Rola para o final
     const msgs = el('conv-messages');
-    msgs.scrollTop = msgs.scrollHeight;
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
   } catch (err) { console.error(err); }
 }
 

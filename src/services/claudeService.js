@@ -1,13 +1,14 @@
 const Anthropic = require('@anthropic-ai/sdk');
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const _apiKey = (process.env.ANTHROPIC_API_KEY || process.env.ANTROPIC_API_KEY) || process.env.ANTROPIC_API_KEY;
+const anthropic = new Anthropic({ apiKey: _apiKey });
 
 /**
  * Conversa de vendas — texto
  * Retorna { reply, converted, conversionValue, notes }
  */
 async function analyzeConversation({ leadName, messages, clientScript, productValue, paymentLink }) {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!(process.env.ANTHROPIC_API_KEY || process.env.ANTROPIC_API_KEY)) {
     console.warn('[Claude] ANTHROPIC_API_KEY não configurada');
     return null;
   }
@@ -103,7 +104,7 @@ Responda APENAS com JSON válido neste formato exato, sem mais nada:
  * Retorna { isPaymentReceipt, value, reply }
  */
 async function analyzePaymentReceipt({ imageBase64, imageMime, leadName, productValue }) {
-  if (!process.env.ANTHROPIC_API_KEY) return null;
+  if (!(process.env.ANTHROPIC_API_KEY || process.env.ANTROPIC_API_KEY)) return null;
 
   const systemPrompt = `Você analisa imagens recebidas no WhatsApp para detectar comprovantes de pagamento.
 

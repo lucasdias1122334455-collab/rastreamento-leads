@@ -63,6 +63,7 @@ async function updateClient(req, res, next) {
     if (pixelId !== undefined) data.pixelId = pixelId || null;
     if (metaConversionsToken !== undefined) data.metaConversionsToken = metaConversionsToken || null;
     if (req.body.brendiClientId !== undefined) data.brendiClientId = req.body.brendiClientId || null;
+    if (req.body.brendiSecret !== undefined) data.brendiSecret = req.body.brendiSecret || null;
     const client = await prisma.client.update({
       where: { id: Number(req.params.id) },
       data,

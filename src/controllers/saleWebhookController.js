@@ -27,15 +27,19 @@ async function saleWebhook(req, res) {
     // ─── Formato Brendi: busca detalhes do pedido na API deles ───────────────
     let parsedBody = body;
     if (body.orderURL && body.eventType) {
-      // Só processa pedidos confirmados
-      if (body.eventType !== 'CONFIRMED') {
-        console.log(`[SaleWebhook] Brendi evento ${body.eventType} ignorado — aguardando CONFIRMED`);
+      // Processa CONFIRMED (pago) e DELIVERED (entregue/finalizado)
+      const validEvents = ['CONFIRMED', 'DELIVERED'];
+      if (!validEvents.includes(body.eventType)) {
+        console.log(`[SaleWebhook] Evento Brendi ${body.eventType} ignorado`);
         return;
       }
       try {
         console.log(`[SaleWebhook] Brendi — buscando detalhes do pedido: ${body.orderURL}`);
         const orderRes = await fetch(body.orderURL, {
-          headers: { 'client-id': client.brendiClientId || '' },
+          headers: {
+            'client-id': client.brendiClientId || '',
+            'Authorization': client.brendiSecret ? `Bearer ${client.brendiSecret}` : '',
+          },
         });
         if (orderRes.ok) {
           parsedBody = await orderRes.json();

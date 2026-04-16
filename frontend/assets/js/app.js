@@ -468,6 +468,7 @@ function openClientModal(client = null) {
   el('client-pixel-id').value = client?.pixelId || '';
   el('client-meta-conversions-token').value = client?.metaConversionsToken || '';
   el('client-brendi-client-id').value = client?.brendiClientId || '';
+  el('client-brendi-secret').value = client?.brendiSecret || '';
   // URL webhook do site
   const saleUrl = client?.id
     ? `https://rastreamento-leads-production.up.railway.app/api/sale/webhook/${client.id}`
@@ -493,6 +494,7 @@ el('client-form').addEventListener('submit', async (e) => {
     pixelId: el('client-pixel-id').value || null,
     metaConversionsToken: el('client-meta-conversions-token').value || null,
     brendiClientId: el('client-brendi-client-id').value || null,
+    brendiSecret: el('client-brendi-secret').value || null,
   };
   try {
     if (id) {

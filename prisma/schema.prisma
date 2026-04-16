@@ -54,6 +54,7 @@ model Client {
   pixelId            String?
   metaConversionsToken String?
   brendiClientId     String?
+  brendiSecret       String?
   createdAt          DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

@@ -41,6 +41,7 @@
         <a href="#" class="nav-item" data-page="conversions">📈 Conversões</a>
         <a href="#" class="nav-item" data-page="meta-stats">📢 Meta Ads</a>
         <a href="#" class="nav-item nav-admin hidden" data-page="users">👥 Usuários</a>
+        <a href="#" class="nav-item" data-page="analyst">🧠 Analista</a>
       </nav>
       <div class="sidebar-footer">
         <button id="profile-btn" class="profile-btn" title="Editar perfil"><span id="user-name"></span> ✏️</button>
@@ -304,6 +305,33 @@
       </section>
 
 
+      <!-- Analyst Screen -->
+      <section id="page-analyst" class="page hidden" style="padding:0;height:100%;display:flex;flex-direction:column;overflow:hidden">
+        <div id="analyst-page">
+          <div id="analyst-page-header">
+            <div id="analyst-logo">🧠</div>
+            <h1 id="analyst-greeting">Olá, como posso ajudar?</h1>
+            <p id="analyst-subtitle">Analista sênior de Meta Ads com acesso aos seus dados em tempo real</p>
+          </div>
+          <div id="analyst-page-messages" class="hidden"></div>
+          <div id="analyst-page-suggestions">
+            <button class="analyst-suggestion" onclick="analystQuickSend('Como está minha performance esse mês?')">📊 Como está minha performance esse mês?</button>
+            <button class="analyst-suggestion" onclick="analystQuickSend('Qual anúncio está performando melhor?')">🏆 Qual anúncio está performando melhor?</button>
+            <button class="analyst-suggestion" onclick="analystQuickSend('Meu CPL está bom? O que posso melhorar?')">💰 Meu CPL está bom?</button>
+            <button class="analyst-suggestion" onclick="analystQuickSend('Quais são as minhas maiores oportunidades agora?')">🚀 Quais são minhas maiores oportunidades?</button>
+          </div>
+          <div id="analyst-page-input-wrap">
+            <div id="analyst-page-input-box">
+              <textarea id="analyst-page-input" placeholder="Pergunte algo sobre seus anúncios, leads, conversões..." rows="1" onkeydown="analystPageKeydown(event)" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+              <button id="analyst-page-send" onclick="analystPageSend()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              </button>
+            </div>
+            <p id="analyst-page-hint">Enter para enviar · Shift+Enter para nova linha</p>
+          </div>
+        </div>
+      </section>
+
       <!-- Usuários (admin only) -->
       <section id="page-users" class="page hidden">
         <div class="page-header">
@@ -508,31 +536,5 @@
   </div>
 
   <script src="/assets/js/app.js"></script>
-
-  <!-- AI Analyst Chat -->
-  <div id="analyst-fab" onclick="toggleAnalyst()" title="Analista IA">
-    <span>🧠</span>
-  </div>
-  <div id="analyst-panel" class="hidden">
-    <div id="analyst-header">
-      <div id="analyst-title">
-        <span>🧠</span>
-        <div>
-          <div style="font-weight:700;font-size:14px">Analista IA</div>
-          <div style="font-size:11px;opacity:0.7">Especialista em Meta Ads</div>
-        </div>
-      </div>
-      <button onclick="toggleAnalyst()" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;padding:4px">×</button>
-    </div>
-    <div id="analyst-messages">
-      <div class="analyst-msg analyst-msg-ai">
-        <div class="analyst-bubble">Olá! Sou seu analista sênior de Meta Ads. Tenho acesso aos seus dados em tempo real.<br><br>Posso analisar sua performance, identificar problemas e dar sugestões estratégicas. O que quer saber?</div>
-      </div>
-    </div>
-    <div id="analyst-input-area">
-      <textarea id="analyst-input" placeholder="Pergunte algo sobre seus anúncios, leads, conversões..." rows="2" onkeydown="analystKeydown(event)"></textarea>
-      <button id="analyst-send" onclick="analystSend()">➤</button>
-    </div>
-  </div>
 </body>
 </html>

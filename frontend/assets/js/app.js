@@ -919,12 +919,12 @@ function convMobileBack(to) {
 
 async function selectConvAd(encodedKey, el_clicked, label) {
   document.querySelectorAll('.conv-ad-item').forEach(i => i.classList.remove('active'));
-  el_clicked.classList.add('active');
-  el('conv-leads-header-text').textContent = label;
-  el('conv-leads-list').innerHTML = '<p class="conv-empty">Carregando...</p>';
-  el('conv-messages').innerHTML = '<p class="conv-empty" style="margin-top:3rem">← Selecione um lead</p>';
-  el('conv-chat-header-text').textContent = 'Conversa';
-  el('conv-chat-info').classList.add('hidden');
+  if (el_clicked) el_clicked.classList.add('active');
+  if (el('conv-leads-header-text')) el('conv-leads-header-text').textContent = label;
+  if (el('conv-leads-list')) el('conv-leads-list').innerHTML = '<p class="conv-empty">Carregando...</p>';
+  if (el('conv-messages')) el('conv-messages').innerHTML = '<p class="conv-empty" style="margin-top:3rem">← Selecione um lead</p>';
+  if (el('conv-chat-header-text')) el('conv-chat-header-text').textContent = 'Conversa';
+  if (el('conv-chat-info')) el('conv-chat-info').classList.add('hidden');
   convActiveLeadId = null;
   if (isMobile()) convMobileShow('leads');
 

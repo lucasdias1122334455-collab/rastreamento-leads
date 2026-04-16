@@ -37,20 +37,49 @@ async function saleWebhook(req, res) {
       isCancelled = body.eventType === 'CANCELLED';
       try {
         console.log(`[SaleWebhook] Brendi — buscando detalhes do pedido: ${body.orderURL}`);
-        const orderRes = await fetch(body.orderURL, {
-          headers: {
-            'client-id': client.brendiClientId || '',
-            'Authorization': client.brendiSecret ? `Bearer ${client.brendiSecret}` : '',
-          },
-        });
-        if (orderRes.ok) {
-          parsedBody = await orderRes.json();
-          console.log(`[SaleWebhook] Brendi — pedido obtido:`, JSON.stringify(parsedBody).substring(0, 300));
+        const clientId_ = client.brendiClientId || '';
+        const secret_ = client.brendiSecret || '';
+
+        // Tenta diferentes combinações de autenticação
+        const authAttempts = [
+          { 'client-id': clientId_, 'Authorization': `Bearer ${secret_}` },
+          { 'client-id': clientId_ },
+          { 'Authorization': `Bearer ${clientId_}` },
+          { 'client-id': secret_ },
+          { 'Authorization': `Bearer ${clientId_}`, 'Content-Type': 'application/json' },
+        ];
+
+        let orderData = null;
+        for (const headers of authAttempts) {
+          const orderRes = await fetch(body.orderURL, { headers });
+          if (orderRes.ok) {
+            orderData = await orderRes.json();
+            console.log(`[SaleWebhook] Brendi — pedido obtido com auth:`, JSON.stringify(headers));
+            break;
+          }
+          console.log(`[SaleWebhook] Brendi — tentativa falhou (${orderRes.status}):`, JSON.stringify(headers));
+        }
+
+        if (orderData) {
+          parsedBody = orderData;
         } else {
-          console.warn(`[SaleWebhook] Brendi — erro ao buscar pedido: ${orderRes.status}`);
+          // Se não conseguiu buscar, cria lead com orderId como identificador
+          console.log(`[SaleWebhook] Brendi — usando orderId como identificador`);
+          parsedBody = {
+            ...body,
+            phone: `brendi_${body.orderId}`,
+            name: `Pedido Brendi #${body.orderId?.substring(0, 8)}`,
+            total: 0,
+          };
         }
       } catch (fetchErr) {
         console.error(`[SaleWebhook] Brendi — falha ao buscar pedido:`, fetchErr.message);
+        parsedBody = {
+          ...body,
+          phone: `brendi_${body.orderId}`,
+          name: `Pedido Brendi #${body.orderId?.substring(0, 8)}`,
+          total: 0,
+        };
       }
     }
 
@@ -79,7 +108,7 @@ async function saleWebhook(req, res) {
     const orderId = parsedBody.id || parsedBody.order_id || parsedBody.orderId ||
       body.orderId || parsedBody.order?.id || parsedBody.data?.id || null;
 
-    const phone = String(rawPhone).replace(/\D/g, '');
+    const phone = String(rawPhone).startsWith('brendi_') ? String(rawPhone) : String(rawPhone).replace(/\D/g, '');
 
     if (!phone && !email) {
       console.log(`[SaleWebhook] Pedido ${orderId} sem telefone ou email — ignorado`);

@@ -29,7 +29,7 @@ async function saleWebhook(req, res) {
     let isCancelled = false;
     if (body.orderURL && body.eventType) {
       // Processa CONFIRMED, DELIVERED e CANCELLED
-      const validEvents = ['CONFIRMED', 'DELIVERED', 'CANCELLED'];
+      const validEvents = ['CONFIRMED', 'DELIVERED', 'DISPATCHED', 'READY', 'CONCLUDED', 'CANCELLED'];
       if (!validEvents.includes(body.eventType)) {
         console.log(`[SaleWebhook] Evento Brendi ${body.eventType} ignorado`);
         return;

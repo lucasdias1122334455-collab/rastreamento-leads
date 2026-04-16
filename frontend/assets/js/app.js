@@ -1183,6 +1183,7 @@ if (token) {
 // ===================== AI ANALYST PAGE =====================
 let analystPageHistory = [];
 let analystPageStarted = false;
+let analystPendingImage = null; // { base64, mediaType, preview }
 
 function analystQuickSend(text) {
   const input = el('analyst-page-input');
@@ -1197,12 +1198,46 @@ function analystPageKeydown(e) {
   }
 }
 
+function analystAttachImage() {
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+  fileInput.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = ev.target.result.split(',')[1];
+      const mediaType = file.type;
+      analystPendingImage = { base64, mediaType, preview: ev.target.result };
+      // Show preview
+      const preview = el('analyst-image-preview');
+      if (preview) {
+        preview.innerHTML = `<div style="position:relative;display:inline-block"><img src="${ev.target.result}" style="max-height:80px;border-radius:8px;border:1px solid rgba(108,99,255,0.4)"><button onclick="analystClearImage()" style="position:absolute;top:-6px;right:-6px;background:#ff4444;border:none;border-radius:50%;width:18px;height:18px;color:white;font-size:11px;cursor:pointer;line-height:1">×</button></div>`;
+        preview.classList.remove('hidden');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+  fileInput.click();
+}
+
+function analystClearImage() {
+  analystPendingImage = null;
+  const preview = el('analyst-image-preview');
+  if (preview) { preview.innerHTML = ''; preview.classList.add('hidden'); }
+}
+
 async function analystPageSend() {
   const input = el('analyst-page-input');
   const message = input.value.trim();
-  if (!message) return;
+  if (!message && !analystPendingImage) return;
+  const sendText = message || '(imagem enviada)';
   input.value = '';
   input.style.height = 'auto';
+
+  const imageToSend = analystPendingImage;
+  analystClearImage();
 
   // First message — hide header/suggestions, show messages
   if (!analystPageStarted) {
@@ -1215,10 +1250,11 @@ async function analystPageSend() {
   const msgs = el('analyst-page-messages');
 
   // User message
+  const imgHtml = imageToSend ? `<img src="${imageToSend.preview}" style="max-width:200px;border-radius:8px;display:block;margin-bottom:6px">` : '';
   msgs.innerHTML += `
     <div class="analyst-page-msg analyst-page-msg-user">
       <div class="analyst-page-avatar">👤</div>
-      <div class="analyst-page-bubble">${message.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
+      <div class="analyst-page-bubble">${imgHtml}${sendText.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
     </div>`;
 
   // Typing indicator
@@ -1226,28 +1262,43 @@ async function analystPageSend() {
   msgs.innerHTML += `
     <div class="analyst-page-msg analyst-page-msg-ai" id="${typingId}">
       <div class="analyst-page-avatar">🧠</div>
-      <div class="analyst-page-bubble analyst-typing-dots">Analisando seus dados...</div>
+      <div class="analyst-page-bubble analyst-typing-dots">Analisando${imageToSend ? ' imagem' : ' dados'}...</div>
     </div>`;
   msgs.scrollTop = msgs.scrollHeight;
 
   try {
     const clientId = window.convActiveClientId || null;
-    const data = await apiFetch('/analyst/chat', {
+    // Use raw fetch to avoid header override issue in apiFetch
+    const token = localStorage.getItem('token');
+    const res = await fetch('/api/analyst/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, clientId, history: analystPageHistory }),
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        message: sendText,
+        clientId,
+        history: analystPageHistory,
+        image: imageToSend ? { base64: imageToSend.base64, mediaType: imageToSend.mediaType } : null,
+      }),
     });
 
     document.getElementById(typingId)?.remove();
 
+    if (!res.ok) throw new Error('Erro ' + res.status);
+    const data = await res.json();
+
     const reply = data.reply || 'Erro ao processar resposta.';
-    analystPageHistory.push({ role: 'user', content: message });
+    analystPageHistory.push({ role: 'user', content: sendText });
     analystPageHistory.push({ role: 'assistant', content: reply });
     if (analystPageHistory.length > 20) analystPageHistory = analystPageHistory.slice(-20);
 
     const formatted = reply
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/`(.*?)`/g, '<code style="background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:4px">$1</code>')
       .replace(/\n/g, '<br>');
 
     msgs.innerHTML += `
@@ -1261,7 +1312,7 @@ async function analystPageSend() {
     msgs.innerHTML += `
       <div class="analyst-page-msg analyst-page-msg-ai">
         <div class="analyst-page-avatar">🧠</div>
-        <div class="analyst-page-bubble" style="color:#ff6b6b">Erro ao conectar. Tente novamente.</div>
+        <div class="analyst-page-bubble" style="color:#ff6b6b">Erro ao conectar. Tente novamente.<br><small>${err.message}</small></div>
       </div>`;
     msgs.scrollTop = msgs.scrollHeight;
   }

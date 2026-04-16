@@ -136,14 +136,26 @@ ${dataContext}
 
 Seja como aquele sócio especialista em tráfego que o usuário gostaria de ter no time.`;
 
+    // Build user message — with image if provided
+    const { image } = req.body;
+    let userContent;
+    if (image && image.base64 && image.mediaType) {
+      userContent = [
+        { type: 'image', source: { type: 'base64', media_type: image.mediaType, data: image.base64 } },
+        { type: 'text', text: message }
+      ];
+    } else {
+      userContent = message;
+    }
+
     const messages = [
       ...history.slice(-10).map(h => ({ role: h.role, content: h.content })),
-      { role: 'user', content: message }
+      { role: 'user', content: userContent }
     ];
 
     const response = await anthropic.messages.create({
       model: 'claude-opus-4-5',
-      max_tokens: 1024,
+      max_tokens: 1500,
       system: systemPrompt,
       messages,
     });

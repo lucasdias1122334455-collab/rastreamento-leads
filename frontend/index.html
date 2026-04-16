@@ -321,13 +321,15 @@
             <button class="analyst-suggestion" onclick="analystQuickSend('Quais são as minhas maiores oportunidades agora?')">🚀 Quais são minhas maiores oportunidades?</button>
           </div>
           <div id="analyst-page-input-wrap">
+            <div id="analyst-image-preview" class="hidden" style="padding:0 4px 8px"></div>
             <div id="analyst-page-input-box">
+              <button onclick="analystAttachImage()" title="Enviar imagem" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:20px;cursor:pointer;padding:4px;flex-shrink:0;transition:color 0.2s" onmouseover="this.style.color='rgba(108,99,255,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.4)'">📎</button>
               <textarea id="analyst-page-input" placeholder="Pergunte algo sobre seus anúncios, leads, conversões..." rows="1" onkeydown="analystPageKeydown(event)" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
               <button id="analyst-page-send" onclick="analystPageSend()">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
               </button>
             </div>
-            <p id="analyst-page-hint">Enter para enviar · Shift+Enter para nova linha</p>
+            <p id="analyst-page-hint">Enter para enviar · Shift+Enter para nova linha · 📎 para enviar imagem</p>
           </div>
         </div>
       </section>

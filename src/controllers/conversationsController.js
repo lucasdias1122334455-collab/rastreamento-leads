@@ -33,6 +33,12 @@ async function getAdGroups(req, res, next) {
       if (lead.status === 'new') groups[key].new++;
     }
 
+    // Pasta especial: Carrinho Abandonado (leads do site com status lost)
+    const abandoned = leads.filter(l => l.source === 'website' && l.status === 'lost');
+    if (abandoned.length > 0) {
+      groups['__abandoned__'] = { key: '__abandoned__', source: 'website', total: abandoned.length, converted: 0, new: 0, isAbandoned: true };
+    }
+
     res.json(Object.values(groups).sort((a, b) => b.total - a.total));
   } catch (err) { next(err); }
 }
@@ -53,6 +59,12 @@ async function getLeadsByAd(req, res, next) {
         interactions: { orderBy: { createdAt: 'desc' }, take: 1, select: { content: true, createdAt: true, direction: true } },
       },
     });
+
+    // Pasta especial: Carrinho Abandonado
+    if (adKey === '__abandoned__') {
+      const abandoned = allLeads.filter(l => l.source === 'website' && l.status === 'lost');
+      return res.json(abandoned);
+    }
 
     const filtered = allLeads.filter(lead => getAdKey(lead) === adKey);
     res.json(filtered);

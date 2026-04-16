@@ -874,12 +874,20 @@ async function loadConvAds() {
       return;
     }
     const sourceIcon = (src) => src === 'whatsapp_meta' ? '📢' : src === 'manual' ? '✍️' : '📱';
-    container.innerHTML = groups.map(g => `
-      <div class="conv-ad-item" onclick="selectConvAd('${encodeURIComponent(g.key)}', this, '${g.key.replace(/'/g, "\\'")}')">
-        <div class="conv-ad-title">${sourceIcon(g.source)} ${g.key}</div>
-        <div class="conv-ad-meta">${g.total} leads · ${g.converted} convertidos</div>
-      </div>
-    `).join('');
+    container.innerHTML = groups.map(g => {
+      if (g.isAbandoned) {
+        return `
+          <div class="conv-ad-item conv-ad-abandoned" onclick="selectConvAd('${encodeURIComponent('__abandoned__')}', this, '🛒 Carrinho Abandonado')">
+            <div class="conv-ad-title">🛒 Carrinho Abandonado</div>
+            <div class="conv-ad-meta">${g.total} leads · recuperar agora</div>
+          </div>`;
+      }
+      return `
+        <div class="conv-ad-item" onclick="selectConvAd('${encodeURIComponent(g.key)}', this, '${g.key.replace(/'/g, "\\'")}')">
+          <div class="conv-ad-title">${sourceIcon(g.source)} ${g.key}</div>
+          <div class="conv-ad-meta">${g.total} leads · ${g.converted} convertidos</div>
+        </div>`;
+    }).join('');
   } catch (err) { console.error(err); }
 }
 

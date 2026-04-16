@@ -921,6 +921,11 @@ nav { flex: 1; padding: 0 .625rem; display: flex; flex-direction: column; gap: 2
 }
 .conv-ad-item:hover  { background: rgba(0,212,184,0.04); }
 .conv-ad-item.active { background: rgba(0,212,184,0.08); border-left: 2px solid var(--cyan); }
+.conv-ad-abandoned { border-left: 2px solid #f59e0b; }
+.conv-ad-abandoned:hover { background: rgba(245,158,11,0.06); }
+.conv-ad-abandoned.active { background: rgba(245,158,11,0.1); border-left: 2px solid #f59e0b; }
+.conv-ad-abandoned .conv-ad-title { color: #fcd34d; }
+.conv-ad-abandoned .conv-ad-meta { color: #f59e0b; }
 
 .conv-ad-title { font-weight: 600; font-size: .85rem; color: var(--text); word-break: break-word; }
 .conv-ad-meta  { font-size: .73rem; color: var(--muted); }

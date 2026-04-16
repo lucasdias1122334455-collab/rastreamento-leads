@@ -1,12 +1,12 @@
 const prisma = require('../config/database');
-const Anthropic = require('@anthropic-ai/sdk');
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 async function chat(req, res, next) {
   try {
     const { message, clientId, history = [] } = req.body;
     if (!message) return res.status(400).json({ error: 'message required' });
+    if (!process.env.ANTHROPIC_API_KEY) return res.status(503).json({ error: 'AI não configurada' });
+    const Anthropic = require('@anthropic-ai/sdk');
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
     // Gather real data from DB
     const where = clientId ? { clientId: Number(clientId) } : {};

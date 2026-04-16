@@ -212,7 +212,8 @@ async function saleWebhook(req, res) {
     }
 
     // ─── Envia confirmação no WhatsApp ────────────────────────────────────────
-    if (client.instanceName && lead.phone) {
+    const isValidPhone = lead.phone && !lead.phone.startsWith('brendi_') && !lead.phone.startsWith('ig_');
+    if (client.instanceName && isValidPhone) {
       try {
         const firstName = lead.name ? lead.name.split(' ')[0] : null;
         const msg = firstName

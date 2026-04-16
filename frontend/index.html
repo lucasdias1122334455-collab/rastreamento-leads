@@ -508,5 +508,31 @@
   </div>
 
   <script src="/assets/js/app.js"></script>
+
+  <!-- AI Analyst Chat -->
+  <div id="analyst-fab" onclick="toggleAnalyst()" title="Analista IA">
+    <span>🧠</span>
+  </div>
+  <div id="analyst-panel" class="hidden">
+    <div id="analyst-header">
+      <div id="analyst-title">
+        <span>🧠</span>
+        <div>
+          <div style="font-weight:700;font-size:14px">Analista IA</div>
+          <div style="font-size:11px;opacity:0.7">Especialista em Meta Ads</div>
+        </div>
+      </div>
+      <button onclick="toggleAnalyst()" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;padding:4px">×</button>
+    </div>
+    <div id="analyst-messages">
+      <div class="analyst-msg analyst-msg-ai">
+        <div class="analyst-bubble">Olá! Sou seu analista sênior de Meta Ads. Tenho acesso aos seus dados em tempo real.<br><br>Posso analisar sua performance, identificar problemas e dar sugestões estratégicas. O que quer saber?</div>
+      </div>
+    </div>
+    <div id="analyst-input-area">
+      <textarea id="analyst-input" placeholder="Pergunte algo sobre seus anúncios, leads, conversões..." rows="2" onkeydown="analystKeydown(event)"></textarea>
+      <button id="analyst-send" onclick="analystSend()">➤</button>
+    </div>
+  </div>
 </body>
 </html>

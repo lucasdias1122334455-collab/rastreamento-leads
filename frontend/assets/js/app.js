@@ -1179,3 +1179,68 @@ if (token) {
     startWAStatusPolling();
   }).catch(logout);
 }
+
+// ===================== AI ANALYST =====================
+let analystHistory = [];
+
+function toggleAnalyst() {
+  const panel = el('analyst-panel');
+  panel.classList.toggle('hidden');
+  if (!panel.classList.contains('hidden')) {
+    el('analyst-input').focus();
+    const msgs = el('analyst-messages');
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+}
+
+function analystKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    analystSend();
+  }
+}
+
+async function analystSend() {
+  const input = el('analyst-input');
+  const message = input.value.trim();
+  if (!message) return;
+  input.value = '';
+
+  // Add user message
+  const msgs = el('analyst-messages');
+  msgs.innerHTML += `<div class="analyst-msg analyst-msg-user"><div class="analyst-bubble">${message.replace(/</g,'&lt;')}</div></div>`;
+
+  // Typing indicator
+  const typingId = 'analyst-typing-' + Date.now();
+  msgs.innerHTML += `<div class="analyst-msg analyst-msg-ai analyst-typing" id="${typingId}"><div class="analyst-bubble">Analisando dados...</div></div>`;
+  msgs.scrollTop = msgs.scrollHeight;
+
+  try {
+    const clientId = window.convActiveClientId || null;
+    const data = await apiFetch('/analyst/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, clientId, history: analystHistory }),
+    });
+
+    document.getElementById(typingId)?.remove();
+
+    const reply = data.reply || 'Erro ao processar resposta.';
+    analystHistory.push({ role: 'user', content: message });
+    analystHistory.push({ role: 'assistant', content: reply });
+    if (analystHistory.length > 20) analystHistory = analystHistory.slice(-20);
+
+    // Format reply: bold **text**, line breaks
+    const formatted = reply
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br>');
+
+    msgs.innerHTML += `<div class="analyst-msg analyst-msg-ai"><div class="analyst-bubble">${formatted}</div></div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+  } catch (err) {
+    document.getElementById(typingId)?.remove();
+    msgs.innerHTML += `<div class="analyst-msg analyst-msg-ai"><div class="analyst-bubble" style="color:#ff6b6b">Erro ao conectar com o analista. Tente novamente.</div></div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+}

@@ -14,6 +14,7 @@ const conversationsRoutes = require('./routes/conversations');
 const mercadoPagoRoutes = require('./routes/mercadopago');
 const saleWebhookRoutes = require('./routes/saleWebhook');
 const instagramRoutes = require('./routes/instagram');
+const aiAnalystRoutes = require('./routes/aiAnalyst');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -35,6 +36,7 @@ app.use('/api/conversations', conversationsRoutes);
 app.use('/api/mp', mercadoPagoRoutes);
 app.use('/api/sale', saleWebhookRoutes);
 app.use('/api/instagram', instagramRoutes);
+app.use('/api/analyst', aiAnalystRoutes);
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));

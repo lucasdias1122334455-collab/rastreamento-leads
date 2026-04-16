@@ -8,6 +8,8 @@ function getAdKey(lead) {
     } catch (_) { return 'Meta Ads'; }
   }
   if (lead.source === 'manual') return 'Manual';
+  if (lead.source === 'instagram') return 'Instagram DM';
+  if (lead.source === 'website') return 'Site';
   return 'WhatsApp QR Code';
 }
 

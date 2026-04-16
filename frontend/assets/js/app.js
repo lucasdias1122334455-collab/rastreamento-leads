@@ -881,7 +881,7 @@ async function loadConvAds() {
       container.innerHTML = '<p class="conv-empty">Nenhuma conversa ainda.</p>';
       return;
     }
-    const sourceIcon = (src) => src === 'whatsapp_meta' ? '📢' : src === 'manual' ? '✍️' : '📱';
+    const sourceIcon = (src) => src === 'whatsapp_meta' ? '📢' : src === 'manual' ? '✍️' : src === 'instagram' ? '📸' : src === 'website' ? '🛒' : '📱';
     container.innerHTML = groups.map(g => {
       if (g.isAbandoned) {
         return `

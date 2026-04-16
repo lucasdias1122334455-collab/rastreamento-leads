@@ -26,13 +26,15 @@ async function saleWebhook(req, res) {
 
     // ─── Formato Brendi: busca detalhes do pedido na API deles ───────────────
     let parsedBody = body;
+    let isCancelled = false;
     if (body.orderURL && body.eventType) {
-      // Processa CONFIRMED (pago) e DELIVERED (entregue/finalizado)
-      const validEvents = ['CONFIRMED', 'DELIVERED'];
+      // Processa CONFIRMED, DELIVERED e CANCELLED
+      const validEvents = ['CONFIRMED', 'DELIVERED', 'CANCELLED'];
       if (!validEvents.includes(body.eventType)) {
         console.log(`[SaleWebhook] Evento Brendi ${body.eventType} ignorado`);
         return;
       }
+      isCancelled = body.eventType === 'CANCELLED';
       try {
         console.log(`[SaleWebhook] Brendi — buscando detalhes do pedido: ${body.orderURL}`);
         const orderRes = await fetch(body.orderURL, {
@@ -109,6 +111,9 @@ async function saleWebhook(req, res) {
       });
     }
 
+    const leadStatus = isCancelled ? 'lost' : 'converted';
+    const leadStage = isCancelled ? 'decision' : 'action';
+
     if (!lead && phone) {
       lead = await prisma.lead.create({
         data: {
@@ -116,24 +121,28 @@ async function saleWebhook(req, res) {
           name,
           email,
           source: 'website',
-          status: 'converted',
-          stage: 'action',
+          status: leadStatus,
+          stage: leadStage,
           clientId,
-          value: amount || null,
+          value: isCancelled ? null : (amount || null),
         },
       });
-      console.log(`[SaleWebhook] Lead criado automaticamente: ${lead.id}`);
+      console.log(`[SaleWebhook] Lead criado: ${lead.id} — ${leadStatus}`);
     } else if (lead) {
-      await prisma.lead.update({
-        where: { id: lead.id },
-        data: {
-          status: 'converted',
-          stage: 'action',
-          value: amount || lead.value || null,
-          ...(name && !lead.name ? { name } : {}),
-          ...(email && !lead.email ? { email } : {}),
-        },
-      });
+      // Só atualiza status se não for rebaixar uma conversão para cancelado
+      const novaData = {
+        ...(name && !lead.name ? { name } : {}),
+        ...(email && !lead.email ? { email } : {}),
+      };
+      if (!isCancelled) {
+        novaData.status = 'converted';
+        novaData.stage = 'action';
+        novaData.value = amount || lead.value || null;
+      } else if (!['converted'].includes(lead.status)) {
+        novaData.status = 'lost';
+        novaData.stage = 'decision';
+      }
+      await prisma.lead.update({ where: { id: lead.id }, data: novaData });
     }
 
     if (!lead) {
@@ -141,18 +150,24 @@ async function saleWebhook(req, res) {
       return;
     }
 
-    // ─── Registra nota de conversão ───────────────────────────────────────────
+    // ─── Registra nota ────────────────────────────────────────────────────────
+    const noteContent = isCancelled
+      ? `❌ Pedido cancelado pelo site${orderId ? ` — Pedido #${orderId}` : ''} (PIX expirado ou desistência)`
+      : `✅ Venda confirmada pelo site${orderId ? ` — Pedido #${orderId}` : ''}${amount ? ` — R$ ${amount.toFixed(2)}` : ''}`;
+
     await prisma.interaction.create({
       data: {
         leadId: lead.id,
         type: 'note',
         direction: 'inbound',
-        content: `✅ Venda confirmada pelo site${orderId ? ` — Pedido #${orderId}` : ''}${amount ? ` — R$ ${amount.toFixed(2)}` : ''}`,
-        metadata: JSON.stringify({ source: 'website', orderId, amount }),
+        content: noteContent,
+        metadata: JSON.stringify({ source: 'website', orderId, amount, cancelled: isCancelled }),
       },
     });
 
-    console.log(`[SaleWebhook] Lead ${lead.id} convertido via site — R$ ${amount}`);
+    console.log(`[SaleWebhook] Lead ${lead.id} — ${isCancelled ? 'CANCELADO' : `convertido R$ ${amount}`}`);
+
+    if (isCancelled) return; // Não dispara pixel nem WhatsApp em cancelamentos
 
     // ─── Dispara Meta Pixel Purchase ──────────────────────────────────────────
     if (client.pixelId && client.metaConversionsToken && amount > 0) {

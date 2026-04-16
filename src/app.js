@@ -13,6 +13,7 @@ const userRoutes = require('./routes/users');
 const conversationsRoutes = require('./routes/conversations');
 const mercadoPagoRoutes = require('./routes/mercadopago');
 const saleWebhookRoutes = require('./routes/saleWebhook');
+const instagramRoutes = require('./routes/instagram');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -33,6 +34,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/conversations', conversationsRoutes);
 app.use('/api/mp', mercadoPagoRoutes);
 app.use('/api/sale', saleWebhookRoutes);
+app.use('/api/instagram', instagramRoutes);
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
@@ -149,6 +151,8 @@ app.listen(PORT, async () => {
     await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "metaConversionsToken" TEXT`);
     await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "brendiClientId" TEXT`);
     await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "brendiSecret" TEXT`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "instagramToken" TEXT`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "instagramAccountId" TEXT`);
     console.log('[DB] Tabelas criadas com sucesso.');
   } catch (e) {
     console.error('[DB] Erro ao criar tabelas:', e.message);

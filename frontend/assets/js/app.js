@@ -469,6 +469,12 @@ function openClientModal(client = null) {
   el('client-meta-conversions-token').value = client?.metaConversionsToken || '';
   el('client-brendi-client-id').value = client?.brendiClientId || '';
   el('client-brendi-secret').value = client?.brendiSecret || '';
+  // Campos Instagram DM
+  el('client-instagram-token').value = client?.instagramToken || '';
+  el('client-instagram-account-id').value = client?.instagramAccountId || '';
+  // Set webhook URL
+  const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://' + window.location.hostname;
+  el('client-instagram-webhook-url').value = `${baseUrl}/api/instagram/webhook`;
   // URL webhook do site
   const saleUrl = client?.id
     ? `https://rastreamento-leads-production.up.railway.app/api/sale/webhook/${client.id}`
@@ -495,6 +501,8 @@ el('client-form').addEventListener('submit', async (e) => {
     metaConversionsToken: el('client-meta-conversions-token').value || null,
     brendiClientId: el('client-brendi-client-id').value || null,
     brendiSecret: el('client-brendi-secret').value || null,
+    instagramToken: el('client-instagram-token').value || null,
+    instagramAccountId: el('client-instagram-account-id').value || null,
   };
   try {
     if (id) {

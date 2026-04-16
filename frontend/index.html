@@ -379,6 +379,26 @@
           <label style="margin-top:.75rem">URL do Webhook do Site <span style="font-size:.8rem;color:var(--muted)">— cole isso nas configurações do seu site/loja</span></label>
           <div id="client-sale-webhook-url" class="mp-webhook-url">Salve o cliente para ver a URL</div>
         </div>
+        <!-- INSTAGRAM DM -->
+        <div class="pixel-section" style="border-color: #E1306C;">
+          <h4>📩 INSTAGRAM DM</h4>
+          <div class="form-group">
+            <label>ID da Conta Instagram Business</label>
+            <input type="text" id="client-instagram-account-id" placeholder="Ex: 17841400008460056">
+          </div>
+          <div class="form-group">
+            <label>Token de Acesso da Página</label>
+            <input type="text" id="client-instagram-token" placeholder="EAAxxxxxxx...">
+          </div>
+          <div class="form-group">
+            <label>URL do Webhook (configurar no Meta App)</label>
+            <input type="text" id="client-instagram-webhook-url" readonly style="background:#f0f0f0;cursor:pointer" onclick="this.select();document.execCommand('copy');showToast('URL copiada!')">
+          </div>
+          <div class="form-group">
+            <label>Verify Token</label>
+            <input type="text" value="leadtrack_instagram_2024" readonly style="background:#f0f0f0;cursor:pointer" onclick="this.select();document.execCommand('copy');showToast('Token copiado!')">
+          </div>
+        </div>
         <div class="modal-actions">
           <button type="button" id="client-modal-cancel">Cancelar</button>
           <button type="submit" class="btn-primary">Salvar</button>

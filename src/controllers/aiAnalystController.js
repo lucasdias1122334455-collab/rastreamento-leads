@@ -4,9 +4,10 @@ async function chat(req, res, next) {
   try {
     const { message, clientId, history = [] } = req.body;
     if (!message) return res.status(400).json({ error: 'message required' });
-    if (!process.env.ANTHROPIC_API_KEY) return res.status(503).json({ error: 'AI não configurada' });
+    const apiKey = process.env.ANTHROPIC_API_KEY || process.env.ANTROPIC_API_KEY;
+    if (!apiKey) return res.status(503).json({ error: 'AI não configurada' });
     const Anthropic = require('@anthropic-ai/sdk');
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const anthropic = new Anthropic({ apiKey });
 
     // Gather real data from DB
     const where = clientId ? { clientId: Number(clientId) } : {};

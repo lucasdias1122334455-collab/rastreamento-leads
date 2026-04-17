@@ -59,12 +59,17 @@ async function chat(req, res, next) {
       }
     }
 
-    // Ad spend data
-    const adSpends = await prisma.adSpend.findMany({
-      where: clientId ? { clientId: Number(clientId) } : {},
-      orderBy: { date: 'desc' },
-      take: 60,
-    }).catch(() => []);
+    // Ad spend data (tabela opcional — ignora se não existir)
+    let adSpends = [];
+    try {
+      if (prisma.adSpend) {
+        adSpends = await prisma.adSpend.findMany({
+          where: clientId ? { clientId: Number(clientId) } : {},
+          orderBy: { date: 'desc' },
+          take: 60,
+        });
+      }
+    } catch (_) {}
 
     const totalSpend30 = adSpends
       .filter(s => new Date(s.date) >= thirtyDaysAgo)

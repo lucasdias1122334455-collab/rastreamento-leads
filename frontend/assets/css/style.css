@@ -1467,3 +1467,206 @@ nav { flex: 1; padding: 0 .625rem; display: flex; flex-direction: column; gap: 2
   color: rgba(255,255,255,0.2);
   margin-top: 8px;
 }
+
+/* ===== SMOOTH ANIMATIONS & CAKTO-STYLE REDESIGN ===== */
+
+/* Page fade-in transition */
+.page:not(.hidden) {
+  animation: pageIn 0.25s ease forwards;
+}
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Nav items - smooth hover (enhance existing transitions) */
+.nav-item {
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease !important;
+  border-left: 3px solid transparent;
+  border-radius: 0 8px 8px 0;
+  margin-right: 8px;
+}
+.nav-item:hover {
+  background: rgba(108,99,255,0.12) !important;
+  color: #a89fff !important;
+  border-left-color: rgba(108,99,255,0.4);
+}
+.nav-item.active {
+  background: rgba(108,99,255,0.18) !important;
+  color: #6c63ff !important;
+  border-left-color: #6c63ff !important;
+  font-weight: 600;
+}
+
+/* Stat cards - hover lift */
+.stat-card {
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease !important;
+}
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  border-color: rgba(108,99,255,0.3) !important;
+}
+
+/* Dashboard stat cards - bigger, cleaner */
+.stats-grid .stat-card {
+  padding: 20px 24px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.03);
+}
+.stat-card .stat-value {
+  font-size: 2.2rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+.stat-card .stat-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  opacity: 0.5;
+  margin-bottom: 8px;
+}
+
+/* All buttons - smooth */
+button,
+.btn-primary,
+.btn-sm,
+.btn-edit,
+.btn-danger {
+  transition: all 0.18s ease !important;
+}
+button:hover,
+.btn-primary:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+button:active,
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Modal - slide up + fade */
+.modal-content {
+  animation: modalIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Table rows - smooth hover */
+.leads-table tr {
+  transition: background 0.15s ease !important;
+}
+.leads-table tbody tr:hover td {
+  background: rgba(108,99,255,0.08) !important;
+}
+
+/* Inputs & selects - smooth focus */
+input,
+textarea,
+select {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: rgba(108,99,255,0.6) !important;
+  box-shadow: 0 0 0 3px rgba(108,99,255,0.12) !important;
+  outline: none !important;
+}
+
+/* Client cards */
+.client-card {
+  transition: transform 0.22s ease, box-shadow 0.22s ease !important;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Conversations - lead items */
+.conv-lead-item {
+  transition: background 0.15s ease, border-left-color 0.15s ease !important;
+  border-left: 3px solid transparent;
+}
+.conv-lead-item:hover {
+  background: rgba(108,99,255,0.1) !important;
+  border-left-color: rgba(108,99,255,0.4);
+}
+.conv-lead-item.active {
+  border-left-color: #6c63ff !important;
+}
+
+/* Conv ad folders */
+.conv-ad-item {
+  transition: background 0.18s ease, transform 0.18s ease !important;
+  border-radius: 8px;
+}
+.conv-ad-item:hover {
+  transform: translateX(3px);
+  background: rgba(108,99,255,0.1) !important;
+}
+.conv-ad-item.active {
+  background: rgba(108,99,255,0.18) !important;
+  border-left: 3px solid #6c63ff;
+}
+
+/* Status badges - subtle pulse on "new" */
+.status-new {
+  animation: subtlePulse 2.5s ease infinite;
+}
+@keyframes subtlePulse {
+  0%,  100% { box-shadow: 0 0 0 0 rgba(62,207,207,0.3); }
+  50%        { box-shadow: 0 0 0 4px rgba(62,207,207,0); }
+}
+
+/* Page headers */
+.page-header {
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Sidebar logo area glow */
+.logo {
+  position: relative;
+}
+
+/* Scrollbar refinement */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(108,99,255,0.3); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(108,99,255,0.5); }
+
+/* Analyst suggestions */
+.analyst-suggestion {
+  transition: all 0.2s ease !important;
+}
+.analyst-suggestion:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108,99,255,0.2);
+}
+
+/* Toast animation (matches any .toast class added via JS) */
+.toast {
+  animation: toastIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Mobile - override nav border direction back to bottom */
+@media (max-width: 768px) {
+  .nav-item {
+    border-left: none !important;
+    border-radius: 0 !important;
+    margin-right: 0 !important;
+    border-bottom: 2px solid transparent;
+  }
+  .nav-item:hover,
+  .nav-item.active {
+    border-left-color: transparent !important;
+    border-bottom-color: #6c63ff !important;
+  }
+}

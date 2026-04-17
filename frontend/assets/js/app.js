@@ -1391,7 +1391,10 @@ async function analystPageSend() {
 
     document.getElementById(typingId)?.remove();
 
-    if (!res.ok) throw new Error('Erro ' + res.status);
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(`Erro ${res.status}: ${errData.error || ''} ${JSON.stringify(errData.detail || '')}`);
+    }
     const data = await res.json();
 
     const reply = data.reply || 'Erro ao processar resposta.';

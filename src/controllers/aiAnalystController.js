@@ -169,8 +169,10 @@ Seja como aquele sócio especialista em tráfego que o usuário gostaria de ter 
     const reply = response.content[0].text;
     res.json({ reply });
   } catch (err) {
-    console.error('[AI Analyst] Erro:', err.message);
-    next(err);
+    console.error('[AI Analyst] Erro completo:', err.message, err.status, JSON.stringify(err.error || {}));
+    // Retorna detalhes do erro para debug
+    const status = err.status || 500;
+    res.status(status).json({ error: err.message || 'Erro interno', detail: err.error || null });
   }
 }
 

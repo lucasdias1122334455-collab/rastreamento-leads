@@ -976,10 +976,15 @@ async function renderConvChat(id) {
     if (!info) return;
     info.classList.remove('hidden');
     info.innerHTML = `
-      <div class="conv-chat-info-item">📞 <strong>${lead.phone}</strong></div>
+      <div class="conv-chat-info-item">📞 <strong>${lead.phone?.startsWith('ig_') ? 'Instagram DM' : lead.phone?.startsWith('brendi_') ? 'Brendi' : lead.phone}</strong></div>
       ${lead.client ? `<div class="conv-chat-info-item">🏢 <strong>${lead.client.name}</strong></div>` : ''}
       <div class="conv-chat-info-item">${statusBadge(lead.status)}</div>
-      ${lead.assignedTo ? `<div class="conv-chat-info-item">👤 <strong>${lead.assignedTo.name}</strong></div>` : ''}
+      <div class="conv-chat-info-item" style="gap:4px">
+        💰 <input type="number" id="conv-lead-value" value="${lead.value || ''}" placeholder="R$ valor" step="0.01" min="0"
+          style="width:90px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:var(--text);padding:3px 7px;font-size:12px;outline:none"
+          onkeydown="if(event.key==='Enter')saveConvLeadValue(${lead.id})">
+        <button class="btn-sm" style="background:rgba(62,207,207,0.2);border:1px solid rgba(62,207,207,0.4);color:#3ecfcf;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" onclick="saveConvLeadValue(${lead.id})">✓</button>
+      </div>
       <div class="conv-chat-info-item" style="margin-left:auto">
         <button class="btn-sm btn-primary" onclick="navigateTo('leads');setTimeout(()=>openLeadModal(${lead.id}),300)">Editar Lead</button>
       </div>
@@ -1036,6 +1041,24 @@ async function renderConvChat(id) {
     const msgs = el('conv-messages');
     if (msgs) msgs.scrollTop = msgs.scrollHeight;
   } catch (err) { console.error(err); }
+}
+
+async function saveConvLeadValue(leadId) {
+  const input = el('conv-lead-value');
+  if (!input) return;
+  const value = parseFloat(input.value);
+  if (isNaN(value) || value < 0) { showToast('Valor inválido'); return; }
+  try {
+    await apiFetch(`/leads/${leadId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ value, status: 'converted' }),
+    });
+    showToast('✅ Valor salvo!');
+    input.style.borderColor = 'rgba(62,207,207,0.6)';
+    setTimeout(() => { if (el('conv-lead-value')) el('conv-lead-value').style.borderColor = 'rgba(255,255,255,0.15)'; }, 2000);
+  } catch (err) {
+    showToast('Erro ao salvar valor');
+  }
 }
 
 async function saveAdSpend(adKey, value) {

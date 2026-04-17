@@ -385,84 +385,206 @@
 
   <!-- Modal Cliente -->
   <div id="client-modal" class="modal hidden">
-    <div class="modal-content">
-      <h3 id="client-modal-title">Novo Cliente</h3>
+    <div class="modal-content modal-content-wide">
+      <div class="cm-header">
+        <div>
+          <h3 id="client-modal-title">Novo Cliente</h3>
+          <p class="cm-subtitle">Configure as integrações do cliente</p>
+        </div>
+        <button type="button" class="cm-close" id="client-modal-cancel-x">✕</button>
+      </div>
       <form id="client-form">
         <input type="hidden" id="client-id" />
-        <label>Nome *</label>
-        <input type="text" id="client-name" placeholder="Nome do cliente" required />
-        <label>Telefone</label>
-        <input type="text" id="client-phone" placeholder="5566999999999" />
-        <label>Email</label>
-        <input type="email" id="client-email" placeholder="email@cliente.com" />
-        <label>Notas</label>
-        <textarea id="client-notes" rows="2" placeholder="Observações..."></textarea>
-        <div class="meta-section">
-          <p class="meta-section-title">📱 Meta Business API <span style="font-size:.8rem;color:var(--muted);font-weight:400">(opcional — para anúncios Click-to-WhatsApp)</span></p>
-          <label>Phone Number ID <span style="font-size:.8rem;color:var(--muted)">— Meta for Developers → WhatsApp → Configuração</span></label>
-          <input type="text" id="client-meta-phone-id" placeholder="Ex: 123456789012345" />
+
+        <!-- ── Dados básicos ── -->
+        <div class="cm-section cm-section-base">
+          <div class="cm-section-head">
+            <span class="cm-section-icon">👤</span>
+            <div>
+              <span class="cm-section-title">Dados do Cliente</span>
+              <span class="cm-section-sub">Informações principais</span>
+            </div>
+          </div>
+          <div class="cm-grid-2">
+            <div class="cm-field">
+              <label>Nome *</label>
+              <input type="text" id="client-name" placeholder="Nome do cliente" required />
+            </div>
+            <div class="cm-field">
+              <label>Telefone</label>
+              <input type="text" id="client-phone" placeholder="5566999999999" />
+            </div>
+          </div>
+          <div class="cm-field">
+            <label>Email</label>
+            <input type="email" id="client-email" placeholder="email@cliente.com" />
+          </div>
+          <div class="cm-field">
+            <label>Notas</label>
+            <textarea id="client-notes" rows="2" placeholder="Observações..."></textarea>
+          </div>
         </div>
-        <div class="mp-section">
-          <p class="mp-section-title">💳 Mercado Pago <span style="font-size:.8rem;color:var(--muted);font-weight:400">(opcional — converte lead automaticamente ao pagar)</span></p>
-          <label>Access Token <span style="font-size:.8rem;color:var(--muted)">— MP → Sua conta → Credenciais → Access Token produção</span></label>
-          <input type="text" id="client-mp-token" placeholder="APP_USR-..." />
-          <label style="margin-top:.75rem">URL do Webhook <span style="font-size:.8rem;color:var(--muted)">— cole isso no Mercado Pago → Webhooks</span></label>
-          <div id="client-mp-webhook-url" class="mp-webhook-url">Salve o cliente para ver a URL</div>
-        </div>
-        <div class="ai-section">
-          <p class="ai-section-title">🤖 Agente de IA <span style="font-size:.8rem;color:var(--muted);font-weight:400">(responde leads e detecta conversões automaticamente)</span></p>
-          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem">
-            <label class="ai-toggle-label">
+
+        <!-- ── Agente de IA ── -->
+        <div class="cm-section cm-section-ai">
+          <div class="cm-section-head">
+            <span class="cm-section-icon">🤖</span>
+            <div>
+              <span class="cm-section-title">Agente de IA</span>
+              <span class="cm-section-sub">Responde leads e detecta conversões automaticamente</span>
+            </div>
+            <label class="ai-toggle-label" style="margin-left:auto">
               <input type="checkbox" id="client-ai-enabled" />
               <span class="ai-toggle-track"></span>
             </label>
-            <span style="font-size:.9rem;color:var(--muted)" id="client-ai-enabled-label">IA desativada</span>
           </div>
-          <div id="client-ai-fields" style="display:none">
-            <label>Link de Pagamento <span style="font-size:.8rem;color:var(--muted)">— enviado quando o lead fechar (PIX, MP, site, etc.)</span></label>
-            <input type="text" id="client-payment-link" placeholder="Ex: https://pag.ae/fitlife  ou  PIX: 11999999999" />
-            <label style="margin-top:.75rem">Descrição do Produto <span style="font-size:.8rem;color:var(--muted)">— o que a IA deve falar, benefícios, diferenciais, prova social</span></label>
-            <textarea id="client-ai-script" rows="5" placeholder="Ex:&#10;Somos a Academia FitLife. Plano mensal com acesso ilimitado.&#10;Benefícios: perca peso, ganhe disposição e mais energia no dia a dia.&#10;Diferenciais: equipamentos novos, personal incluso, sem fidelidade.&#10;Prova social: mais de 500 alunos ativos, 98% de satisfação.&#10;Entregamos em todo o Brasil em até 5 dias úteis."></textarea>
-          </div>
-        </div>
-        <div class="pixel-section">
-          <p class="pixel-section-title">📊 Meta Pixel <span style="font-size:.8rem;color:var(--muted);font-weight:400">(opcional — dispara Purchase automaticamente a cada venda)</span></p>
-          <label>Site da Loja <span style="font-size:.8rem;color:var(--muted)">— URL do site usado nos anúncios</span></label>
-          <input type="text" id="client-website" placeholder="Ex: https://minhaloja.com.br" />
-          <label style="margin-top:.75rem">Pixel ID <span style="font-size:.8rem;color:var(--muted)">— Meta for Developers → Pixels → ID</span></label>
-          <input type="text" id="client-pixel-id" placeholder="Ex: 123456789012345" />
-          <label style="margin-top:.75rem">Access Token (Conversions API) <span style="font-size:.8rem;color:var(--muted)">— Meta for Developers → Pixels → Configurações → Access Token</span></label>
-          <input type="text" id="client-meta-conversions-token" placeholder="EAAxxxxxxx..." />
-          <label style="margin-top:.75rem">Brendi Client ID <span style="font-size:.8rem;color:var(--muted)">— Brendi → Integrações → Webhook → Client ID</span></label>
-          <input type="text" id="client-brendi-client-id" placeholder="a7dc3045-2e56-41cb-..." />
-          <label style="margin-top:.75rem">Brendi Secret <span style="font-size:.8rem;color:var(--muted)">— gerado ao configurar o webhook no Brendi</span></label>
-          <input type="password" id="client-brendi-secret" placeholder="Cole o secret aqui" />
-          <label style="margin-top:.75rem">URL do Webhook do Site <span style="font-size:.8rem;color:var(--muted)">— cole isso nas configurações do seu site/loja</span></label>
-          <div id="client-sale-webhook-url" class="mp-webhook-url">Salve o cliente para ver a URL</div>
-        </div>
-        <!-- INSTAGRAM DM -->
-        <div class="pixel-section" style="border-color: #E1306C;">
-          <h4>📩 INSTAGRAM DM</h4>
-          <div class="form-group">
-            <label>ID da Conta Instagram Business</label>
-            <input type="text" id="client-instagram-account-id" placeholder="Ex: 17841400008460056">
-          </div>
-          <div class="form-group">
-            <label>Token de Acesso da Página</label>
-            <input type="text" id="client-instagram-token" placeholder="EAAxxxxxxx...">
-          </div>
-          <div class="form-group">
-            <label>URL do Webhook (configurar no Meta App)</label>
-            <input type="text" id="client-instagram-webhook-url" readonly style="background:#f0f0f0;cursor:pointer" onclick="this.select();document.execCommand('copy');showToast('URL copiada!')">
-          </div>
-          <div class="form-group">
-            <label>Verify Token</label>
-            <input type="text" value="leadtrack_instagram_2024" readonly style="background:#f0f0f0;cursor:pointer" onclick="this.select();document.execCommand('copy');showToast('Token copiado!')">
+          <div id="client-ai-fields" style="display:none;margin-top:.75rem">
+            <div class="cm-field">
+              <label>Link de Pagamento</label>
+              <input type="text" id="client-payment-link" placeholder="https://pag.ae/fitlife  ou  PIX: 11999999999" />
+              <span class="cm-hint">Enviado quando o lead fechar negócio</span>
+            </div>
+            <div class="cm-field" style="margin-top:.75rem">
+              <label>Descrição do Produto / Script da IA</label>
+              <textarea id="client-ai-script" rows="5" placeholder="Ex:&#10;Somos a Academia FitLife. Plano mensal com acesso ilimitado.&#10;Benefícios: perca peso, ganhe disposição.&#10;Diferenciais: equipamentos novos, personal incluso.&#10;Prova social: +500 alunos, 98% de satisfação."></textarea>
+              <span class="cm-hint">O que a IA deve apresentar: benefícios, diferenciais, prova social</span>
+            </div>
           </div>
         </div>
+
+        <!-- ── WhatsApp / Meta Business ── -->
+        <div class="cm-section cm-section-meta">
+          <div class="cm-section-head">
+            <span class="cm-section-icon">📱</span>
+            <div>
+              <span class="cm-section-title">WhatsApp / Meta Business</span>
+              <span class="cm-section-sub">Para anúncios Click-to-WhatsApp</span>
+            </div>
+          </div>
+          <div class="cm-field">
+            <label>Phone Number ID</label>
+            <input type="text" id="client-meta-phone-id" placeholder="Ex: 123456789012345" />
+            <span class="cm-hint">Meta for Developers → WhatsApp → Configuração</span>
+          </div>
+        </div>
+
+        <!-- ── Mercado Pago ── -->
+        <div class="cm-section cm-section-mp">
+          <div class="cm-section-head">
+            <span class="cm-section-icon">💳</span>
+            <div>
+              <span class="cm-section-title">Mercado Pago</span>
+              <span class="cm-section-sub">Converte lead automaticamente ao pagar</span>
+            </div>
+          </div>
+          <div class="cm-field">
+            <label>Access Token</label>
+            <input type="text" id="client-mp-token" placeholder="APP_USR-..." />
+            <span class="cm-hint">MP → Sua conta → Credenciais → Access Token produção</span>
+          </div>
+          <div class="cm-field" style="margin-top:.75rem">
+            <label>URL do Webhook</label>
+            <div id="client-mp-webhook-url" class="cm-webhook-url" onclick="copyWebhookUrl(this)">Salve o cliente para ver a URL</div>
+            <span class="cm-hint">Cole isso em: Mercado Pago → Webhooks</span>
+          </div>
+        </div>
+
+        <!-- ── Meta Pixel ── -->
+        <div class="cm-section cm-section-pixel">
+          <div class="cm-section-head">
+            <span class="cm-section-icon">📊</span>
+            <div>
+              <span class="cm-section-title">Meta Pixel</span>
+              <span class="cm-section-sub">Dispara evento Purchase a cada venda confirmada</span>
+            </div>
+          </div>
+          <div class="cm-field">
+            <label>Site da Loja</label>
+            <input type="text" id="client-website" placeholder="https://minhaloja.com.br" />
+            <span class="cm-hint">URL usada nos anúncios do Meta</span>
+          </div>
+          <div class="cm-grid-2" style="margin-top:.75rem">
+            <div class="cm-field">
+              <label>Pixel ID</label>
+              <input type="text" id="client-pixel-id" placeholder="123456789012345" />
+              <span class="cm-hint">Meta for Developers → Pixels → ID</span>
+            </div>
+            <div class="cm-field">
+              <label>Access Token (Conversions API)</label>
+              <input type="text" id="client-meta-conversions-token" placeholder="EAAxxxxxxx..." />
+              <span class="cm-hint">Pixels → Configurações → Access Token</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Brendi ── -->
+        <div class="cm-section cm-section-brendi">
+          <div class="cm-section-head">
+            <span class="cm-section-icon">🛒</span>
+            <div>
+              <span class="cm-section-title">Brendi</span>
+              <span class="cm-section-sub">Integração com pedidos da loja Brendi</span>
+            </div>
+          </div>
+          <div class="cm-grid-2">
+            <div class="cm-field">
+              <label>Client ID</label>
+              <input type="text" id="client-brendi-client-id" placeholder="a7dc3045-2e56-41cb-..." />
+              <span class="cm-hint">Brendi → Integrações → Webhook → Client ID</span>
+            </div>
+            <div class="cm-field">
+              <label>Secret</label>
+              <input type="password" id="client-brendi-secret" placeholder="••••••••" />
+              <span class="cm-hint">Gerado ao configurar o webhook no Brendi</span>
+            </div>
+          </div>
+          <div class="cm-field" style="margin-top:.75rem">
+            <label>URL do Webhook do Site</label>
+            <div id="client-sale-webhook-url" class="cm-webhook-url" onclick="copyWebhookUrl(this)">Salve o cliente para ver a URL</div>
+            <span class="cm-hint">Cole nas configurações da sua loja/site</span>
+          </div>
+        </div>
+
+        <!-- ── Instagram DM ── -->
+        <div class="cm-section cm-section-insta">
+          <div class="cm-section-head">
+            <span class="cm-section-icon">📸</span>
+            <div>
+              <span class="cm-section-title">Instagram DM</span>
+              <span class="cm-section-sub">Recebe e responde mensagens diretas do Instagram</span>
+            </div>
+          </div>
+          <div class="cm-grid-2">
+            <div class="cm-field">
+              <label>ID da Conta Instagram Business</label>
+              <input type="text" id="client-instagram-account-id" placeholder="17841400008460056" />
+              <span class="cm-hint">Meta for Developers → seu app</span>
+            </div>
+            <div class="cm-field">
+              <label>Token de Acesso da Página</label>
+              <input type="text" id="client-instagram-token" placeholder="EAAxxxxxxx..." />
+              <span class="cm-hint">Token de página com permissão instagram_manage_messages</span>
+            </div>
+          </div>
+          <div class="cm-grid-2" style="margin-top:.75rem">
+            <div class="cm-field">
+              <label>URL do Webhook</label>
+              <input type="text" id="client-instagram-webhook-url" readonly class="cm-copy-input"
+                onclick="this.select();navigator.clipboard?.writeText(this.value);showToast('URL copiada!')" />
+              <span class="cm-hint">Configure no Meta App → Webhooks</span>
+            </div>
+            <div class="cm-field">
+              <label>Verify Token</label>
+              <input type="text" value="leadtrack_instagram_2024" readonly class="cm-copy-input"
+                onclick="this.select();navigator.clipboard?.writeText(this.value);showToast('Token copiado!')" />
+              <span class="cm-hint">Use ao configurar o webhook no Meta</span>
+            </div>
+          </div>
+        </div>
+
         <div class="modal-actions">
           <button type="button" id="client-modal-cancel">Cancelar</button>
-          <button type="submit" class="btn-primary">Salvar</button>
+          <button type="submit" class="btn-primary">Salvar Cliente</button>
         </div>
       </form>
     </div>

@@ -442,9 +442,16 @@ async function sendChatMessage() {
 
 el('new-client-btn').addEventListener('click', () => openClientModal());
 el('client-modal-cancel').addEventListener('click', () => hide('client-modal'));
+el('client-modal-cancel-x')?.addEventListener('click', () => hide('client-modal'));
+
+function copyWebhookUrl(el) {
+  const text = el.textContent?.trim();
+  if (!text || text === 'Salve o cliente para ver a URL') return;
+  navigator.clipboard?.writeText(text).then(() => showToast('URL copiada!')).catch(() => {});
+}
 el('client-ai-enabled').addEventListener('change', function() {
   el('client-ai-fields').style.display = this.checked ? 'block' : 'none';
-  el('client-ai-enabled-label').textContent = this.checked ? 'IA ativada ✅' : 'IA desativada';
+  if (el('client-ai-enabled-label')) el('client-ai-enabled-label').textContent = this.checked ? 'IA ativada ✅' : 'IA desativada';
 });
 el('qr-modal-close').addEventListener('click', () => { clearInterval(qrPollTimer); hide('qr-modal'); });
 

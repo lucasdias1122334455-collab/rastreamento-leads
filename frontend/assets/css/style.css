@@ -1876,6 +1876,27 @@ select:focus {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ─── GRUPOS WHATSAPP ────────────────────────────────── */
+.conv-ad-groups {
+  border-left: 3px solid #25d366 !important;
+  background: rgba(37,211,102,0.04) !important;
+}
+.conv-ad-groups:hover {
+  background: rgba(37,211,102,0.08) !important;
+}
+.conv-ad-groups.active {
+  background: rgba(37,211,102,0.12) !important;
+  border-left-color: #25d366 !important;
+}
+
+.conv-msg-group-sender {
+  font-size: .68rem;
+  font-weight: 700;
+  color: var(--cyan);
+  margin-bottom: .2rem;
+  letter-spacing: 0.02em;
+}
+
 /* ─── LOGIN RESPONSIVE ───────────────────────────────── */
 @media (max-width: 768px) {
   .login-left { display: none; }

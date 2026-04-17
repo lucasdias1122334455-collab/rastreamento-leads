@@ -207,6 +207,7 @@ async function loadLeads(page = 1) {
       let phoneDisplay = l.phone || '—';
       if (l.phone?.startsWith('ig_'))      phoneDisplay = `📸 Instagram DM`;
       else if (l.phone?.startsWith('brendi_')) phoneDisplay = `🛒 Brendi`;
+      else if (l.phone?.startsWith('grp_'))    phoneDisplay = `👥 Grupo`;
       else if (l.phone?.endsWith('@lid'))   phoneDisplay = l.phone.replace('@lid','').replace(/(\d{2})(\d{5})(\d{4})/,'($1) $2-$3');
       return `<tr>
         <td class="td-name">${l.name || '<em style="color:var(--muted);font-weight:400">sem nome</em>'}</td>
@@ -937,13 +938,20 @@ async function loadConvAds() {
       container.innerHTML = '<p class="conv-empty">Nenhuma conversa ainda.</p>';
       return;
     }
-    const sourceIcon = (src) => src === 'whatsapp_meta' ? '📢' : src === 'manual' ? '✍️' : src === 'instagram' ? '📸' : src === 'website' ? '🛒' : '📱';
+    const sourceIcon = (src) => src === 'whatsapp_meta' ? '📢' : src === 'manual' ? '✍️' : src === 'instagram' ? '📸' : src === 'website' ? '🛒' : src === 'whatsapp_group' ? '👥' : '📱';
     container.innerHTML = groups.map(g => {
       if (g.isAbandoned) {
         return `
           <div class="conv-ad-item conv-ad-abandoned" onclick="selectConvAd('${encodeURIComponent('__abandoned__')}', this, '🛒 Carrinho Abandonado')">
             <div class="conv-ad-title">🛒 Carrinho Abandonado</div>
             <div class="conv-ad-meta">${g.total} leads · recuperar agora</div>
+          </div>`;
+      }
+      if (g.isGroups) {
+        return `
+          <div class="conv-ad-item conv-ad-groups" onclick="selectConvAd('${encodeURIComponent('__groups__')}', this, '👥 Grupos WhatsApp')">
+            <div class="conv-ad-title">👥 Grupos WhatsApp</div>
+            <div class="conv-ad-meta">${g.total} grupo${g.total !== 1 ? 's' : ''} · ${g.new} com mensagens novas</div>
           </div>`;
       }
       return `
@@ -995,9 +1003,10 @@ async function selectConvAd(encodedKey, el_clicked, label) {
       const lastMsg = l.interactions?.[0];
       const preview = lastMsg ? lastMsg.content.replace('[mídia]', '📷 Mídia') : 'Sem mensagens';
       const time = lastMsg ? fmtDate(lastMsg.createdAt) : fmtDate(l.createdAt);
+      const isGrp = l.phone?.startsWith('grp_');
       return `
-        <div class="conv-lead-item" onclick="selectConvLead(${l.id}, this)">
-          <div class="conv-lead-name">${l.name || l.phone}</div>
+        <div class="conv-lead-item${isGrp ? ' conv-lead-group' : ''}" onclick="selectConvLead(${l.id}, this)">
+          <div class="conv-lead-name">${isGrp ? '👥 ' : ''}${l.name || l.phone}</div>
           <div class="conv-lead-preview">${preview}</div>
           <div class="conv-lead-meta">
             ${statusBadge(l.status)}
@@ -1026,23 +1035,31 @@ async function renderConvChat(id) {
   try {
     const lead = await apiFetch(`/conversations/lead/${id}`);
 
+    const isGroupLead = lead.phone?.startsWith('grp_');
+
     // Info do lead
     if (el('conv-chat-header-text')) el('conv-chat-header-text').textContent = lead.name || lead.phone;
     const info = el('conv-chat-info');
     if (!info) return;
     info.classList.remove('hidden');
+
+    let phoneDisplay = lead.phone || '—';
+    if (lead.phone?.startsWith('ig_'))    phoneDisplay = '📸 Instagram DM';
+    else if (lead.phone?.startsWith('brendi_')) phoneDisplay = '🛒 Brendi';
+    else if (lead.phone?.startsWith('grp_'))    phoneDisplay = '👥 Grupo WhatsApp';
+
     info.innerHTML = `
-      <div class="conv-chat-info-item">📞 <strong>${lead.phone?.startsWith('ig_') ? 'Instagram DM' : lead.phone?.startsWith('brendi_') ? 'Brendi' : lead.phone}</strong></div>
+      <div class="conv-chat-info-item">📞 <strong>${phoneDisplay}</strong></div>
       ${lead.client ? `<div class="conv-chat-info-item">🏢 <strong>${lead.client.name}</strong></div>` : ''}
       <div class="conv-chat-info-item">${statusBadge(lead.status)}</div>
-      <div class="conv-chat-info-item" style="gap:4px">
+      ${!isGroupLead ? `<div class="conv-chat-info-item" style="gap:4px">
         💰 <input type="number" id="conv-lead-value" value="${lead.value || ''}" placeholder="R$ valor" step="0.01" min="0"
           style="width:90px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:var(--text);padding:3px 7px;font-size:12px;outline:none"
           onkeydown="if(event.key==='Enter')saveConvLeadValue(${lead.id})">
         <button class="btn-sm" style="background:rgba(62,207,207,0.2);border:1px solid rgba(62,207,207,0.4);color:#3ecfcf;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" onclick="saveConvLeadValue(${lead.id})">✓</button>
-      </div>
+      </div>` : ''}
       <div class="conv-chat-info-item" style="margin-left:auto">
-        <button class="btn-sm btn-primary" onclick="navigateTo('leads');setTimeout(()=>openLeadModal(${lead.id}),300)">Editar Lead</button>
+        <button class="btn-sm btn-primary" onclick="navigateTo('leads');setTimeout(()=>openLeadModal(${lead.id}),300)">Ver Lead</button>
       </div>
     `;
 
@@ -1059,6 +1076,15 @@ async function renderConvChat(id) {
       let content = i.content;
       const time = new Date(i.createdAt).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
       const isConversion = content.includes('Comprovante de pagamento recebido') || content.includes('Pagamento aprovado');
+
+      // Extrai metadados de grupo
+      let groupSenderName = null;
+      if (isGroupLead && dir === 'inbound') {
+        try {
+          const meta = JSON.parse(i.metadata || '{}');
+          groupSenderName = meta.participantName || meta.participant || null;
+        } catch (_) {}
+      }
 
       // Detecta comprovante de pagamento
       const isReceipt = content.toLowerCase().includes('comprovante') && i.direction === 'inbound';
@@ -1085,7 +1111,7 @@ async function renderConvChat(id) {
       return `
         <div class="conv-msg ${dir} ${isConversion ? 'conv-msg-converted' : ''}">
           ${dir === 'system' ? `<em>${content}</em>` : `
-            ${dir === 'outbound' ? '<div class="conv-msg-sender">Agente IA</div>' : ''}
+            ${groupSenderName ? `<div class="conv-msg-group-sender">${groupSenderName}</div>` : dir === 'outbound' ? '<div class="conv-msg-sender">Agente IA</div>' : ''}
             ${bubble}
           `}
           <div class="conv-msg-time">${time}</div>

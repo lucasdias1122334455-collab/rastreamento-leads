@@ -55,8 +55,64 @@ async function webhook(req, res) {
     if (!data || data?.key?.fromMe) return;
 
     const jid = data.key?.remoteJid || '';
-    if (jid.includes('@g.us')) return; // ignora grupos
+    const isGroup = jid.endsWith('@g.us');
 
+    // Identifica o cliente pela instância
+    let client = null;
+    if (instance) {
+      client = await prisma.client.findUnique({ where: { instanceName: instance } });
+    }
+    const clientId = client?.id || null;
+
+    // ─── GRUPO WhatsApp ───────────────────────────────────────────────────────
+    if (isGroup) {
+      const groupId = jid.replace('@g.us', '');
+      const groupPhone = `grp_${groupId}`;
+      const participant = (data.key?.participant || '').replace('@s.whatsapp.net', '');
+      const senderName = data.pushName || participant || 'Desconhecido';
+
+      const content =
+        data.message?.conversation ||
+        data.message?.extendedTextMessage?.text ||
+        data.message?.imageMessage ? '[imagem]' : '[mídia]';
+
+      // Busca ou cria lead do grupo
+      let groupLead = await prisma.lead.findFirst({ where: { phone: groupPhone, clientId: clientId || undefined } });
+      if (!groupLead) {
+        // Tenta buscar nome do grupo via Evolution
+        let groupName = null;
+        if (instance) {
+          try { groupName = await evolutionService.getGroupInfo(instance, jid); } catch (_) {}
+        }
+        groupLead = await prisma.lead.create({
+          data: {
+            phone: groupPhone,
+            name: groupName || `Grupo ${groupId.substring(0, 12)}`,
+            source: 'whatsapp_group',
+            status: 'new',
+            stage: 'awareness',
+            clientId,
+          },
+        });
+        console.log(`[Webhook] Grupo criado: ${groupLead.name}`);
+      }
+
+      // Salva mensagem com prefixo do remetente
+      await prisma.interaction.create({
+        data: {
+          leadId: groupLead.id,
+          type: 'message',
+          direction: 'inbound',
+          content,
+          metadata: JSON.stringify({ source: 'whatsapp_group', participant, participantName: senderName, groupJid: jid }),
+        },
+      });
+
+      console.log(`[Webhook] Grupo ${groupLead.name} — ${senderName}: ${content?.substring(0, 60)}`);
+      return; // grupos não recebem IA
+    }
+
+    // ─── CONTATO INDIVIDUAL ───────────────────────────────────────────────────
     const phone = jid.replace('@s.whatsapp.net', '');
     const pushName = data.pushName || null;
 
@@ -81,13 +137,6 @@ async function webhook(req, res) {
         } catch (_) {}
       }
     }
-
-    // Identifica o cliente pela instância
-    let client = null;
-    if (instance) {
-      client = await prisma.client.findUnique({ where: { instanceName: instance } });
-    }
-    const clientId = client?.id || null;
 
     // Busca ou cria o lead
     let lead = await prisma.lead.findUnique({ where: { phone } });

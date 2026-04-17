@@ -85,7 +85,20 @@ async function getMediaBase64(instanceName, messageKey) {
   return data.base64 || null;
 }
 
+async function getGroupInfo(instanceName, groupJid) {
+  try {
+    const { data } = await axios.get(
+      `${BASE_URL}/group/findGroupInfos/${instanceName}`,
+      { params: { groupJid }, headers }
+    );
+    return data?.subject || null; // nome do grupo
+  } catch (_) {
+    return null;
+  }
+}
+
 module.exports = {
   getStatus, getQRCode, sendMessage, disconnectInstance,
-  createClientInstance, getClientQRCode, getClientStatus, deleteClientInstance, sendClientMessage, getMediaBase64,
+  createClientInstance, getClientQRCode, getClientStatus, deleteClientInstance,
+  sendClientMessage, getMediaBase64, getGroupInfo,
 };

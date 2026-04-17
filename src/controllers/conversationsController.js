@@ -10,6 +10,7 @@ function getAdKey(lead) {
   if (lead.source === 'manual') return 'Manual';
   if (lead.source === 'instagram') return 'Instagram DM';
   if (lead.source === 'website') return 'Site';
+  if (lead.source === 'whatsapp_group') return '__groups__';
   return 'WhatsApp QR Code';
 }
 
@@ -41,6 +42,14 @@ async function getAdGroups(req, res, next) {
       groups['__abandoned__'] = { key: '__abandoned__', source: 'website', total: abandoned.length, converted: 0, new: 0, isAbandoned: true };
     }
 
+    // Pasta especial: Grupos WhatsApp
+    const groupLeads = leads.filter(l => l.source === 'whatsapp_group');
+    if (groupLeads.length > 0) {
+      const gCount = groupLeads.length;
+      const gNew = groupLeads.filter(l => l.status === 'new').length;
+      groups['__groups__'] = { key: '__groups__', source: 'whatsapp_group', total: gCount, converted: 0, new: gNew, isGroups: true };
+    }
+
     res.json(Object.values(groups).sort((a, b) => b.total - a.total));
   } catch (err) { next(err); }
 }
@@ -62,10 +71,13 @@ async function getLeadsByAd(req, res, next) {
       },
     });
 
-    // Pasta especial: Carrinho Abandonado
+    // Pastas especiais
     if (adKey === '__abandoned__') {
       const abandoned = allLeads.filter(l => l.source === 'website' && l.status === 'lost');
       return res.json(abandoned);
+    }
+    if (adKey === '__groups__') {
+      return res.json(allLeads.filter(l => l.source === 'whatsapp_group'));
     }
 
     const filtered = allLeads.filter(lead => getAdKey(lead) === adKey);

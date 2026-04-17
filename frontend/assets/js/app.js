@@ -471,7 +471,7 @@ function openClientModal(client = null) {
   // Campos IA
   const aiEnabled = Boolean(client?.aiEnabled);
   el('client-ai-enabled').checked = aiEnabled;
-  el('client-ai-enabled-label').textContent = aiEnabled ? 'IA ativada ✅' : 'IA desativada';
+  if (el('client-ai-enabled-label')) el('client-ai-enabled-label').textContent = aiEnabled ? 'IA ativada ✅' : 'IA desativada';
   el('client-ai-fields').style.display = aiEnabled ? 'block' : 'none';
   el('client-payment-link').value = client?.paymentLink || '';
   el('client-ai-script').value = client?.aiScript || '';

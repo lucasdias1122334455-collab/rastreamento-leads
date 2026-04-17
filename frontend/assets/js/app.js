@@ -202,21 +202,26 @@ async function loadLeads(page = 1) {
 
   try {
     const data = await apiFetch(`/leads?${params}`);
-    el('leads-tbody').innerHTML = data.leads.map((l) => `
-      <tr>
-        <td>${l.name || '<em style="color:var(--muted)">sem nome</em>'}</td>
-        <td>${l.phone}</td>
+    el('leads-tbody').innerHTML = data.leads.map((l) => {
+      // Formata o telefone exibido
+      let phoneDisplay = l.phone || '—';
+      if (l.phone?.startsWith('ig_'))      phoneDisplay = `📸 Instagram DM`;
+      else if (l.phone?.startsWith('brendi_')) phoneDisplay = `🛒 Brendi`;
+      else if (l.phone?.endsWith('@lid'))   phoneDisplay = l.phone.replace('@lid','').replace(/(\d{2})(\d{5})(\d{4})/,'($1) $2-$3');
+      return `<tr>
+        <td class="td-name">${l.name || '<em style="color:var(--muted);font-weight:400">sem nome</em>'}</td>
+        <td class="td-phone" title="${l.phone}">${phoneDisplay}</td>
         <td>${statusBadge(l.status)}</td>
-        <td>${stageLabel(l.stage)}</td>
-        <td>${l.source || '—'}</td>
+        <td style="color:var(--muted);font-size:.82rem">${stageLabel(l.stage)}</td>
+        <td style="color:var(--muted);font-size:.8rem">${l.source || '—'}</td>
         <td>${l.client ? `<span class="client-tag">${l.client.name}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
-        <td>${fmtDate(l.createdAt)}</td>
-        <td style="display:flex;gap:.4rem;">
+        <td style="color:var(--muted);font-size:.8rem">${fmtDate(l.createdAt)}</td>
+        <td style="display:flex;gap:.35rem;white-space:nowrap">
           <button class="btn-sm btn-edit" onclick="openEditModal(${l.id})">Editar</button>
           <button class="btn-sm btn-del" onclick="deleteLead(${l.id})">Excluir</button>
         </td>
-      </tr>
-    `).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:2rem">Nenhum lead encontrado.</td></tr>';
+      </tr>`;
+    }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:2rem">Nenhum lead encontrado.</td></tr>';
 
     renderPagination(data.pages, page);
   } catch (err) {
@@ -707,13 +712,23 @@ function renderConvTab(tab) {
   activeConvTab = tab;
   document.querySelectorAll('.conv-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
 
+  // Mostra/oculta seletor de período
+  const rangeEl = el('conv-date-range');
+  if (rangeEl) rangeEl.classList.toggle('hidden', tab !== 'range');
+
+  if (tab === 'range') return; // aguarda usuário clicar em Buscar
+
   const rows = tab === 'daily' ? convData.daily
              : tab === 'weekly' ? convData.weekly
              : convData.monthly;
 
   const labelKey = tab === 'daily' ? 'date' : tab === 'weekly' ? 'week' : 'month';
-  el('conv-col-period').textContent = tab === 'daily' ? 'Dia' : tab === 'weekly' ? 'Semana' : 'Mês';
+  el('conv-col-period').textContent = tab === 'daily' ? 'Dia' : tab === 'weekly' ? 'Semana' : 'Período';
 
+  renderConvRows(rows, labelKey);
+}
+
+function renderConvRows(rows, labelKey) {
   // Gráfico de barras
   const maxVal = Math.max(...rows.map(r => r.value), 1);
   el('conv-bar-chart').innerHTML = rows.map(r => `
@@ -737,8 +752,42 @@ function renderConvTab(tab) {
   }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:2rem">Nenhuma conversão com valor registrado ainda.</td></tr>';
 }
 
+async function applyConvDateRange() {
+  const from = el('conv-date-from')?.value;
+  const to   = el('conv-date-to')?.value;
+  if (!from || !to) { alert('Selecione as duas datas.'); return; }
+  if (from > to)    { alert('A data inicial deve ser anterior à final.'); return; }
+
+  try {
+    const clientId = el('conv-client-filter')?._activeId || '';
+    const qs = new URLSearchParams({ startDate: from, endDate: to });
+    if (clientId) qs.set('clientId', clientId);
+
+    const data = await apiFetch(`/dashboard/conversion-values?${qs}`);
+
+    el('conv-col-period').textContent = 'Dia';
+
+    // Usa o daily do range retornado
+    renderConvRows(data.daily || [], 'date');
+
+    // Atualiza cards de sumário
+    if (data.summary) {
+      if (el('conv-today-val'))    el('conv-today-val').textContent    = data.summary.today.formatted;
+      if (el('conv-today-count'))  el('conv-today-count').textContent  = `${data.summary.today.count} conversão(ões)`;
+      if (el('conv-week-val'))     el('conv-week-val').textContent     = data.summary.week.formatted;
+      if (el('conv-week-count'))   el('conv-week-count').textContent   = `${data.summary.week.count} conversão(ões)`;
+      if (el('conv-month-val'))    el('conv-month-val').textContent    = data.summary.month.formatted;
+      if (el('conv-month-count'))  el('conv-month-count').textContent  = `${data.summary.month.count} conversão(ões)`;
+      if (el('conv-alltime-val'))  el('conv-alltime-val').textContent  = data.summary.allTime.formatted;
+      if (el('conv-alltime-count'))el('conv-alltime-count').textContent= `${data.summary.allTime.count} total`;
+    }
+  } catch(e) {
+    console.error('Erro ao buscar período:', e);
+  }
+}
+
 document.querySelectorAll('.conv-tab').forEach(b => {
-  b.addEventListener('click', () => { if (convData) renderConvTab(b.dataset.tab); });
+  b.addEventListener('click', () => { if (convData || b.dataset.tab === 'range') renderConvTab(b.dataset.tab); });
 });
 
 // ─── Meta Stats ───────────────────────────────────────────────────────────────

@@ -11,17 +11,41 @@
 <body>
   <!-- Login -->
   <div id="login-screen" class="screen">
-    <div class="login-card">
-      <h1>Yide Vibe</h1>
-      <p class="subtitle">Powered by Yide Digital</p>
-      <form id="login-form">
-        <label>Email</label>
-        <input type="email" id="email" placeholder="admin@sistema.com" required />
-        <label>Senha</label>
-        <input type="password" id="password" placeholder="••••••••" required />
-        <button type="submit">Entrar</button>
-        <p id="login-error" class="error hidden"></p>
-      </form>
+    <div class="login-bg-glow"></div>
+    <div class="login-left">
+      <div class="login-brand">
+        <div class="login-logo-icon">⚡</div>
+        <span class="login-logo-text">Yide Vibe</span>
+      </div>
+      <div class="login-hero">
+        <div class="login-badge">🚀 Plataforma de rastreamento de leads</div>
+        <h1 class="login-title">Converta mais com <span>inteligência</span></h1>
+        <p class="login-desc">Rastreie leads, automatize vendas com IA e acompanhe sua performance em tempo real.</p>
+        <div class="login-stats">
+          <div class="login-stat"><strong>Instagram DM</strong><span>Integrado</span></div>
+          <div class="login-stat"><strong>IA de Vendas</strong><span>Automática</span></div>
+          <div class="login-stat"><strong>Meta Pixel</strong><span>Conectado</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="login-right">
+      <div class="login-card">
+        <h2>Bem-vindo de volta</h2>
+        <p class="login-card-sub">Entre na sua conta para continuar</p>
+        <form id="login-form">
+          <div class="login-field">
+            <label>Email</label>
+            <input type="email" id="email" placeholder="seu@email.com" required />
+          </div>
+          <div class="login-field">
+            <label>Senha</label>
+            <input type="password" id="password" placeholder="••••••••" required />
+          </div>
+          <button type="submit">Entrar na plataforma →</button>
+          <p id="login-error" class="error hidden"></p>
+        </form>
+        <p class="login-footer-text">Powered by <strong>Yide Digital</strong></p>
+      </div>
     </div>
   </div>
 
@@ -209,11 +233,18 @@
           </div>
         </div>
 
-        <!-- Abas diário / semanal / mensal -->
+        <!-- Abas diário / semanal / mensal / período -->
         <div class="conv-tabs" style="margin-top:2rem">
           <button class="conv-tab active" data-tab="monthly">Por Mês</button>
           <button class="conv-tab" data-tab="weekly">Por Semana</button>
           <button class="conv-tab" data-tab="daily">Por Dia</button>
+          <button class="conv-tab" data-tab="range">📅 Período</button>
+        </div>
+        <div id="conv-date-range" class="conv-date-range hidden">
+          <input type="date" id="conv-date-from" />
+          <span class="date-sep">até</span>
+          <input type="date" id="conv-date-to" />
+          <button class="btn-date-apply" onclick="applyConvDateRange()">Buscar</button>
         </div>
 
         <div id="conv-chart-wrap" class="conv-chart-wrap">

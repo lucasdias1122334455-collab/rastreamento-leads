@@ -54,21 +54,60 @@ async function getConversionValues(req, res, next) {
     const now = new Date();
     const clientFilter = req.query.clientId ? { clientId: Number(req.query.clientId) } : {};
 
-    // Limites de tempo
+    const sum = (leads) => leads.reduce((acc, l) => acc + (l.value || 0), 0);
+    const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    // ── Modo período customizado ──────────────────────────────────────────
+    if (req.query.startDate && req.query.endDate) {
+      const startDate = new Date(req.query.startDate + 'T00:00:00');
+      const endDate   = new Date(req.query.endDate   + 'T23:59:59');
+
+      // Leads convertidos no período
+      const [dayLeads, weekLeads, monthLeads, allTime, rangeLeads] = await Promise.all([
+        prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()) }, ...clientFilter }, select: { value: true } }),
+        prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: (() => { const d = new Date(now); d.setDate(now.getDate() - now.getDay()); d.setHours(0,0,0,0); return d; })() }, ...clientFilter }, select: { value: true } }),
+        prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: new Date(now.getFullYear(), now.getMonth(), 1) }, ...clientFilter }, select: { value: true } }),
+        prisma.lead.findMany({ where: { status: 'converted', ...clientFilter }, select: { value: true } }),
+        prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: startDate, lte: endDate }, ...clientFilter }, select: { value: true, updatedAt: true } }),
+      ]);
+
+      // Monta mapa dia a dia no período selecionado
+      const dailyMap = {};
+      const diffDays = Math.ceil((endDate - startDate) / 86400000) + 1;
+      for (let i = 0; i < diffDays; i++) {
+        const d = new Date(startDate); d.setDate(d.getDate() + i);
+        const key = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        dailyMap[key] = { count: 0, value: 0 };
+      }
+      rangeLeads.forEach(l => {
+        const key = new Date(l.updatedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        if (dailyMap[key]) { dailyMap[key].count++; dailyMap[key].value += (l.value || 0); }
+      });
+
+      return res.json({
+        summary: {
+          today:   { count: dayLeads.length,   value: sum(dayLeads),   formatted: fmt(sum(dayLeads)) },
+          week:    { count: weekLeads.length,   value: sum(weekLeads),  formatted: fmt(sum(weekLeads)) },
+          month:   { count: monthLeads.length,  value: sum(monthLeads), formatted: fmt(sum(monthLeads)) },
+          allTime: { count: allTime.length,     value: sum(allTime),    formatted: fmt(sum(allTime)) },
+        },
+        daily:   Object.entries(dailyMap).map(([date, d]) => ({ date, ...d })),
+        weekly:  [],
+        monthly: [],
+      });
+    }
+
+    // ── Modo padrão ───────────────────────────────────────────────────────
     const startOfDay   = new Date(now); startOfDay.setHours(0,0,0,0);
     const startOfWeek  = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0,0,0,0);
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // Leads convertidos em cada período (com valor)
     const [dayLeads, weekLeads, monthLeads, allTime] = await Promise.all([
       prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: startOfDay }, ...clientFilter }, select: { value: true, source: true } }),
       prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: startOfWeek }, ...clientFilter }, select: { value: true, source: true } }),
       prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: startOfMonth }, ...clientFilter }, select: { value: true, source: true } }),
       prisma.lead.findMany({ where: { status: 'converted', ...clientFilter }, select: { value: true, source: true, updatedAt: true } }),
     ]);
-
-    const sum = (leads) => leads.reduce((acc, l) => acc + (l.value || 0), 0);
-    const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     // Últimos 30 dias agrupados por dia
     const last30 = new Date(now); last30.setDate(now.getDate() - 29); last30.setHours(0,0,0,0);

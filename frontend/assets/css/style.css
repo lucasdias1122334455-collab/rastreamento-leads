@@ -321,9 +321,29 @@ h1, h2, h3, .logo, .stat-value {
   padding: 0 1.25rem 2rem;
 }
 
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  flex: 1;
+}
+
+.sidebar-logo-icon {
+  width: 28px;
+  height: 28px;
+  background: rgba(0,212,184,0.12);
+  border: 1px solid rgba(0,212,184,0.3);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .85rem;
+  flex-shrink: 0;
+}
+
 .logo {
-  font-size: 1.5rem;
-  letter-spacing: 0.1em;
+  font-size: 1.4rem;
+  letter-spacing: 0.12em;
   color: var(--text);
 }
 .logo span { color: var(--cyan); }
@@ -1962,17 +1982,100 @@ select:focus {
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Mobile - override nav border direction back to bottom */
+/* ─── MOBILE RESPONSIVE ──────────────────────────────────── */
 @media (max-width: 768px) {
+  /* Layout */
+  #app-screen { flex-direction: column; }
+
+  /* Sidebar vira barra inferior */
+  .sidebar {
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    padding: 0;
+    border-right: none;
+    border-top: 1px solid var(--border-light);
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 100;
+    background: var(--sidebar-bg);
+    order: 2;
+  }
+
+  .sidebar::after { display: none; }
+
+  /* Esconde header e footer da sidebar no mobile */
+  .sidebar-header,
+  .sidebar-footer { display: none; }
+
+  /* Nav vira barra horizontal */
+  nav {
+    flex-direction: row;
+    padding: 0;
+    gap: 0;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar { display: none; }
+
   .nav-item {
+    flex: 1;
+    min-width: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: .55rem .25rem .45rem;
+    font-size: .55rem;
     border-left: none !important;
     border-radius: 0 !important;
-    margin-right: 0 !important;
     border-bottom: 2px solid transparent;
+    text-align: center;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+
+  .nav-item::before {
+    content: attr(data-icon);
+    font-size: 1.1rem;
+    margin-bottom: .15rem;
+    display: block;
+  }
+
   .nav-item:hover,
   .nav-item.active {
     border-left-color: transparent !important;
-    border-bottom-color: #6c63ff !important;
+    border-bottom-color: var(--cyan) !important;
+    background: rgba(0,212,184,0.08);
   }
+
+  /* Content ocupa o espaço acima */
+  .content {
+    padding: 1.25rem 1rem 5rem;
+    order: 1;
+    min-height: 100vh;
+  }
+
+  /* Títulos menores */
+  .page h2 { font-size: 2rem; }
+
+  /* Stats em 2 colunas */
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* Filtros em coluna */
+  .filters { flex-direction: column; }
+
+  /* Tabela com scroll horizontal */
+  .leads-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Page header empilha */
+  .page-header { flex-wrap: wrap; }
+
+  /* Login em coluna */
+  #login-screen { flex-direction: column; }
+  .login-left { display: none; }
+  .login-right { width: 100%; min-height: 100vh; border-left: none; border-top: none; }
 }

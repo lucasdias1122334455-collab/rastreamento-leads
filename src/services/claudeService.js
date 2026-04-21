@@ -1,4 +1,5 @@
 const Anthropic = require('@anthropic-ai/sdk');
+const tokenTracker = require('./tokenTracker');
 
 const _apiKey = (process.env.ANTHROPIC_API_KEY || process.env.ANTROPIC_API_KEY) || process.env.ANTROPIC_API_KEY;
 const anthropic = new Anthropic({ apiKey: _apiKey });
@@ -7,7 +8,7 @@ const anthropic = new Anthropic({ apiKey: _apiKey });
  * Conversa de vendas — texto
  * Retorna { reply, converted, conversionValue, notes }
  */
-async function analyzeConversation({ leadName, messages, clientScript, productValue, paymentLink }) {
+async function analyzeConversation({ leadName, messages, clientScript, productValue, paymentLink, clientId, clientName }) {
   if (!(process.env.ANTHROPIC_API_KEY || process.env.ANTROPIC_API_KEY)) {
     console.warn('[Claude] ANTHROPIC_API_KEY não configurada');
     return null;
@@ -86,6 +87,14 @@ Responda APENAS com JSON válido neste formato exato, sem mais nada:
     });
 
     const text = response.content[0]?.text?.trim() || '';
+    // Registra tokens usados
+    tokenTracker.track({
+      clientId: clientId || null,
+      clientName: clientName || 'Desconhecido',
+      feature: 'whatsapp_ai',
+      inputTokens: response.usage?.input_tokens || 0,
+      outputTokens: response.usage?.output_tokens || 0,
+    });
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       console.warn('[Claude] Resposta não era JSON:', text);
@@ -103,7 +112,7 @@ Responda APENAS com JSON válido neste formato exato, sem mais nada:
  * Analisa imagem para detectar comprovante de pagamento
  * Retorna { isPaymentReceipt, value, reply }
  */
-async function analyzePaymentReceipt({ imageBase64, imageMime, leadName, productValue }) {
+async function analyzePaymentReceipt({ imageBase64, imageMime, leadName, productValue, clientId, clientName }) {
   if (!(process.env.ANTHROPIC_API_KEY || process.env.ANTROPIC_API_KEY)) return null;
 
   const systemPrompt = `Você analisa imagens recebidas no WhatsApp para detectar comprovantes de pagamento.
@@ -157,6 +166,13 @@ Se NÃO for comprovante:
     });
 
     const text = response.content[0]?.text?.trim() || '';
+    tokenTracker.track({
+      clientId: clientId || null,
+      clientName: clientName || 'Desconhecido',
+      feature: 'image_analysis',
+      inputTokens: response.usage?.input_tokens || 0,
+      outputTokens: response.usage?.output_tokens || 0,
+    });
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return null;
 

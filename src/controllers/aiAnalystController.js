@@ -1,4 +1,5 @@
 const prisma = require('../config/database');
+const tokenTracker = require('../services/tokenTracker');
 
 async function chat(req, res, next) {
   try {
@@ -167,6 +168,13 @@ Seja como aquele sócio especialista em tráfego que o usuário gostaria de ter 
     });
 
     const reply = response.content[0].text;
+    tokenTracker.track({
+      clientId: clientId ? Number(clientId) : null,
+      clientName: clientId ? `Cliente ${clientId}` : 'Geral',
+      feature: 'ai_analyst',
+      inputTokens: response.usage?.input_tokens || 0,
+      outputTokens: response.usage?.output_tokens || 0,
+    });
     res.json({ reply });
   } catch (err) {
     console.error('[AI Analyst] Erro completo:', err.message, err.status, JSON.stringify(err.error || {}));

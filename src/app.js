@@ -15,6 +15,7 @@ const mercadoPagoRoutes = require('./routes/mercadopago');
 const saleWebhookRoutes = require('./routes/saleWebhook');
 const instagramRoutes = require('./routes/instagram');
 const aiAnalystRoutes = require('./routes/aiAnalyst');
+const tokenUsageRoutes = require('./routes/tokenUsage');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -37,6 +38,7 @@ app.use('/api/mp', mercadoPagoRoutes);
 app.use('/api/sale', saleWebhookRoutes);
 app.use('/api/instagram', instagramRoutes);
 app.use('/api/analyst', aiAnalystRoutes);
+app.use('/api/tokens', tokenUsageRoutes);
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
@@ -158,6 +160,21 @@ app.listen(PORT, async () => {
     await prisma.$executeRawUnsafe(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS "convertedAt" TIMESTAMP DEFAULT NULL`);
     // Backfill: preenche convertedAt para leads já convertidos usando updatedAt
     await prisma.$executeRawUnsafe(`UPDATE leads SET "convertedAt" = "updatedAt" WHERE status = 'converted' AND "convertedAt" IS NULL`);
+    // Tabela de rastreamento de tokens por cliente (acesso exclusivo Portuga)
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS token_usage (
+        id SERIAL PRIMARY KEY,
+        "clientId" INTEGER REFERENCES clients(id) ON DELETE SET NULL,
+        "clientName" TEXT,
+        feature TEXT NOT NULL,
+        "inputTokens" INTEGER NOT NULL DEFAULT 0,
+        "outputTokens" INTEGER NOT NULL DEFAULT 0,
+        "costUsd" NUMERIC(10,6) NOT NULL DEFAULT 0,
+        date DATE NOT NULL DEFAULT CURRENT_DATE,
+        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS idx_token_usage_client_date ON token_usage("clientId", date)`);
     console.log('[DB] Tabelas criadas com sucesso.');
   } catch (e) {
     console.error('[DB] Erro ao criar tabelas:', e.message);

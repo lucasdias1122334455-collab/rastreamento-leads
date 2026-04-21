@@ -3,7 +3,15 @@ const { authenticate } = require('../middleware/auth');
 const prisma = require('../config/database');
 
 const router = Router();
-router.use(authenticate);
+
+// Aceita JWT normal OU ?apiKey= para Looker Studio / automações externas
+router.use((req, res, next) => {
+  const apiKey = req.query.apiKey;
+  if (apiKey && process.env.REPORTS_API_KEY && apiKey === process.env.REPORTS_API_KEY) {
+    return next(); // acesso via API key
+  }
+  return authenticate(req, res, next); // fallback para JWT
+});
 
 // Utilitário: gera CSV a partir de array de objetos
 function toCSV(rows) {

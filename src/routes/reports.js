@@ -94,10 +94,10 @@ router.get('/ads', async (req, res) => {
         leads: a.leads,
         convertidos: a.convertidos,
         perdidos: a.perdidos,
-        cvr: a.leads > 0 ? ((a.convertidos / a.leads) * 100).toFixed(1) + '%' : '0%',
-        receita_brl: a.receita.toFixed(2),
-        investimento_brl: a.investimento.toFixed(2),
-        roas: a.investimento > 0 ? (a.receita / a.investimento).toFixed(2) : '-',
+        cvr: a.leads > 0 ? Math.round((a.convertidos / a.leads) * 1000) / 10 : 0,
+        receita_brl: Math.round(a.receita * 100) / 100,
+        investimento_brl: Math.round(a.investimento * 100) / 100,
+        roas: a.investimento > 0 ? Math.round((a.receita / a.investimento) * 100) / 100 : 0,
       }))
       .sort((a, b) => b.convertidos - a.convertidos);
 
@@ -148,7 +148,7 @@ router.get('/daily', async (req, res) => {
       const d = String(r.dia).slice(0, 10);
       if (!dayMap[d]) dayMap[d] = { data: d, novos_leads: 0, conversoes: 0, receita_brl: '0.00' };
       dayMap[d].conversoes = r.conversoes;
-      dayMap[d].receita_brl = Number(r.receita || 0).toFixed(2);
+      dayMap[d].receita_brl = Math.round(Number(r.receita || 0) * 100) / 100;
     }
 
     const rows = Object.values(dayMap).sort((a, b) => a.data.localeCompare(b.data));
@@ -246,11 +246,11 @@ router.get('/summary', async (req, res) => {
       total_leads: total,
       convertidos: converted,
       perdidos: lost,
-      cvr: total > 0 ? ((converted/total)*100).toFixed(1)+'%' : '0%',
-      receita_brl: receitaTotal.toFixed(2),
-      investimento_brl: investimento.toFixed(2),
-      roas: investimento > 0 ? (receitaTotal/investimento).toFixed(2) : '-',
-      ticket_medio: converted > 0 ? (receitaTotal/converted).toFixed(2) : '0.00',
+      cvr: total > 0 ? Math.round((converted/total)*1000)/10 : 0,
+      receita_brl: Math.round(receitaTotal * 100) / 100,
+      investimento_brl: Math.round(investimento * 100) / 100,
+      roas: investimento > 0 ? Math.round((receitaTotal/investimento) * 100) / 100 : 0,
+      ticket_medio: converted > 0 ? Math.round((receitaTotal/converted) * 100) / 100 : 0,
     }];
 
     if (format === 'csv') {

@@ -154,6 +154,7 @@ async function saleWebhook(req, res) {
           stage: leadStage,
           clientId,
           value: isCancelled ? null : (amount || null),
+          convertedAt: isCancelled ? null : new Date(),
         },
       });
       console.log(`[SaleWebhook] Lead criado: ${lead.id} — ${leadStatus}`);
@@ -167,6 +168,7 @@ async function saleWebhook(req, res) {
         novaData.status = 'converted';
         novaData.stage = 'action';
         novaData.value = amount || lead.value || null;
+        if (!lead.convertedAt) novaData.convertedAt = new Date();
       } else if (!['converted'].includes(lead.status)) {
         novaData.status = 'lost';
         novaData.stage = 'decision';

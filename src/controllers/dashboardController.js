@@ -64,11 +64,11 @@ async function getConversionValues(req, res, next) {
 
       // Leads convertidos no período
       const [dayLeads, weekLeads, monthLeads, allTime, rangeLeads] = await Promise.all([
-        prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()) }, ...clientFilter }, select: { value: true } }),
-        prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: (() => { const d = new Date(now); d.setDate(now.getDate() - now.getDay()); d.setHours(0,0,0,0); return d; })() }, ...clientFilter }, select: { value: true } }),
-        prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: new Date(now.getFullYear(), now.getMonth(), 1) }, ...clientFilter }, select: { value: true } }),
+        prisma.lead.findMany({ where: { status: 'converted', convertedAt: { gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()) }, ...clientFilter }, select: { value: true } }),
+        prisma.lead.findMany({ where: { status: 'converted', convertedAt: { gte: (() => { const d = new Date(now); d.setDate(now.getDate() - now.getDay()); d.setHours(0,0,0,0); return d; })() }, ...clientFilter }, select: { value: true } }),
+        prisma.lead.findMany({ where: { status: 'converted', convertedAt: { gte: new Date(now.getFullYear(), now.getMonth(), 1) }, ...clientFilter }, select: { value: true } }),
         prisma.lead.findMany({ where: { status: 'converted', ...clientFilter }, select: { value: true } }),
-        prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: startDate, lte: endDate }, ...clientFilter }, select: { value: true, updatedAt: true } }),
+        prisma.lead.findMany({ where: { status: 'converted', convertedAt: { gte: startDate, lte: endDate }, ...clientFilter }, select: { value: true, convertedAt: true } }),
       ]);
 
       // Monta mapa dia a dia no período selecionado
@@ -80,7 +80,7 @@ async function getConversionValues(req, res, next) {
         dailyMap[key] = { count: 0, value: 0 };
       }
       rangeLeads.forEach(l => {
-        const key = new Date(l.updatedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        const key = new Date(l.convertedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
         if (dailyMap[key]) { dailyMap[key].count++; dailyMap[key].value += (l.value || 0); }
       });
 
@@ -103,10 +103,10 @@ async function getConversionValues(req, res, next) {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const [dayLeads, weekLeads, monthLeads, allTime] = await Promise.all([
-      prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: startOfDay }, ...clientFilter }, select: { value: true, source: true } }),
-      prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: startOfWeek }, ...clientFilter }, select: { value: true, source: true } }),
-      prisma.lead.findMany({ where: { status: 'converted', updatedAt: { gte: startOfMonth }, ...clientFilter }, select: { value: true, source: true } }),
-      prisma.lead.findMany({ where: { status: 'converted', ...clientFilter }, select: { value: true, source: true, updatedAt: true } }),
+      prisma.lead.findMany({ where: { status: 'converted', convertedAt: { gte: startOfDay }, ...clientFilter }, select: { value: true, source: true } }),
+      prisma.lead.findMany({ where: { status: 'converted', convertedAt: { gte: startOfWeek }, ...clientFilter }, select: { value: true, source: true } }),
+      prisma.lead.findMany({ where: { status: 'converted', convertedAt: { gte: startOfMonth }, ...clientFilter }, select: { value: true, source: true } }),
+      prisma.lead.findMany({ where: { status: 'converted', ...clientFilter }, select: { value: true, source: true, convertedAt: true } }),
     ]);
 
     // Últimos 30 dias agrupados por dia

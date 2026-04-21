@@ -93,7 +93,10 @@ async function update(req, res, next) {
     const data = {};
     if (name !== undefined) data.name = name;
     if (email !== undefined) data.email = email;
-    if (status && VALID_STATUSES.includes(status)) data.status = status;
+    if (status && VALID_STATUSES.includes(status)) {
+      data.status = status;
+      if (status === 'converted') data.convertedAt = new Date();
+    }
     if (stage && VALID_STAGES.includes(stage)) data.stage = stage;
     if (notes !== undefined) data.notes = notes;
     if (tags !== undefined) data.tags = JSON.stringify(tags);

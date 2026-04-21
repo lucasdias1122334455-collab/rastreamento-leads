@@ -155,6 +155,9 @@ app.listen(PORT, async () => {
     await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "brendiSecret" TEXT`);
     await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "instagramToken" TEXT`);
     await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "instagramAccountId" TEXT`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS "convertedAt" TIMESTAMP DEFAULT NULL`);
+    // Backfill: preenche convertedAt para leads já convertidos usando updatedAt
+    await prisma.$executeRawUnsafe(`UPDATE leads SET "convertedAt" = "updatedAt" WHERE status = 'converted' AND "convertedAt" IS NULL`);
     console.log('[DB] Tabelas criadas com sucesso.');
   } catch (e) {
     console.error('[DB] Erro ao criar tabelas:', e.message);

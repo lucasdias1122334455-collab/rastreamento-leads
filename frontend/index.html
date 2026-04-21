@@ -71,6 +71,7 @@
         <a href="#" class="nav-item nav-admin hidden" data-page="users" data-icon="👥">Usuários</a>
         <a href="#" class="nav-item" data-page="analyst" data-icon="🧠">Analista IA</a>
         <a href="#" class="nav-item" data-page="reports" data-icon="📑">Relatórios</a>
+        <a href="#" class="nav-item" data-page="tracking" data-icon="🔗">Links</a>
       </nav>
       <div class="sidebar-footer">
         <button id="profile-btn" class="profile-btn" title="Editar perfil"><span id="user-name"></span></button>
@@ -488,6 +489,39 @@
         </div>
       </section>
 
+      <!-- Links de Rastreamento -->
+      <section id="page-tracking" class="page hidden">
+        <div class="page-header">
+          <h2>Links de Rastreamento</h2>
+          <button class="btn-primary" onclick="openTrackingModal()">+ Novo Link</button>
+        </div>
+
+        <div class="card" style="padding:1rem;margin-bottom:1.5rem;background:rgba(108,99,255,0.08);border-color:rgba(108,99,255,0.25)">
+          <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.7);line-height:1.6">
+            <strong style="color:#a89fff">Como usar:</strong> Crie um link de rastreamento para cada anúncio. Cole o link gerado no campo de URL do seu anúncio no Meta Ads.
+            Quando alguém clicar e comprar (via Brendi ou qualquer site), o sistema identifica automaticamente de qual campanha veio.
+          </p>
+        </div>
+
+        <div style="overflow-x:auto">
+          <table class="leads-table" id="tracking-links-table">
+            <thead>
+              <tr>
+                <th>Campanha</th>
+                <th>Link de Rastreamento</th>
+                <th>Destino</th>
+                <th>Cliques</th>
+                <th>Cliente</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tracking-links-tbody">
+              <tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,0.3);padding:2rem">Nenhum link criado ainda</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <!-- Usuários (admin only) -->
       <section id="page-users" class="page hidden">
         <div class="page-header">
@@ -504,6 +538,42 @@
         </table>
       </section>
     </main>
+  </div>
+
+  <!-- Modal Link de Rastreamento -->
+  <div id="tracking-modal" class="modal hidden">
+    <div class="modal-content" style="max-width:480px">
+      <div class="cm-header">
+        <div><h3>Novo Link de Rastreamento</h3><p class="cm-subtitle">Cole o link gerado no seu anúncio do Meta</p></div>
+        <button type="button" class="cm-close" onclick="closeTrackingModal()">✕</button>
+      </div>
+      <form id="tracking-form" onsubmit="saveTrackingLink(event)" style="display:flex;flex-direction:column;gap:1rem;padding:1.5rem">
+        <div class="cm-field">
+          <label>Nome da Campanha *</label>
+          <input type="text" id="tl-campaign" placeholder="Ex: Promo Verão 2025" required />
+        </div>
+        <div class="cm-field">
+          <label>Slug (parte final do link) *</label>
+          <input type="text" id="tl-slug" placeholder="Ex: promo-verao-2025" required pattern="[a-zA-Z0-9-]+" />
+          <small style="color:rgba(255,255,255,0.35);font-size:11px">Somente letras, números e hífens</small>
+        </div>
+        <div class="cm-field">
+          <label>URL de Destino * <small style="color:rgba(255,255,255,0.35)">(seu site / Brendi)</small></label>
+          <input type="url" id="tl-destination" placeholder="https://seusite.com/produto" required />
+        </div>
+        <div class="cm-field">
+          <label>Cliente</label>
+          <select id="tl-client"><option value="">Selecione o cliente</option></select>
+        </div>
+        <div id="tl-preview" style="background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:8px;padding:.75rem;font-size:12px;color:#a89fff;display:none">
+          🔗 Seu link: <span id="tl-preview-url" style="word-break:break-all"></span>
+        </div>
+        <div style="display:flex;gap:.75rem;justify-content:flex-end">
+          <button type="button" onclick="closeTrackingModal()" style="padding:8px 18px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#ccc;border-radius:8px;cursor:pointer">Cancelar</button>
+          <button type="submit" class="btn-primary">Criar Link</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- Modal Cliente -->

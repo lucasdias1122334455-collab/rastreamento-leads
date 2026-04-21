@@ -17,6 +17,7 @@ const instagramRoutes = require('./routes/instagram');
 const aiAnalystRoutes = require('./routes/aiAnalyst');
 const tokenUsageRoutes = require('./routes/tokenUsage');
 const reportsRoutes = require('./routes/reports');
+const trackingRoutes = require('./routes/tracking');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -41,6 +42,8 @@ app.use('/api/instagram', instagramRoutes);
 app.use('/api/analyst', aiAnalystRoutes);
 app.use('/api/tokens', tokenUsageRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/tracking', trackingRoutes);
+app.use('/rastrear', trackingRoutes);
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
@@ -177,6 +180,30 @@ app.listen(PORT, async () => {
       )
     `);
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS idx_token_usage_client_date ON token_usage("clientId", date)`);
+    // Tabelas de rastreamento de links (UTM tracking)
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS tracking_links (
+        id SERIAL PRIMARY KEY,
+        slug TEXT NOT NULL UNIQUE,
+        campaign TEXT NOT NULL,
+        destination TEXT NOT NULL,
+        "clientId" INTEGER REFERENCES clients(id) ON DELETE CASCADE,
+        clicks INTEGER NOT NULL DEFAULT 0,
+        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS tracking_clicks (
+        id SERIAL PRIMARY KEY,
+        "linkId" INTEGER NOT NULL REFERENCES tracking_links(id) ON DELETE CASCADE,
+        "clientId" INTEGER,
+        campaign TEXT,
+        ip TEXT,
+        "userAgent" TEXT,
+        "clickedAt" TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS idx_tracking_clicks_client ON tracking_clicks("clientId", "clickedAt")`);
     console.log('[DB] Tabelas criadas com sucesso.');
   } catch (e) {
     console.error('[DB] Erro ao criar tabelas:', e.message);

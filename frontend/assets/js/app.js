@@ -94,7 +94,8 @@ function navigateTo(page) {
   if (page === 'meta-stats') loadMetaStats();
   if (page === 'conversions') { loadConversions(); loadSalesList(); }
   if (page === 'conversations') loadConversations();
-  if (page === 'reports') initReportsPage();
+  if (page === 'reports')   initReportsPage();
+  if (page === 'tracking')  loadTrackingLinks();
 }
 
 document.querySelectorAll('.nav-item').forEach((a) => {
@@ -1477,6 +1478,123 @@ async function analystPageSend() {
         <div class="analyst-page-bubble" style="color:#ff6b6b">Erro ao conectar. Tente novamente.<br><small>${err.message}</small></div>
       </div>`;
     msgs.scrollTop = msgs.scrollHeight;
+  }
+}
+
+// ─── LINKS DE RASTREAMENTO ────────────────────────────────────────────────────
+
+const BASE_URL = window.location.origin;
+
+async function loadTrackingLinks() {
+  const tbody = document.getElementById('tracking-links-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,0.3);padding:2rem">Carregando...</td></tr>';
+  try {
+    const rows = await apiFetch('/tracking/api/links');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,0.3);padding:2rem">Nenhum link criado ainda. Clique em "+ Novo Link" para começar.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => {
+      const link = `${BASE_URL}/rastrear/${r.slug}`;
+      return `<tr>
+        <td><strong>${r.campaign}</strong></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <span style="font-size:12px;color:#a89fff;word-break:break-all">${link}</span>
+            <button onclick="copyLink('${link}')" title="Copiar" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#ccc;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;flex-shrink:0">Copiar</button>
+          </div>
+        </td>
+        <td style="font-size:12px;color:rgba(255,255,255,0.5);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.destination}">${r.destination}</td>
+        <td style="color:#00d4aa;font-weight:600">${r.clicks}</td>
+        <td style="font-size:12px;color:rgba(255,255,255,0.4)">${r.clientName || '—'}</td>
+        <td><button onclick="deleteTrackingLink(${r.id})" style="background:rgba(255,100,100,0.1);border:1px solid rgba(255,100,100,0.2);color:#ff6b6b;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:11px">Excluir</button></td>
+      </tr>`;
+    }).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#ff6b6b;padding:2rem">Erro: ${err.message}</td></tr>`;
+  }
+}
+
+function copyLink(url) {
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copiado';
+    btn.style.color = '#00d4aa';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = '#ccc'; }, 2000);
+  });
+}
+
+async function openTrackingModal() {
+  document.getElementById('tl-campaign').value = '';
+  document.getElementById('tl-slug').value = '';
+  document.getElementById('tl-destination').value = '';
+  document.getElementById('tl-preview').style.display = 'none';
+
+  // Popula clientes
+  const sel = document.getElementById('tl-client');
+  sel.innerHTML = '<option value="">Sem cliente específico</option>';
+  try {
+    const clients = await apiFetch('/clients');
+    if (Array.isArray(clients)) {
+      clients.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c.id; o.textContent = c.name;
+        sel.appendChild(o);
+      });
+    }
+  } catch (_) {}
+
+  document.getElementById('tracking-modal').classList.remove('hidden');
+
+  // Preview ao digitar slug
+  const slugEl = document.getElementById('tl-slug');
+  const preview = document.getElementById('tl-preview');
+  const previewUrl = document.getElementById('tl-preview-url');
+  slugEl.oninput = () => {
+    const s = slugEl.value.trim();
+    if (s) { previewUrl.textContent = `${BASE_URL}/rastrear/${s}`; preview.style.display = 'block'; }
+    else   { preview.style.display = 'none'; }
+  };
+
+  // Auto-gera slug ao digitar campanha
+  document.getElementById('tl-campaign').oninput = (e) => {
+    if (!slugEl.value) {
+      slugEl.value = e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').substring(0, 40);
+      slugEl.dispatchEvent(new Event('input'));
+    }
+  };
+}
+
+function closeTrackingModal() {
+  document.getElementById('tracking-modal').classList.add('hidden');
+}
+
+async function saveTrackingLink(e) {
+  e.preventDefault();
+  const body = {
+    campaign:    document.getElementById('tl-campaign').value.trim(),
+    slug:        document.getElementById('tl-slug').value.trim(),
+    destination: document.getElementById('tl-destination').value.trim(),
+    clientId:    document.getElementById('tl-client').value || null,
+  };
+  try {
+    await apiFetch('/tracking/api/links', { method: 'POST', body: JSON.stringify(body) });
+    closeTrackingModal();
+    loadTrackingLinks();
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
+async function deleteTrackingLink(id) {
+  if (!confirm('Excluir este link?')) return;
+  try {
+    await apiFetch(`/tracking/api/links/${id}`, { method: 'DELETE' });
+    loadTrackingLinks();
+  } catch (err) {
+    alert('Erro: ' + err.message);
   }
 }
 

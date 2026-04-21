@@ -181,6 +181,33 @@ async function saleWebhook(req, res) {
       return;
     }
 
+    // ─── Atribuição de campanha (tracking link) ───────────────────────────────
+    try {
+      const recent = await prisma.$queryRawUnsafe(`
+        SELECT campaign FROM tracking_clicks
+        WHERE "clientId" = $1
+          AND "clickedAt" > NOW() - INTERVAL '24 hours'
+        ORDER BY "clickedAt" DESC
+        LIMIT 1
+      `, clientId);
+
+      if (recent.length && lead) {
+        const campaign = recent[0].campaign;
+        let tags = {};
+        try { tags = JSON.parse(lead.tags || '{}'); } catch (_) {}
+        if (!tags.adName) {
+          tags.adName = campaign;
+          tags.adHeadline = campaign;
+          tags.source = 'tracking_link';
+          await prisma.$executeRawUnsafe(
+            `UPDATE leads SET tags = $1 WHERE id = $2`,
+            JSON.stringify(tags), lead.id
+          );
+          console.log(`[SaleWebhook] Campanha atribuída: "${campaign}" → lead ${lead.id}`);
+        }
+      }
+    } catch (_) {}
+
     // ─── Registra nota ────────────────────────────────────────────────────────
     const noteContent = isCancelled
       ? `❌ Pedido cancelado pelo site${orderId ? ` — Pedido #${orderId}` : ''} (PIX expirado ou desistência)`

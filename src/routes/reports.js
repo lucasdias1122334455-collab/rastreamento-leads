@@ -264,4 +264,56 @@ router.get('/summary', async (req, res) => {
   }
 });
 
+// ─── GET /api/reports/channels ────────────────────────────────────────────────
+// Conversões por canal de origem (whatsapp, meta, site, etc.)
+router.get('/channels', async (req, res) => {
+  try {
+    const { clientId, startDate, endDate } = req.query;
+
+    const clientFilter = clientId ? `AND "clientId" = ${Number(clientId)}` : '';
+    const start = startDate ? `'${startDate}'` : `'1970-01-01'`;
+    const end   = endDate   ? `'${endDate}T23:59:59'` : `NOW()`;
+
+    const rows = await prisma.$queryRawUnsafe(`
+      SELECT
+        COALESCE(source, 'desconhecido') as canal,
+        COUNT(*)::int                    as leads,
+        SUM(CASE WHEN status = 'converted' THEN 1 ELSE 0 END)::int as convertidos,
+        SUM(CASE WHEN status = 'lost'      THEN 1 ELSE 0 END)::int as perdidos,
+        COALESCE(SUM(CASE WHEN status = 'converted' THEN value ELSE 0 END), 0)::numeric as receita
+      FROM leads
+      WHERE "createdAt" BETWEEN ${start} AND ${end}
+      ${clientFilter}
+      GROUP BY canal
+      ORDER BY convertidos DESC, leads DESC
+    `);
+
+    const labelMap = {
+      whatsapp:       'WhatsApp',
+      whatsapp_group: 'WhatsApp Grupo',
+      whatsapp_meta:  'Meta Ads → WhatsApp',
+      instagram:      'Instagram',
+      mercadopago:    'Mercado Pago (Site)',
+      site:           'Site',
+      manual:         'Manual',
+      desconhecido:   'Desconhecido',
+    };
+
+    const result = rows.map(r => ({
+      canal:          labelMap[r.canal] || r.canal,
+      canal_raw:      r.canal,
+      leads:          r.leads,
+      convertidos:    r.convertidos,
+      perdidos:       r.perdidos,
+      cvr:            r.leads > 0 ? Math.round((r.convertidos / r.leads) * 1000) / 10 : 0,
+      receita_brl:    Math.round(Number(r.receita) * 100) / 100,
+      ticket_medio:   r.convertidos > 0 ? Math.round((Number(r.receita) / r.convertidos) * 100) / 100 : 0,
+    }));
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

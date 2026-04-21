@@ -1449,22 +1449,25 @@ async function loadReports() {
   const headers = { 'Authorization': `Bearer ${token}` };
 
   try {
-    const [sumRes, dailyRes, adsRes, funnelRes] = await Promise.all([
-      fetch('/api/reports/summary' + q, { headers }),
-      fetch('/api/reports/daily'   + q, { headers }),
-      fetch('/api/reports/ads'     + q, { headers }),
-      fetch('/api/reports/funnel'  + q, { headers }),
+    const [sumRes, dailyRes, adsRes, funnelRes, chanRes] = await Promise.all([
+      fetch('/api/reports/summary'  + q, { headers }),
+      fetch('/api/reports/daily'    + q, { headers }),
+      fetch('/api/reports/ads'      + q, { headers }),
+      fetch('/api/reports/funnel'   + q, { headers }),
+      fetch('/api/reports/channels' + q, { headers }),
     ]);
 
-    const summary = await sumRes.json();
-    const daily   = await dailyRes.json();
-    const ads     = await adsRes.json();
-    const funnel  = await funnelRes.json();
+    const summary  = await sumRes.json();
+    const daily    = await dailyRes.json();
+    const ads      = await adsRes.json();
+    const funnel   = await funnelRes.json();
+    const channels = await chanRes.json();
 
     if (Array.isArray(summary) && summary[0]) renderSummary(summary[0]);
-    if (Array.isArray(daily))   renderDailyChart(daily);
-    if (Array.isArray(ads))     { renderAdsDonut(ads); renderAdsTable(ads); }
-    if (Array.isArray(funnel))  renderFunnel(funnel);
+    if (Array.isArray(daily))    renderDailyChart(daily);
+    if (Array.isArray(ads))      { renderAdsDonut(ads); renderAdsTable(ads); }
+    if (Array.isArray(funnel))   renderFunnel(funnel);
+    if (Array.isArray(channels)) renderChannelsTable(channels);
   } catch (err) {
     console.error('[Reports]', err);
   }
@@ -1601,6 +1604,40 @@ function printReports() {
     section.setAttribute('data-print-date', now);
   }
   window.print();
+}
+
+function renderChannelsTable(rows) {
+  const tbody = document.getElementById('report-channels-tbody');
+  if (!tbody) return;
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:rgba(255,255,255,0.3);padding:1.5rem">Nenhum dado</td></tr>';
+    return;
+  }
+
+  const icons = {
+    'whatsapp':       '💬',
+    'whatsapp_meta':  '📢',
+    'whatsapp_group': '👥',
+    'instagram':      '📸',
+    'mercadopago':    '💳',
+    'site':           '🌐',
+    'manual':         '✍️',
+  };
+
+  tbody.innerHTML = rows.map(r => {
+    const icon = icons[r.canal_raw] || '📌';
+    const cvr  = `<span style="color:${r.cvr >= 10 ? '#00d4aa' : r.cvr >= 5 ? '#ffd93d' : '#ff6b6b'}">${r.cvr}%</span>`;
+    const brl  = v => v > 0 ? 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '—';
+    return `<tr>
+      <td><span style="margin-right:6px">${icon}</span><strong>${r.canal}</strong></td>
+      <td>${r.leads}</td>
+      <td style="color:#00d4aa;font-weight:600">${r.convertidos}</td>
+      <td style="color:#ff6b6b">${r.perdidos}</td>
+      <td>${cvr}</td>
+      <td>${brl(r.receita_brl)}</td>
+      <td>${brl(r.ticket_medio)}</td>
+    </tr>`;
+  }).join('');
 }
 
 async function initReportsPage() {

@@ -2087,55 +2087,60 @@ select:focus {
   .login-right { width: 100%; min-height: 100vh; border-left: none; border-top: none; }
 }
 
-/* ─── PRINT / PDF ───────────────────────────────────────────────────────────── */
+/* ─── PRINT / PDF (dark mode) ────────────────────────────────────────────────── */
 @media print {
-  /* Esconde tudo que não é relatório */
-  body { background: #fff !important; color: #111 !important; }
-  #login-screen, .sidebar, #page-reports .page-header button,
-  #page-reports input, #page-reports select { display: none !important; }
+  /* Força o browser a imprimir cores de fundo e texto */
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
-  /* Mostra só a seção de relatórios */
+  /* Esconde tudo que não é o relatório */
+  #login-screen, .sidebar, #page-reports .page-header button,
+  #page-reports input[type="date"], #page-reports select { display: none !important; }
+
+  /* Layout: só a seção de relatórios aparece */
+  body { background: #0f0f1a !important; margin: 0; }
   #app-screen { display: block !important; }
-  main { display: block !important; padding: 0 !important; }
-  #page-reports { display: block !important; padding: 0 !important; }
+  main { display: block !important; padding: 16px 24px !important; background: #0f0f1a !important; }
+  #page-reports { display: block !important; }
   .page:not(#page-reports) { display: none !important; }
 
-  /* Cabeçalho da página impressa */
-  #page-reports .page-header { display: flex !important; margin-bottom: 16px; }
-  #page-reports h2 { color: #111 !important; font-size: 20px; }
+  /* Cabeçalho */
+  #page-reports .page-header { display: flex !important; margin-bottom: 20px; flex-wrap: nowrap; }
+  #page-reports h2 { color: #fff !important; font-size: 22px; }
 
-  /* Cards KPI */
+  /* KPI Cards — garante fundo e cor do valor */
   .stat-card {
-    background: #f5f5f5 !important;
-    border: 1px solid #ddd !important;
-    color: #111 !important;
+    background: #1a1a2e !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    border-bottom: 2px solid #00d4b8 !important;
     break-inside: avoid;
   }
-  .stat-label { color: #555 !important; }
-  .stat-value { color: #111 !important; }
+  .stat-card .stat-label,
+  .stat-label { color: rgba(255,255,255,0.5) !important; }
+  .stat-card .stat-value,
+  .stat-value { color: #00d4b8 !important; }
 
-  /* Cards genéricos */
+  /* Cards genéricos (gráficos, funil, tabela) */
   .card {
-    background: #f9f9f9 !important;
-    border: 1px solid #ddd !important;
+    background: #1a1a2e !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
     break-inside: avoid;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
-  .card h4 { color: #333 !important; }
+  .card h4 { color: rgba(255,255,255,0.5) !important; }
 
   /* Tabela */
-  .leads-table th { background: #eee !important; color: #111 !important; }
-  .leads-table td, .leads-table th { border-color: #ccc !important; color: #111 !important; }
-  .leads-table tr:nth-child(even) td { background: #f7f7f7 !important; }
+  .leads-table th { background: rgba(255,255,255,0.05) !important; color: rgba(255,255,255,0.55) !important; }
+  .leads-table td { color: #ddd !important; border-color: rgba(255,255,255,0.06) !important; }
+  .leads-table tr:nth-child(even) td { background: rgba(255,255,255,0.03) !important; }
 
   /* Funil */
-  #report-funnel > div { background: #f2f2f2 !important; border-color: #ddd !important; }
-  #report-funnel > div div { color: #111 !important; }
+  #report-funnel > div { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.07) !important; }
+  #report-funnel > div > div { color: #fff !important; }
 
-  /* Gráficos: mantém tamanho */
+  /* Gráficos */
   #chart-daily, #chart-ads-donut { max-height: 200px !important; }
 
-  /* Evita quebra de página no meio de blocos */
+  /* Sem quebra de página no meio dos blocos */
   .stats-grid, #report-funnel, #report-ads-table { break-inside: avoid; }
 
   /* Rodapé com data */
@@ -2143,10 +2148,10 @@ select:focus {
     content: "Gerado em " attr(data-print-date) " · Yide Vibe";
     display: block;
     text-align: center;
-    color: #999;
+    color: rgba(255,255,255,0.3);
     font-size: 11px;
-    margin-top: 32px;
-    padding-top: 12px;
-    border-top: 1px solid #eee;
+    margin-top: 28px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.08);
   }
 }

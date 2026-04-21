@@ -201,6 +201,8 @@ async function runAIAgent({ lead, client, instance }) {
       clientScript: client.aiScript || null,
       productValue: client.productValue || null,
       paymentLink: client.paymentLink || null,
+      clientId: client.id || null,
+      clientName: client.name || 'Desconhecido',
     });
 
     if (!result || !result.reply) return;
@@ -271,6 +273,8 @@ async function runImageAgent({ lead, client, instance, imageBase64, imageMime })
       imageMime,
       leadName: lead.name,
       productValue: client.productValue || null,
+      clientId: client.id || null,
+      clientName: client.name || 'Desconhecido',
     });
 
     if (!result) return;

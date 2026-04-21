@@ -49,7 +49,7 @@ router.get('/ads', async (req, res) => {
 
     const leads = await prisma.lead.findMany({
       where,
-      select: { tags: true, status: true, value: true, createdAt: true, convertedAt: true },
+      select: { tags: true, status: true, value: true, createdAt: true },
     });
 
     // Agrupar por anúncio

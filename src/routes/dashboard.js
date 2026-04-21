@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const { getStats, getMetaStats, getConversionValues, getFunnelStats, exportLeads } = require('../controllers/dashboardController');
 const { authenticate } = require('../middleware/auth');
+const prisma = require('../config/database');
 
 const router = Router();
 
@@ -10,5 +11,68 @@ router.get('/meta-stats', getMetaStats);
 router.get('/conversion-values', getConversionValues);
 router.get('/funnel', getFunnelStats);
 router.get('/export-leads', exportLeads);
+
+// ─── GET /api/dashboard/sales-list ───────────────────────────────────────────
+// Lista individual de vendas convertidas com nome, telefone, valor, canal, data
+router.get('/sales-list', async (req, res) => {
+  try {
+    const { clientId, startDate, endDate, limit = 100 } = req.query;
+    const where = { status: 'converted' };
+    if (clientId) where.clientId = Number(clientId);
+    if (startDate || endDate) {
+      where.convertedAt = {};
+      if (startDate) where.convertedAt.gte = new Date(startDate + 'T00:00:00');
+      if (endDate)   where.convertedAt.lte = new Date(endDate   + 'T23:59:59');
+    }
+
+    const leads = await prisma.lead.findMany({
+      where,
+      orderBy: { convertedAt: 'desc' },
+      take: Number(limit),
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        email: true,
+        source: true,
+        value: true,
+        convertedAt: true,
+        tags: true,
+        client: { select: { name: true } },
+      },
+    });
+
+    const sourceLabel = {
+      whatsapp:       'WhatsApp',
+      whatsapp_meta:  'Meta Ads → WhatsApp',
+      whatsapp_group: 'Grupo WhatsApp',
+      instagram:      'Instagram',
+      website:        'Site',
+      mercadopago:    'Mercado Pago',
+      manual:         'Manual',
+    };
+
+    const rows = leads.map(l => {
+      let adName = null;
+      try { const t = JSON.parse(l.tags || '{}'); adName = t.adHeadline || t.adName || null; } catch (_) {}
+      const phone = l.phone?.startsWith('brendi_') ? '—' : l.phone || '—';
+      return {
+        id:          l.id,
+        nome:        l.name || '—',
+        telefone:    phone,
+        email:       l.email || '—',
+        canal:       sourceLabel[l.source] || l.source || '—',
+        anuncio:     adName,
+        valor:       l.value ? Number(l.value) : null,
+        convertedAt: l.convertedAt,
+        cliente:     l.client?.name || null,
+      };
+    });
+
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 module.exports = router;

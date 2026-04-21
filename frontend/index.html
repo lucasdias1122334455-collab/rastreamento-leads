@@ -262,6 +262,36 @@
             <tbody id="conv-tbody"></tbody>
           </table>
         </div>
+
+        <!-- Lista individual de vendas -->
+        <div style="margin-top:2rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
+            <h3 style="margin:0;font-size:16px">Histórico de Vendas</h3>
+            <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+              <input type="date" id="sales-from" style="padding:5px 9px;border-radius:7px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:12px" />
+              <input type="date" id="sales-to"   style="padding:5px 9px;border-radius:7px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:12px" />
+              <button onclick="loadSalesList()" style="padding:5px 14px;font-size:12px;background:rgba(108,99,255,0.2);border:1px solid rgba(108,99,255,0.4);color:#a89fff;border-radius:7px;cursor:pointer">Filtrar</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="leads-table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Telefone</th>
+                  <th>Canal</th>
+                  <th>Anúncio</th>
+                  <th>Valor</th>
+                  <th>Data</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="sales-list-tbody">
+                <tr><td colspan="7" style="text-align:center;color:rgba(255,255,255,0.3);padding:2rem">Carregando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <!-- Meta Ads Métricas -->

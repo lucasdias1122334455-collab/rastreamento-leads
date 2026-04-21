@@ -92,7 +92,7 @@ function navigateTo(page) {
   if (page === 'whatsapp') loadWAStatus();
   if (page === 'users') loadUsers();
   if (page === 'meta-stats') loadMetaStats();
-  if (page === 'conversions') loadConversions();
+  if (page === 'conversions') { loadConversions(); loadSalesList(); }
   if (page === 'conversations') loadConversations();
   if (page === 'reports') initReportsPage();
 }
@@ -798,6 +798,59 @@ async function applyConvDateRange() {
 document.querySelectorAll('.conv-tab').forEach(b => {
   b.addEventListener('click', () => { if (convData || b.dataset.tab === 'range') renderConvTab(b.dataset.tab); });
 });
+
+async function loadSalesList() {
+  const tbody = document.getElementById('sales-list-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:rgba(255,255,255,0.3);padding:2rem">Carregando...</td></tr>';
+
+  try {
+    const from = document.getElementById('sales-from')?.value;
+    const to   = document.getElementById('sales-to')?.value;
+    const cid  = el('conv-client-filter')?._activeId || '';
+    const qs   = new URLSearchParams();
+    if (from) qs.set('startDate', from);
+    if (to)   qs.set('endDate', to);
+    if (cid)  qs.set('clientId', cid);
+    qs.set('limit', '200');
+
+    const rows = await apiFetch(`/dashboard/sales-list?${qs}`);
+
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:rgba(255,255,255,0.3);padding:2rem">Nenhuma venda encontrada</td></tr>';
+      return;
+    }
+
+    const canalIcon = {
+      'WhatsApp':              '💬',
+      'Meta Ads → WhatsApp':   '📢',
+      'Grupo WhatsApp':        '👥',
+      'Instagram':             '📸',
+      'Site':                  '🌐',
+      'Mercado Pago':          '💳',
+      'Manual':                '✍️',
+    };
+
+    tbody.innerHTML = rows.map(r => {
+      const icon  = canalIcon[r.canal] || '📌';
+      const valor = r.valor != null ? fmtBRL(r.valor) : '<span style="color:rgba(255,255,255,0.3)">—</span>';
+      const data  = r.convertedAt ? new Date(r.convertedAt).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+      const tel   = r.telefone !== '—' ? `<a href="https://wa.me/${r.telefone}" target="_blank" style="color:#00d4aa;text-decoration:none">${r.telefone}</a>` : '—';
+      const ad    = r.anuncio ? `<span style="font-size:11px;color:rgba(255,255,255,0.45)" title="${r.anuncio}">${r.anuncio.substring(0,25)}${r.anuncio.length>25?'…':''}</span>` : '—';
+      return `<tr>
+        <td><strong>${r.nome}</strong>${r.email && r.email !== '—' ? `<br><span style="font-size:11px;color:rgba(255,255,255,0.35)">${r.email}</span>` : ''}</td>
+        <td>${tel}</td>
+        <td>${icon} ${r.canal}</td>
+        <td>${ad}</td>
+        <td style="color:#00d4aa;font-weight:600">${valor}</td>
+        <td style="font-size:12px;color:rgba(255,255,255,0.5)">${data}</td>
+        <td><button class="btn-sm btn-primary" onclick="navigateTo('leads');setTimeout(()=>openLeadModal(${r.id}),300)">Ver</button></td>
+      </tr>`;
+    }).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#ff6b6b;padding:2rem">Erro: ${err.message}</td></tr>`;
+  }
+}
 
 // ─── Meta Stats ───────────────────────────────────────────────────────────────
 

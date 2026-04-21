@@ -94,6 +94,7 @@ function navigateTo(page) {
   if (page === 'meta-stats') loadMetaStats();
   if (page === 'conversions') loadConversions();
   if (page === 'conversations') loadConversations();
+  if (page === 'reports') initReportsPage();
 }
 
 document.querySelectorAll('.nav-item').forEach((a) => {
@@ -1424,4 +1425,196 @@ async function analystPageSend() {
       </div>`;
     msgs.scrollTop = msgs.scrollHeight;
   }
+}
+
+// ─── RELATÓRIOS ──────────────────────────────────────────────────────────────
+
+let _chartDaily = null;
+let _chartDonut = null;
+
+function reportsQueryParams() {
+  const start  = document.getElementById('report-start')?.value || '';
+  const end    = document.getElementById('report-end')?.value || '';
+  const client = document.getElementById('report-client')?.value || '';
+  const p = new URLSearchParams();
+  if (start)  p.set('startDate', start);
+  if (end)    p.set('endDate', end);
+  if (client) p.set('clientId', client);
+  return p.toString() ? '?' + p.toString() : '';
+}
+
+async function loadReports() {
+  const q = reportsQueryParams();
+  const token = localStorage.getItem('token');
+  const headers = { 'Authorization': `Bearer ${token}` };
+
+  try {
+    const [sumRes, dailyRes, adsRes, funnelRes] = await Promise.all([
+      fetch('/api/reports/summary' + q, { headers }),
+      fetch('/api/reports/daily'   + q, { headers }),
+      fetch('/api/reports/ads'     + q, { headers }),
+      fetch('/api/reports/funnel'  + q, { headers }),
+    ]);
+
+    const summary = await sumRes.json();
+    const daily   = await dailyRes.json();
+    const ads     = await adsRes.json();
+    const funnel  = await funnelRes.json();
+
+    if (Array.isArray(summary) && summary[0]) renderSummary(summary[0]);
+    if (Array.isArray(daily))   renderDailyChart(daily);
+    if (Array.isArray(ads))     { renderAdsDonut(ads); renderAdsTable(ads); }
+    if (Array.isArray(funnel))  renderFunnel(funnel);
+  } catch (err) {
+    console.error('[Reports]', err);
+  }
+}
+
+function renderSummary(s) {
+  const fmt = v => v == null ? '—' : v;
+  const brl = v => 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  document.getElementById('rpt-total-leads').textContent = fmt(s.total_leads);
+  document.getElementById('rpt-converted').textContent   = fmt(s.convertidos);
+  document.getElementById('rpt-receita').textContent     = brl(s.receita_brl);
+  document.getElementById('rpt-cvr').textContent         = s.cvr != null ? s.cvr + '%' : '—';
+  document.getElementById('rpt-roas').textContent        = s.roas != null ? s.roas + 'x' : '—';
+  document.getElementById('rpt-ticket').textContent      = brl(s.ticket_medio);
+}
+
+function renderDailyChart(rows) {
+  const labels = rows.map(r => r.data ? r.data.slice(5) : '');
+  const leads  = rows.map(r => r.novos_leads || 0);
+  const convs  = rows.map(r => r.conversoes || 0);
+
+  if (_chartDaily) _chartDaily.destroy();
+  const ctx = document.getElementById('chart-daily');
+  if (!ctx) return;
+  _chartDaily = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Novos Leads',
+          data: leads,
+          borderColor: '#6c63ff',
+          backgroundColor: 'rgba(108,99,255,0.12)',
+          tension: 0.4,
+          fill: true,
+          pointRadius: 3,
+        },
+        {
+          label: 'Conversões',
+          data: convs,
+          borderColor: '#00d4aa',
+          backgroundColor: 'rgba(0,212,170,0.10)',
+          tension: 0.4,
+          fill: true,
+          pointRadius: 3,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: { legend: { labels: { color: 'rgba(255,255,255,0.6)', font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        y: { ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+      },
+    },
+  });
+}
+
+function renderAdsDonut(rows) {
+  const top = rows.slice(0, 8);
+  const labels = top.map(r => r.anuncio?.substring(0, 28) || '—');
+  const data   = top.map(r => r.leads || 0);
+  const colors = ['#6c63ff','#00d4aa','#ff6b6b','#ffd93d','#4ecdc4','#ff8b94','#a8e6cf','#dda0dd'];
+
+  if (_chartDonut) _chartDonut.destroy();
+  const ctx = document.getElementById('chart-ads-donut');
+  if (!ctx) return;
+  _chartDonut = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data, backgroundColor: colors, borderWidth: 0 }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: '62%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.55)', font: { size: 10 }, boxWidth: 10, padding: 8 } },
+      },
+    },
+  });
+}
+
+function renderAdsTable(rows) {
+  const tbody = document.getElementById('report-ads-tbody');
+  if (!tbody) return;
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:rgba(255,255,255,0.3);padding:2rem">Nenhum dado encontrado</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const roas = r.roas > 0 ? `<span style="color:#00d4aa;font-weight:600">${r.roas}x</span>` : '<span style="color:rgba(255,255,255,0.3)">—</span>';
+    const cvr  = `<span style="color:${r.cvr >= 10 ? '#00d4aa' : r.cvr >= 5 ? '#ffd93d' : '#ff6b6b'}">${r.cvr}%</span>`;
+    return `<tr>
+      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.anuncio}">${r.anuncio || '—'}</td>
+      <td>${r.leads}</td>
+      <td style="color:#00d4aa;font-weight:600">${r.convertidos}</td>
+      <td style="color:#ff6b6b">${r.perdidos}</td>
+      <td>${cvr}</td>
+      <td>R$ ${Number(r.receita_brl || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+      <td>${r.investimento_brl > 0 ? 'R$ ' + Number(r.investimento_brl).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '—'}</td>
+      <td>${roas}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderFunnel(rows) {
+  const el = document.getElementById('report-funnel');
+  if (!el) return;
+  const colors = { 'Novos Leads':'#6c63ff','Contactados':'#4ecdc4','Qualificados':'#ffd93d','Convertidos':'#00d4aa','Perdidos':'#ff6b6b','Receita Total (R$)':'#a8e6cf' };
+  el.innerHTML = rows.map(r => `
+    <div style="flex:1;min-width:120px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:1rem;text-align:center">
+      <div style="font-size:11px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">${r.etapa}</div>
+      <div style="font-size:22px;font-weight:700;color:${colors[r.etapa] || '#fff'}">${r.etapa.includes('R$') ? 'R$ ' + Number(r.quantidade || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : r.quantidade}</div>
+      ${r.pct_do_total !== '-' ? `<div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:.25rem">${r.pct_do_total}</div>` : ''}
+    </div>`).join('');
+}
+
+async function exportReportsCSV() {
+  const q = reportsQueryParams();
+  const sep = q ? '&' : '?';
+  window.open('/api/reports/ads' + q + sep + 'format=csv&apiKey=' + (window._reportsApiKey || ''), '_blank');
+}
+
+async function initReportsPage() {
+  // Set default date range: last 30 days
+  const now = new Date();
+  const d30 = new Date(now - 30 * 86400000);
+  document.getElementById('report-end').value   = now.toISOString().slice(0, 10);
+  document.getElementById('report-start').value = d30.toISOString().slice(0, 10);
+
+  // Populate client dropdown
+  try {
+    const token = localStorage.getItem('token');
+    const res = await fetch('/api/clients', { headers: { 'Authorization': `Bearer ${token}` } });
+    const clients = await res.json();
+    const sel = document.getElementById('report-client');
+    if (Array.isArray(clients)) {
+      clients.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        sel.appendChild(opt);
+      });
+    }
+  } catch (_) {}
+
+  await loadReports();
 }

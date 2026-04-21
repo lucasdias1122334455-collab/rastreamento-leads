@@ -1342,6 +1342,13 @@ nav { flex: 1; padding: 0 .625rem; display: flex; flex-direction: column; gap: 2
 
 #profile-success { color: var(--cyan); font-size: .875rem; margin-top: .5rem; }
 
+/* ─── REPORTS PAGE ──────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
 /* ─── RESPONSIVE MOBILE ──────────────────────────────────── */
 @media (max-width: 768px) {
   #app-screen { flex-direction: column; height: 100dvh; }

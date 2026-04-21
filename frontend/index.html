@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="/assets/css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <!-- Login -->
@@ -69,6 +70,7 @@
         <a href="#" class="nav-item" data-page="meta-stats" data-icon="📢">Meta Ads</a>
         <a href="#" class="nav-item nav-admin hidden" data-page="users" data-icon="👥">Usuários</a>
         <a href="#" class="nav-item" data-page="analyst" data-icon="🧠">Analista IA</a>
+        <a href="#" class="nav-item nav-admin hidden" data-page="reports" data-icon="📑">Relatórios</a>
       </nav>
       <div class="sidebar-footer">
         <button id="profile-btn" class="profile-btn" title="Editar perfil"><span id="user-name"></span></button>
@@ -365,6 +367,72 @@
             </div>
             <p id="analyst-page-hint">Enter para enviar · Shift+Enter para nova linha · 📎 para enviar imagem</p>
           </div>
+        </div>
+      </section>
+
+      <!-- Relatórios (admin only) -->
+      <section id="page-reports" class="page hidden">
+        <div class="page-header">
+          <h2>Relatórios</h2>
+          <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+            <input type="date" id="report-start" style="padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:13px" />
+            <input type="date" id="report-end" style="padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:13px" />
+            <select id="report-client" style="padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(30,30,50,1);color:#fff;font-size:13px">
+              <option value="">Todos os clientes</option>
+            </select>
+            <button onclick="loadReports()" class="btn-primary" style="padding:7px 16px;font-size:13px">Atualizar</button>
+            <button onclick="exportReportsCSV()" style="padding:7px 16px;font-size:13px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);color:#ccc;border-radius:8px;cursor:pointer">Exportar CSV</button>
+          </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="stats-grid" id="report-kpis" style="margin-bottom:1.5rem">
+          <div class="stat-card"><div class="stat-label">Total de Leads</div><div class="stat-value" id="rpt-total-leads">—</div></div>
+          <div class="stat-card"><div class="stat-label">Convertidos</div><div class="stat-value" id="rpt-converted">—</div></div>
+          <div class="stat-card"><div class="stat-label">Receita Total</div><div class="stat-value" id="rpt-receita">—</div></div>
+          <div class="stat-card"><div class="stat-label">CVR</div><div class="stat-value" id="rpt-cvr">—</div></div>
+          <div class="stat-card"><div class="stat-label">ROAS</div><div class="stat-value" id="rpt-roas">—</div></div>
+          <div class="stat-card"><div class="stat-label">Ticket Médio</div><div class="stat-value" id="rpt-ticket">—</div></div>
+        </div>
+
+        <!-- Charts -->
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.25rem;margin-bottom:1.5rem">
+          <div class="card" style="padding:1.25rem">
+            <h4 style="margin:0 0 1rem;font-size:14px;color:rgba(255,255,255,0.6);font-weight:500;text-transform:uppercase;letter-spacing:.05em">Evolução Diária</h4>
+            <canvas id="chart-daily" style="width:100%;max-height:220px"></canvas>
+          </div>
+          <div class="card" style="padding:1.25rem">
+            <h4 style="margin:0 0 1rem;font-size:14px;color:rgba(255,255,255,0.6);font-weight:500;text-transform:uppercase;letter-spacing:.05em">Leads por Anúncio</h4>
+            <canvas id="chart-ads-donut" style="width:100%;max-height:220px"></canvas>
+          </div>
+        </div>
+
+        <!-- Funnel -->
+        <div class="card" style="padding:1.25rem;margin-bottom:1.5rem">
+          <h4 style="margin:0 0 1rem;font-size:14px;color:rgba(255,255,255,0.6);font-weight:500;text-transform:uppercase;letter-spacing:.05em">Funil de Conversão</h4>
+          <div id="report-funnel" style="display:flex;gap:1rem;flex-wrap:wrap"></div>
+        </div>
+
+        <!-- Ads Table -->
+        <div class="card" style="padding:1.25rem;overflow-x:auto">
+          <h4 style="margin:0 0 1rem;font-size:14px;color:rgba(255,255,255,0.6);font-weight:500;text-transform:uppercase;letter-spacing:.05em">Performance por Anúncio</h4>
+          <table class="leads-table" id="report-ads-table">
+            <thead>
+              <tr>
+                <th>Anúncio</th>
+                <th>Leads</th>
+                <th>Convertidos</th>
+                <th>Perdidos</th>
+                <th>CVR</th>
+                <th>Receita (R$)</th>
+                <th>Investimento (R$)</th>
+                <th>ROAS</th>
+              </tr>
+            </thead>
+            <tbody id="report-ads-tbody">
+              <tr><td colspan="8" style="text-align:center;color:rgba(255,255,255,0.3);padding:2rem">Clique em "Atualizar" para carregar os dados</td></tr>
+            </tbody>
+          </table>
         </div>
       </section>
 

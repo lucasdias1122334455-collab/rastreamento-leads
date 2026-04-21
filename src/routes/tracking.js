@@ -85,6 +85,23 @@ router.post('/api/links', authenticate, async (req, res) => {
   }
 });
 
+// PUT /api/tracking/links/:id
+router.put('/api/links/:id', authenticate, async (req, res) => {
+  try {
+    const { campaign, destination, clientId } = req.body;
+    if (!campaign || !destination) {
+      return res.status(400).json({ error: 'campaign e destination são obrigatórios' });
+    }
+    const rows = await prisma.$queryRawUnsafe(
+      `UPDATE tracking_links SET campaign = $1, destination = $2, "clientId" = $3 WHERE id = $4 RETURNING *`,
+      campaign, destination, clientId ? Number(clientId) : null, Number(req.params.id)
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // DELETE /api/tracking/links/:id
 router.delete('/api/links/:id', authenticate, async (req, res) => {
   try {

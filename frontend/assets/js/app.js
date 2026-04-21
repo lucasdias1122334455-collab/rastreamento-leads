@@ -1508,7 +1508,10 @@ async function loadTrackingLinks() {
         <td style="font-size:12px;color:rgba(255,255,255,0.5);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.destination}">${r.destination}</td>
         <td style="color:#00d4aa;font-weight:600">${r.clicks}</td>
         <td style="font-size:12px;color:rgba(255,255,255,0.4)">${r.clientName || '—'}</td>
-        <td><button onclick="deleteTrackingLink(${r.id})" style="background:rgba(255,100,100,0.1);border:1px solid rgba(255,100,100,0.2);color:#ff6b6b;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:11px">Excluir</button></td>
+        <td style="display:flex;gap:.4rem">
+          <button onclick="editTrackingLink(${r.id},'${r.campaign.replace(/'/g,"\\'")}','${r.destination.replace(/'/g,"\\'")}',${r.clientId||'null'})" style="background:rgba(108,99,255,0.12);border:1px solid rgba(108,99,255,0.25);color:#a89fff;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:11px">Editar</button>
+          <button onclick="deleteTrackingLink(${r.id})" style="background:rgba(255,100,100,0.1);border:1px solid rgba(255,100,100,0.2);color:#ff6b6b;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:11px">Excluir</button>
+        </td>
       </tr>`;
     }).join('');
   } catch (err) {
@@ -1526,11 +1529,32 @@ function copyLink(url) {
   });
 }
 
+let _editingLinkId = null;
+
+async function editTrackingLink(id, campaign, destination, clientId) {
+  _editingLinkId = id;
+  await openTrackingModal();
+  document.getElementById('tl-campaign').value = campaign;
+  document.getElementById('tl-destination').value = destination;
+  document.getElementById('tl-slug').value = '';
+  document.getElementById('tl-slug').disabled = true;
+  document.getElementById('tl-slug').placeholder = 'Slug não pode ser alterado';
+  document.getElementById('tl-preview').style.display = 'none';
+  if (clientId) document.getElementById('tl-client').value = clientId;
+  document.querySelector('#tracking-form button[type=submit]').textContent = 'Salvar';
+  document.querySelector('#tracking-modal h3').textContent = 'Editar Link';
+}
+
 async function openTrackingModal() {
+  _editingLinkId = null;
   document.getElementById('tl-campaign').value = '';
   document.getElementById('tl-slug').value = '';
+  document.getElementById('tl-slug').disabled = false;
+  document.getElementById('tl-slug').placeholder = 'Ex: promo-verao-2025';
   document.getElementById('tl-destination').value = '';
   document.getElementById('tl-preview').style.display = 'none';
+  document.querySelector('#tracking-form button[type=submit]').textContent = 'Criar Link';
+  document.querySelector('#tracking-modal h3').textContent = 'Novo Link de Rastreamento';
 
   // Popula clientes
   const sel = document.getElementById('tl-client');
@@ -1580,7 +1604,11 @@ async function saveTrackingLink(e) {
     clientId:    document.getElementById('tl-client').value || null,
   };
   try {
-    await apiFetch('/tracking/api/links', { method: 'POST', body: JSON.stringify(body) });
+    if (_editingLinkId) {
+      await apiFetch(`/tracking/api/links/${_editingLinkId}`, { method: 'PUT', body: JSON.stringify(body) });
+    } else {
+      await apiFetch('/tracking/api/links', { method: 'POST', body: JSON.stringify(body) });
+    }
     closeTrackingModal();
     loadTrackingLinks();
   } catch (err) {

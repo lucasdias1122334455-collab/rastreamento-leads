@@ -104,7 +104,7 @@ router.get('/ads', async (req, res) => {
     if (format === 'csv') {
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.setHeader('Content-Disposition', 'attachment; filename="relatorio-anuncios.csv"');
-      return res.send('\uFEFF' + toCSV(rows)); // BOM para Excel/Sheets
+      return res.send(toCSV(rows));
     }
     res.json(rows);
   } catch (err) {

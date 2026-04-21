@@ -1593,6 +1593,16 @@ async function exportReportsCSV() {
   window.open('/api/reports/ads' + q + sep + 'format=csv&apiKey=' + (window._reportsApiKey || ''), '_blank');
 }
 
+function printReports() {
+  // Marca a data de impressão no elemento para aparecer no rodapé via CSS attr()
+  const section = document.getElementById('page-reports');
+  if (section) {
+    const now = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    section.setAttribute('data-print-date', now);
+  }
+  window.print();
+}
+
 async function initReportsPage() {
   // Set default date range: last 30 days
   const now = new Date();

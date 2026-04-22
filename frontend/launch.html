@@ -430,8 +430,7 @@
       const diff = launchDate - now;
 
       if (diff <= 0) {
-        document.querySelector('.countdown-wrapper').style.display = 'none';
-        document.getElementById('launched').style.display = 'flex';
+        window.location.href = '/';
         return;
       }
 

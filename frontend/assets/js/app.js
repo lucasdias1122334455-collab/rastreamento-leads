@@ -99,7 +99,11 @@ function navigateTo(page) {
 }
 
 document.querySelectorAll('.nav-item').forEach((a) => {
-  a.addEventListener('click', (e) => { e.preventDefault(); navigateTo(a.dataset.page); });
+  a.addEventListener('click', (e) => {
+    if (a.getAttribute('href') && a.getAttribute('href') !== '#') return;
+    e.preventDefault();
+    navigateTo(a.dataset.page);
+  });
 });
 
 // ─── Funil + Leads Parados ────────────────────────────────────────────────────

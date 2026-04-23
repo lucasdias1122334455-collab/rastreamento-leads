@@ -5,13 +5,24 @@ const VALID_STAGES = ['awareness', 'interest', 'decision', 'action'];
 
 async function list(req, res, next) {
   try {
-    const { status, stage, search, clientId, page = 1, limit = 20 } = req.query;
+    const { status, stage, search, clientId, origin, page = 1, limit = 20 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
     const where = {};
     if (status) where.status = status;
     if (stage) where.stage = stage;
     if (clientId) where.clientId = Number(clientId);
+    if (origin === 'ads') {
+      // Leads de anúncios: vieram via Meta Ads ou têm tags de campanha
+      where.OR = [
+        { source: 'whatsapp_meta' },
+        { tags: { not: null } },
+      ];
+    } else if (origin === 'organic') {
+      // Leads orgânicos: não vieram de anúncios
+      where.source = { not: 'whatsapp_meta' };
+      where.tags = null;
+    }
     if (search) {
       where.OR = [
         { name: { contains: search } },

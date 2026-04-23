@@ -204,7 +204,8 @@ async function loadLeads(page = 1) {
   const search = el('search-input').value;
   const status = el('filter-status').value;
   const clientId = el('filter-client').value;
-  const params = new URLSearchParams({ page, limit: 20, ...(search && { search }), ...(status && { status }), ...(clientId && { clientId }) });
+  const origin = el('filter-origin')?.value || '';
+  const params = new URLSearchParams({ page, limit: 20, ...(search && { search }), ...(status && { status }), ...(clientId && { clientId }), ...(origin && { origin }) });
 
   try {
     const data = await apiFetch(`/leads?${params}`);
@@ -220,7 +221,7 @@ async function loadLeads(page = 1) {
         <td class="td-phone" title="${l.phone}">${phoneDisplay}</td>
         <td>${statusBadge(l.status)}</td>
         <td style="color:var(--muted);font-size:.82rem">${stageLabel(l.stage)}</td>
-        <td style="color:var(--muted);font-size:.8rem">${l.source || '—'}</td>
+        <td style="color:var(--muted);font-size:.8rem">${l.source === 'whatsapp_meta' ? '📢 Anúncio' : l.fromAd ? '🔗 Link Rastreado' : l.source || '—'}</td>
         <td>${l.client ? `<span class="client-tag">${l.client.name}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
         <td style="color:var(--muted);font-size:.8rem">${fmtDate(l.createdAt)}</td>
         <td style="display:flex;gap:.35rem;white-space:nowrap">
@@ -245,6 +246,7 @@ function renderPagination(pages, current) {
 el('search-input').addEventListener('input', () => loadLeads(1));
 el('filter-status').addEventListener('change', () => loadLeads(1));
 el('filter-client').addEventListener('change', () => loadLeads(1));
+el('filter-origin').addEventListener('change', () => loadLeads(1));
 
 // ─── Lead Modal ───────────────────────────────────────────────────────────────
 

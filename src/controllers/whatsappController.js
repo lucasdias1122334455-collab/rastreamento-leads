@@ -4,7 +4,10 @@ const metaConversions = require('../services/metaConversionsService');
 const prisma = require('../config/database');
 const OpenAI = require('openai');
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let openai = null;
+if (process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
 
 async function getStatus(req, res, next) {
   try {
@@ -358,6 +361,8 @@ async function runImageAgent({ lead, client, instance, imageBase64, imageMime })
 // ─── Agente Ricardo (áudio → Whisper → Claude → TTS → nota de voz) ───────────
 async function runAudioAgent({ lead, client, instance, messageKey }) {
   try {
+    if (!openai) { console.warn('[Ricardo] OPENAI_API_KEY não configurada.'); return; }
+
     // 1. Baixa o áudio em base64 via Evolution
     const audioBase64 = await evolutionService.getMediaBase64(instance, messageKey);
     if (!audioBase64) return;

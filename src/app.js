@@ -204,6 +204,8 @@ app.listen(PORT, async () => {
       )
     `);
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS idx_tracking_clicks_client ON tracking_clicks("clientId", "clickedAt")`);
+    // Ricardo — agente de voz
+    await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "voiceEnabled" BOOLEAN DEFAULT false`);
     console.log('[DB] Tabelas criadas com sucesso.');
   } catch (e) {
     console.error('[DB] Erro ao criar tabelas:', e.message);

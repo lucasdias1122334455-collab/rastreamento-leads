@@ -85,6 +85,15 @@ async function getMediaBase64(instanceName, messageKey) {
   return data.base64 || null;
 }
 
+async function sendAudioMessage(instanceName, phone, audioBase64) {
+  const number = phone.replace(/\D/g, '');
+  await axios.post(`${BASE_URL}/message/sendWhatsAppAudio/${instanceName}`, {
+    number,
+    audio: audioBase64,
+    encoding: true,
+  }, { headers });
+}
+
 async function getGroupInfo(instanceName, groupJid) {
   try {
     const { data } = await axios.get(
@@ -100,5 +109,5 @@ async function getGroupInfo(instanceName, groupJid) {
 module.exports = {
   getStatus, getQRCode, sendMessage, disconnectInstance,
   createClientInstance, getClientQRCode, getClientStatus, deleteClientInstance,
-  sendClientMessage, getMediaBase64, getGroupInfo,
+  sendClientMessage, getMediaBase64, getGroupInfo, sendAudioMessage,
 };

@@ -2,6 +2,9 @@ const evolutionService = require('../services/evolutionService');
 const claudeService = require('../services/claudeService');
 const metaConversions = require('../services/metaConversionsService');
 const prisma = require('../config/database');
+const OpenAI = require('openai');
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 async function getStatus(req, res, next) {
   try {
@@ -118,10 +121,11 @@ async function webhook(req, res) {
 
     // Detecta tipo de mensagem
     const isImage = !!(data.message?.imageMessage);
+    const isAudio = !!(data.message?.audioMessage);
     const content =
       data.message?.conversation ||
       data.message?.extendedTextMessage?.text ||
-      (isImage ? '[imagem]' : '[mídia]');
+      (isImage ? '[imagem]' : isAudio ? '[áudio]' : '[mídia]');
 
     // Extrai base64 da imagem se vier direto no payload
     let imageBase64 = null;
@@ -172,7 +176,10 @@ async function webhook(req, res) {
       if (isImage && imageBase64) {
         // Imagem recebida — Claude analisa se é comprovante de pagamento
         await runImageAgent({ lead, client, instance, imageBase64, imageMime });
-      } else if (content !== '[mídia]') {
+      } else if (isAudio && client.voiceEnabled) {
+        // Áudio recebido — Ricardo transcreve + responde em voz
+        await runAudioAgent({ lead, client, instance, messageKey: data.key });
+      } else if (content !== '[mídia]' && content !== '[áudio]') {
         // Mensagem de texto — conversa de vendas normal
         await runAIAgent({ lead, client, instance });
       }
@@ -345,6 +352,101 @@ async function runImageAgent({ lead, client, instance, imageBase64, imageMime })
 
   } catch (err) {
     console.error('[AI Image Agent] Erro:', err.message);
+  }
+}
+
+// ─── Agente Ricardo (áudio → Whisper → Claude → TTS → nota de voz) ───────────
+async function runAudioAgent({ lead, client, instance, messageKey }) {
+  try {
+    // 1. Baixa o áudio em base64 via Evolution
+    const audioBase64 = await evolutionService.getMediaBase64(instance, messageKey);
+    if (!audioBase64) return;
+
+    // 2. Transcreve com Whisper
+    const audioBuffer = Buffer.from(audioBase64, 'base64');
+    const audioFile = new File([audioBuffer], 'audio.ogg', { type: 'audio/ogg' });
+
+    const transcription = await openai.audio.transcriptions.create({
+      file: audioFile,
+      model: 'whisper-1',
+      language: 'pt',
+    });
+
+    const transcribedText = transcription.text?.trim();
+    if (!transcribedText) return;
+
+    console.log(`[Ricardo] Transcrição de ${lead.phone}: ${transcribedText}`);
+
+    // Salva a transcrição como mensagem de entrada
+    await prisma.interaction.update({
+      where: {
+        id: (await prisma.interaction.findFirst({
+          where: { leadId: lead.id, direction: 'inbound', content: '[áudio]' },
+          orderBy: { createdAt: 'desc' },
+        }))?.id,
+      },
+      data: { content: `[áudio] ${transcribedText}` },
+    }).catch(() => {});
+
+    // 3. Gera resposta com Claude (usando persona Ricardo)
+    const messages = await prisma.interaction.findMany({
+      where: { leadId: lead.id, type: 'message' },
+      orderBy: { createdAt: 'asc' },
+      take: 30,
+    });
+
+    const ricardoScript = `Você é Ricardo, especialista em vendas com 15 anos de experiência.
+Atendimento humanizado, caloroso e consultivo. Adapta-se a qualquer nicho.
+Fale de forma natural, como em uma conversa de voz — sem listas, sem markdown.
+${client.aiScript ? `\n\nRoteiro do cliente:\n${client.aiScript}` : ''}`;
+
+    const result = await claudeService.analyzeConversation({
+      leadName: lead.name,
+      messages: [...messages.slice(0, -1), { ...messages[messages.length - 1], content: transcribedText }],
+      clientScript: ricardoScript,
+      productValue: client.productValue || null,
+      paymentLink: client.paymentLink || null,
+      clientId: client.id || null,
+      clientName: client.name || 'Desconhecido',
+    });
+
+    if (!result?.reply) return;
+
+    // 4. Converte resposta em áudio com TTS
+    const ttsResponse = await openai.audio.speech.create({
+      model: 'tts-1',
+      voice: 'onyx', // voz masculina, profissional
+      input: result.reply,
+      response_format: 'mp3',
+    });
+
+    const replyAudioBuffer = Buffer.from(await ttsResponse.arrayBuffer());
+    const replyAudioBase64 = replyAudioBuffer.toString('base64');
+
+    // 5. Salva resposta no banco
+    await prisma.interaction.create({
+      data: {
+        leadId: lead.id,
+        type: 'message',
+        direction: 'outbound',
+        content: `[áudio] ${result.reply}`,
+        metadata: JSON.stringify({ ai: true, ricardo: true }),
+      },
+    });
+
+    // 6. Envia como nota de voz no WhatsApp
+    try {
+      await evolutionService.sendAudioMessage(instance, lead.phone, replyAudioBase64);
+    } catch (sendErr) {
+      console.warn(`[Ricardo] Falha ao enviar áudio para ${lead.phone}:`, sendErr.message);
+      // Fallback: envia como texto
+      await evolutionService.sendClientMessage(instance, lead.phone, result.reply);
+    }
+
+    console.log(`[Ricardo] Respondeu em áudio para ${lead.phone}`);
+
+  } catch (err) {
+    console.error('[Ricardo Audio Agent] Erro:', err.message);
   }
 }
 

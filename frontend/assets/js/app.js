@@ -480,6 +480,7 @@ function openClientModal(client = null) {
   el('client-ai-enabled').checked = aiEnabled;
   if (el('client-ai-enabled-label')) el('client-ai-enabled-label').textContent = aiEnabled ? 'IA ativada ✅' : 'IA desativada';
   el('client-ai-fields').style.display = aiEnabled ? 'block' : 'none';
+  el('client-voice-enabled').checked = Boolean(client?.voiceEnabled);
   el('client-payment-link').value = client?.paymentLink || '';
   el('client-ai-script').value = client?.aiScript || '';
   // Campos Pixel
@@ -513,6 +514,7 @@ el('client-form').addEventListener('submit', async (e) => {
     metaPhoneNumberId: el('client-meta-phone-id').value || null,
     mpAccessToken: el('client-mp-token').value || null,
     aiEnabled: el('client-ai-enabled').checked,
+    voiceEnabled: el('client-voice-enabled').checked,
     aiScript: el('client-ai-script').value || null,
     paymentLink: el('client-payment-link').value || null,
     website: el('client-website').value || null,

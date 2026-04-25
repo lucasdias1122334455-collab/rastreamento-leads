@@ -1941,29 +1941,34 @@ function crmRenderTickets() {
     container.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--muted);font-size:.85rem">Nenhum atendimento encontrado</div>';
     return;
   }
-  container.innerHTML = crmTickets.map(t => {
+  const avatarColors = ['#00d4b8','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#ec4899','#10b981'];
+  container.innerHTML = crmTickets.map((t, i) => {
     const name = t.name || t.phone || '—';
-    const initials = name.slice(0, 2).toUpperCase();
-    const preview = t.lastMessage ? t.lastMessage.slice(0, 50) : 'Sem mensagens';
+    const initials = name.replace(/[^a-zA-ZÀ-ÿ]/g, '').slice(0, 2).toUpperCase() || '??';
+    const color = avatarColors[i % avatarColors.length];
+    const preview = t.lastMessage ? t.lastMessage.slice(0, 55) : 'Sem mensagens';
     const ts = t.lastMessageAt || t.createdAt;
     const timeStr = ts ? crmFormatTime(ts) : '';
     const status = t.crmStatus || 'new';
     const unread = t.unread > 0 ? `<span class="crm-ticket-unread">${t.unread}</span>` : '';
     const isActive = crmActiveTicket?.id === t.id ? 'active' : '';
-
-    // Silence tag
     const silence = crmSilenceTag(t.lastMessageAt, t.lastDirection);
 
     return `<div class="crm-ticket-item ${isActive}" onclick="crmSelectTicket(${t.id})">
-      <div class="crm-ticket-name">
-        <span class="crm-status-dot ${status}"></span>
-        ${escapeHtml(name)}
-        ${unread}
+      <div class="crm-ticket-avatar" style="background:${color}22;color:${color};border:1.5px solid ${color}44">
+        ${initials}
       </div>
-      <div class="crm-ticket-preview">${escapeHtml(preview)}</div>
-      <div class="crm-ticket-meta" style="display:flex;align-items:center;justify-content:space-between">
-        <span>${timeStr}</span>
-        ${silence}
+      <div class="crm-ticket-body">
+        <div class="crm-ticket-row1">
+          <span class="crm-ticket-name">
+            <span class="crm-status-dot ${status}" style="margin-right:4px"></span>${escapeHtml(name)}
+          </span>
+          <span class="crm-ticket-time">${timeStr}</span>
+        </div>
+        <div class="crm-ticket-row2">
+          <span class="crm-ticket-preview">${escapeHtml(preview)}</span>
+          <span class="crm-ticket-badges">${unread}${silence}</span>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -2002,7 +2007,7 @@ async function crmSelectTicket(id) {
   document.getElementById('crm-chat-active').classList.remove('hidden');
 
   const name = ticket.name || ticket.phone || '—';
-  const initials = name.slice(0, 2).toUpperCase();
+  const initials = name.replace(/[^a-zA-ZÀ-ÿ]/g, '').slice(0, 2).toUpperCase() || '??';
   document.getElementById('crm-active-avatar').textContent = initials;
   document.getElementById('crm-active-name').textContent = name;
   document.getElementById('crm-active-phone').textContent = ticket.phone || '';
@@ -2108,7 +2113,10 @@ function crmCheckQuickReply(el) {
     if (matches.length) {
       suggestions.classList.remove('hidden');
       suggestions.innerHTML = matches.map(q =>
-        `<span class="crm-qr-chip" onclick="crmInsertQuickReply('${escapeHtml(q.content).replace(/'/g,"&#39;")}')">${escapeHtml(q.shortcut)}</span>`
+        `<span class="crm-qr-chip" onclick="crmInsertQuickReply('${escapeHtml(q.content).replace(/'/g,"&#39;")}')">
+          <span class="crm-qr-chip-shortcut">/${escapeHtml(q.shortcut)}</span>
+          <span style="color:var(--muted);font-size:.76rem">— ${escapeHtml(q.content.slice(0,30))}${q.content.length>30?'…':''}</span>
+        </span>`
       ).join('');
       return;
     }

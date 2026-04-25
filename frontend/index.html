@@ -595,21 +595,21 @@
                     </div>
                   </div>
                   <div class="crm-chat-actions">
-                    <select id="crm-active-status" onchange="crmUpdateStatus(this.value)" style="font-size:.8rem;padding:.25rem .5rem;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
-                      <option value="new">Novo</option>
-                      <option value="waiting">Aguardando</option>
-                      <option value="attending">Atendendo</option>
-                      <option value="resolved">Resolvido</option>
+                    <select id="crm-active-status" onchange="crmUpdateStatus(this.value)" class="crm-status-select">
+                      <option value="new">🔵 Novo</option>
+                      <option value="waiting">🟡 Aguardando</option>
+                      <option value="attending">🟢 Atendendo</option>
+                      <option value="resolved">⚫ Resolvido</option>
                     </select>
-                    <button class="btn-sm btn-edit" onclick="crmToggleContact()">👤</button>
+                    <button class="btn-sm btn-edit" onclick="crmToggleContact()" title="Info do contato" style="border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center">👤</button>
                   </div>
                 </div>
                 <div class="crm-messages" id="crm-messages"></div>
                 <!-- Quick reply suggestions -->
                 <div class="crm-qr-suggestions hidden" id="crm-qr-suggestions"></div>
                 <div class="crm-input-area">
-                  <textarea id="crm-msg-input" rows="1" placeholder="Mensagem... (/ para respostas rápidas)" oninput="crmCheckQuickReply(this)" onkeydown="crmMsgKeydown(event)"></textarea>
-                  <button class="btn-primary" onclick="crmSendMessage()">➤</button>
+                  <textarea id="crm-msg-input" rows="1" placeholder="Digite uma mensagem... (/ para respostas rápidas)" oninput="crmCheckQuickReply(this)" onkeydown="crmMsgKeydown(event)"></textarea>
+                  <button class="crm-send-btn" onclick="crmSendMessage()">↑</button>
                 </div>
               </div>
             </div>
@@ -629,13 +629,12 @@
                 <div class="crm-contact-field"><label>Sem resposta há</label><span id="cp-silence" style="color:var(--warning)">—</span></div>
                 <div class="crm-contact-field"><label>Cliente</label><span id="cp-client">—</span></div>
               </div>
-              <div style="padding:1rem;border-top:1px solid var(--border)">
-                <button class="btn-sm btn-primary" style="width:100%;margin-bottom:.5rem" onclick="openCrmTaskModal()">+ Tarefa</button>
-                <button class="btn-sm btn-edit" style="width:100%" onclick="openCrmApptModal()">+ Agendamento</button>
+              <div class="crm-contact-actions">
+                <button class="btn-sm btn-primary" style="width:100%" onclick="openCrmTaskModal()">✅ Nova Tarefa</button>
+                <button class="btn-sm btn-edit" style="width:100%" onclick="openCrmApptModal()">📅 Novo Agendamento</button>
               </div>
-              <!-- Contact tasks -->
-              <div style="padding:.75rem 1rem">
-                <div style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem;font-weight:600">TAREFAS DO LEAD</div>
+              <div style="padding:.75rem 1rem;border-top:1px solid var(--border)">
+                <div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted2);margin-bottom:.6rem;font-weight:600">Tarefas do Lead</div>
                 <div id="cp-tasks"></div>
               </div>
             </div>

@@ -18,6 +18,7 @@ const aiAnalystRoutes = require('./routes/aiAnalyst');
 const tokenUsageRoutes = require('./routes/tokenUsage');
 const reportsRoutes = require('./routes/reports');
 const trackingRoutes = require('./routes/tracking');
+const crmRoutes = require('./routes/crm');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -44,6 +45,7 @@ app.use('/api/tokens', tokenUsageRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/tracking', trackingRoutes);
 app.use('/rastrear', trackingRoutes);
+app.use('/api/crm', crmRoutes);
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
@@ -206,6 +208,46 @@ app.listen(PORT, async () => {
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS idx_tracking_clicks_client ON tracking_clicks("clientId", "clickedAt")`);
     // Ricardo — agente de voz
     await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "voiceEnabled" BOOLEAN DEFAULT false`);
+    // CRM — status do ticket e timestamp de leitura
+    await prisma.$executeRawUnsafe(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS "crmStatus" TEXT DEFAULT 'new'`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS "crmReadAt" TIMESTAMP DEFAULT NULL`);
+    // CRM — tarefas
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS crm_tasks (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT,
+        "dueAt" TIMESTAMP DEFAULT NULL,
+        completed BOOLEAN NOT NULL DEFAULT false,
+        "leadId" INTEGER REFERENCES leads(id) ON DELETE SET NULL,
+        "clientId" INTEGER REFERENCES clients(id) ON DELETE CASCADE,
+        "reminderSent" BOOLEAN NOT NULL DEFAULT false,
+        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    // CRM — agendamentos
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS crm_appointments (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        "scheduledAt" TIMESTAMP DEFAULT NULL,
+        notes TEXT,
+        "leadId" INTEGER REFERENCES leads(id) ON DELETE SET NULL,
+        "clientId" INTEGER REFERENCES clients(id) ON DELETE CASCADE,
+        "detectedBy" TEXT NOT NULL DEFAULT 'manual',
+        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    // CRM — respostas rápidas
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS crm_quick_replies (
+        id SERIAL PRIMARY KEY,
+        shortcut TEXT NOT NULL,
+        content TEXT NOT NULL,
+        "clientId" INTEGER REFERENCES clients(id) ON DELETE CASCADE,
+        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
     console.log('[DB] Tabelas criadas com sucesso.');
   } catch (e) {
     console.error('[DB] Erro ao criar tabelas:', e.message);
@@ -227,6 +269,62 @@ app.listen(PORT, async () => {
   }
 
   await prisma.$disconnect();
+
+  // ─── Task reminder scheduler ─────────────────────────────────────────────────
+  // Every 60s: check tasks due in the next 5 min that haven't had reminder sent
+  const evolutionSvc = require('./services/evolutionService');
+  const dbForScheduler = require('./config/database');
+  setInterval(async () => {
+    try {
+      const due = await dbForScheduler.$queryRawUnsafe(`
+        SELECT t.*, l.phone as "leadPhone", l.name as "leadName", c."instanceName"
+        FROM crm_tasks t
+        LEFT JOIN leads l ON l.id = t."leadId"
+        LEFT JOIN clients c ON c.id = t."clientId"
+        WHERE t.completed = false
+          AND t."reminderSent" = false
+          AND t."dueAt" IS NOT NULL
+          AND t."dueAt" <= NOW() + INTERVAL '5 minutes'
+          AND t."dueAt" >= NOW() - INTERVAL '1 hour'
+      `);
+      for (const task of due) {
+        if (task.instanceName && task.leadPhone) {
+          const msg = `⏰ *Lembrete de tarefa:* ${task.title}${task.leadName ? '\n👤 Lead: ' + task.leadName : ''}`;
+          try {
+            await evolutionSvc.sendClientMessage(task.instanceName, task.leadPhone, msg);
+          } catch (_) {}
+        }
+        await dbForScheduler.$executeRawUnsafe(`UPDATE crm_tasks SET "reminderSent"=true WHERE id=$1`, task.id);
+      }
+    } catch (_) {}
+  }, 60000);
+
+  // ─── Silence follow-up scheduler ─────────────────────────────────────────────
+  // Every 6 hours: check leads that sent the last inbound message > X hours ago
+  // and haven't received a reply yet. Logs to console (team notified via dashboard).
+  // Full auto-send can be enabled per client in future.
+  setInterval(async () => {
+    try {
+      const silent = await dbForScheduler.$queryRawUnsafe(`
+        SELECT l.id, l.name, l.phone, l."crmStatus",
+               last_i."createdAt" as "lastAt", last_i.direction,
+               c."instanceName", c.name as "clientName"
+        FROM leads l
+        LEFT JOIN clients c ON c.id = l."clientId"
+        LEFT JOIN LATERAL (
+          SELECT "createdAt", direction FROM interactions
+          WHERE "leadId" = l.id ORDER BY "createdAt" DESC LIMIT 1
+        ) last_i ON true
+        WHERE last_i.direction = 'inbound'
+          AND last_i."createdAt" < NOW() - INTERVAL '24 hours'
+          AND (l."crmStatus" IS NULL OR l."crmStatus" NOT IN ('resolved'))
+          AND l."clientId" IS NOT NULL
+      `);
+      if (silent.length > 0) {
+        console.log(`[CRM] ${silent.length} leads sem resposta há +24h`);
+      }
+    } catch (_) {}
+  }, 6 * 3600000);
 });
 
 module.exports = app;

@@ -72,6 +72,7 @@
         <a href="#" class="nav-item" data-page="analyst" data-icon="🧠">Analista IA</a>
         <a href="#" class="nav-item" data-page="reports" data-icon="📑">Relatórios</a>
         <a href="#" class="nav-item" data-page="tracking" data-icon="🔗">Links</a>
+        <a href="#" class="nav-item" data-page="crm" data-icon="🎧">CRM</a>
         <a href="/launch.html" class="nav-item nav-admin hidden" data-icon="🎀" target="_blank">Lançamento</a>
       </nav>
       <div class="sidebar-footer">
@@ -528,6 +529,177 @@
         </div>
       </section>
 
+      <!-- ══════════════ CRM ══════════════ -->
+      <section id="page-crm" class="page hidden crm-page">
+
+        <!-- Top bar -->
+        <div class="crm-topbar">
+          <div class="crm-tabs">
+            <button class="crm-tab active" data-tab="chats" onclick="switchCrmTab('chats',this)">💬 Atendimentos</button>
+            <button class="crm-tab" data-tab="kanban" onclick="switchCrmTab('kanban',this)">📋 Kanban</button>
+            <button class="crm-tab" data-tab="tasks" onclick="switchCrmTab('tasks',this)">✅ Tarefas</button>
+            <button class="crm-tab" data-tab="appointments" onclick="switchCrmTab('appointments',this)">📅 Agendamentos</button>
+            <button class="crm-tab" data-tab="quick-replies" onclick="switchCrmTab('quick-replies',this)">⚡ Respostas Rápidas</button>
+          </div>
+          <div class="crm-topbar-right">
+            <select id="crm-client-filter" onchange="crmApplyFilter()">
+              <option value="">Todos os clientes</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Stats bar -->
+        <div class="crm-stats-bar">
+          <div class="crm-stat"><span id="crm-stat-new">—</span><label>Novos</label></div>
+          <div class="crm-stat"><span id="crm-stat-waiting">—</span><label>Aguardando</label></div>
+          <div class="crm-stat"><span id="crm-stat-attending">—</span><label>Atendendo</label></div>
+          <div class="crm-stat"><span id="crm-stat-resolved">—</span><label>Resolvidos</label></div>
+        </div>
+
+        <!-- ── TAB: CHATS ────────────────────────────────── -->
+        <div id="crm-tab-chats" class="crm-tab-content">
+          <div class="crm-layout">
+
+            <!-- Ticket list (left panel) -->
+            <div class="crm-ticket-list" id="crm-ticket-list">
+              <div class="crm-list-header">
+                <input type="text" id="crm-search" placeholder="🔍 Buscar contato..." oninput="crmApplyFilter()" />
+                <select id="crm-status-filter" onchange="crmApplyFilter()">
+                  <option value="">Todos</option>
+                  <option value="new">Novo</option>
+                  <option value="waiting">Aguardando</option>
+                  <option value="attending">Atendendo</option>
+                  <option value="resolved">Resolvido</option>
+                </select>
+              </div>
+              <div id="crm-tickets" class="crm-tickets-scroll"></div>
+            </div>
+
+            <!-- Chat area (middle panel) -->
+            <div class="crm-chat-area" id="crm-chat-area">
+              <!-- Empty state -->
+              <div class="crm-chat-empty" id="crm-chat-empty">
+                <span>🎧</span>
+                <p>Selecione um atendimento para começar</p>
+              </div>
+
+              <!-- Active chat -->
+              <div class="crm-chat-active hidden" id="crm-chat-active">
+                <div class="crm-chat-header">
+                  <div class="crm-chat-header-info">
+                    <button class="crm-back-btn hidden" id="crm-back-to-list" onclick="crmBackToList()">←</button>
+                    <div class="crm-chat-avatar" id="crm-active-avatar">?</div>
+                    <div>
+                      <div class="crm-chat-name" id="crm-active-name">—</div>
+                      <div class="crm-chat-phone" id="crm-active-phone">—</div>
+                    </div>
+                  </div>
+                  <div class="crm-chat-actions">
+                    <select id="crm-active-status" onchange="crmUpdateStatus(this.value)" style="font-size:.8rem;padding:.25rem .5rem;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
+                      <option value="new">Novo</option>
+                      <option value="waiting">Aguardando</option>
+                      <option value="attending">Atendendo</option>
+                      <option value="resolved">Resolvido</option>
+                    </select>
+                    <button class="btn-sm btn-edit" onclick="crmToggleContact()">👤</button>
+                  </div>
+                </div>
+                <div class="crm-messages" id="crm-messages"></div>
+                <!-- Quick reply suggestions -->
+                <div class="crm-qr-suggestions hidden" id="crm-qr-suggestions"></div>
+                <div class="crm-input-area">
+                  <textarea id="crm-msg-input" rows="1" placeholder="Mensagem... (/ para respostas rápidas)" oninput="crmCheckQuickReply(this)" onkeydown="crmMsgKeydown(event)"></textarea>
+                  <button class="btn-primary" onclick="crmSendMessage()">➤</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contact panel (right) -->
+            <div class="crm-contact-panel hidden" id="crm-contact-panel">
+              <div class="crm-contact-header">
+                <h4>Informações do Contato</h4>
+                <button onclick="crmToggleContact()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem">✕</button>
+              </div>
+              <div class="crm-contact-body">
+                <div class="crm-contact-field"><label>Nome</label><span id="cp-name">—</span></div>
+                <div class="crm-contact-field"><label>Telefone</label><span id="cp-phone">—</span></div>
+                <div class="crm-contact-field"><label>Origem</label><span id="cp-source">—</span></div>
+                <div class="crm-contact-field"><label>Status</label><span id="cp-status">—</span></div>
+                <div class="crm-contact-field"><label>Última mensagem</label><span id="cp-last">—</span></div>
+                <div class="crm-contact-field"><label>Sem resposta há</label><span id="cp-silence" style="color:var(--warning)">—</span></div>
+                <div class="crm-contact-field"><label>Cliente</label><span id="cp-client">—</span></div>
+              </div>
+              <div style="padding:1rem;border-top:1px solid var(--border)">
+                <button class="btn-sm btn-primary" style="width:100%;margin-bottom:.5rem" onclick="openCrmTaskModal()">+ Tarefa</button>
+                <button class="btn-sm btn-edit" style="width:100%" onclick="openCrmApptModal()">+ Agendamento</button>
+              </div>
+              <!-- Contact tasks -->
+              <div style="padding:.75rem 1rem">
+                <div style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem;font-weight:600">TAREFAS DO LEAD</div>
+                <div id="cp-tasks"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── TAB: KANBAN ────────────────────────────────── -->
+        <div id="crm-tab-kanban" class="crm-tab-content hidden">
+          <div class="crm-kanban">
+            <div class="crm-kanban-col">
+              <div class="crm-kanban-col-header"><span class="crm-kanban-dot new"></span>Novo<span id="k-count-new" class="crm-kanban-count">0</span></div>
+              <div class="crm-kanban-cards" id="k-col-new"></div>
+            </div>
+            <div class="crm-kanban-col">
+              <div class="crm-kanban-col-header"><span class="crm-kanban-dot waiting"></span>Aguardando<span id="k-count-waiting" class="crm-kanban-count">0</span></div>
+              <div class="crm-kanban-cards" id="k-col-waiting"></div>
+            </div>
+            <div class="crm-kanban-col">
+              <div class="crm-kanban-col-header"><span class="crm-kanban-dot attending"></span>Atendendo<span id="k-count-attending" class="crm-kanban-count">0</span></div>
+              <div class="crm-kanban-cards" id="k-col-attending"></div>
+            </div>
+            <div class="crm-kanban-col">
+              <div class="crm-kanban-col-header"><span class="crm-kanban-dot resolved"></span>Resolvido<span id="k-count-resolved" class="crm-kanban-count">0</span></div>
+              <div class="crm-kanban-cards" id="k-col-resolved"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── TAB: TASKS ────────────────────────────────── -->
+        <div id="crm-tab-tasks" class="crm-tab-content hidden">
+          <div class="page-header" style="margin-bottom:1rem">
+            <h3 style="font-size:1rem">Tarefas</h3>
+            <button class="btn-primary btn-sm" onclick="openCrmTaskModal()">+ Nova Tarefa</button>
+            <label style="font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:.4rem">
+              <input type="checkbox" id="crm-tasks-show-completed" onchange="loadCrmTasks()" /> Mostrar concluídas
+            </label>
+          </div>
+          <div id="crm-tasks-list"></div>
+        </div>
+
+        <!-- ── TAB: APPOINTMENTS ─────────────────────────── -->
+        <div id="crm-tab-appointments" class="crm-tab-content hidden">
+          <div class="page-header" style="margin-bottom:1rem">
+            <h3 style="font-size:1rem">Agendamentos</h3>
+            <button class="btn-primary btn-sm" onclick="openCrmApptModal()">+ Novo Agendamento</button>
+          </div>
+          <div id="crm-appointments-list"></div>
+        </div>
+
+        <!-- ── TAB: QUICK REPLIES ────────────────────────── -->
+        <div id="crm-tab-quick-replies" class="crm-tab-content hidden">
+          <div class="page-header" style="margin-bottom:1rem">
+            <h3 style="font-size:1rem">Respostas Rápidas</h3>
+            <button class="btn-primary btn-sm" onclick="openCrmQrModal()">+ Nova Resposta</button>
+          </div>
+          <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem">
+            No chat, digite <code style="background:var(--surface-2);padding:2px 6px;border-radius:4px">/atalho</code> para inserir automaticamente.
+          </p>
+          <div id="crm-qr-list"></div>
+        </div>
+
+      </section>
+
       <!-- Usuários (admin only) -->
       <section id="page-users" class="page hidden">
         <div class="page-header">
@@ -893,6 +1065,70 @@
         <p id="profile-success" class="hidden" style="color:#22c55e;font-size:.9rem;margin-top:.5rem"></p>
         <div class="modal-actions">
           <button type="button" id="profile-modal-cancel">Cancelar</button>
+          <button type="submit" class="btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       CRM MODALS
+  ════════════════════════════════════════════════════════════════ -->
+
+  <!-- Modal Task -->
+  <div id="crm-task-modal" class="modal hidden">
+    <div class="modal-content" style="max-width:480px">
+      <h3 id="crm-task-modal-title">Nova Tarefa</h3>
+      <form id="crm-task-form">
+        <input type="hidden" id="crm-task-id" />
+        <label>Título *</label>
+        <input type="text" id="crm-task-title" placeholder="Ex: Ligar para cliente às 14h" required />
+        <label>Descrição</label>
+        <textarea id="crm-task-desc" rows="2" placeholder="Detalhes..."></textarea>
+        <label>Vencimento</label>
+        <input type="datetime-local" id="crm-task-due" />
+        <label>Lead</label>
+        <select id="crm-task-lead"><option value="">— Nenhum —</option></select>
+        <div class="modal-actions">
+          <button type="button" onclick="closeCrmTaskModal()">Cancelar</button>
+          <button type="submit" class="btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Appointment -->
+  <div id="crm-appt-modal" class="modal hidden">
+    <div class="modal-content" style="max-width:480px">
+      <h3>Novo Agendamento</h3>
+      <form id="crm-appt-form">
+        <label>Título *</label>
+        <input type="text" id="crm-appt-title" placeholder="Ex: Reunião de apresentação" required />
+        <label>Data e Hora</label>
+        <input type="datetime-local" id="crm-appt-date" />
+        <label>Notas</label>
+        <textarea id="crm-appt-notes" rows="2" placeholder="Observações..."></textarea>
+        <label>Lead</label>
+        <select id="crm-appt-lead"><option value="">— Nenhum —</option></select>
+        <div class="modal-actions">
+          <button type="button" onclick="closeCrmApptModal()">Cancelar</button>
+          <button type="submit" class="btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Quick Reply -->
+  <div id="crm-qr-modal" class="modal hidden">
+    <div class="modal-content" style="max-width:480px">
+      <h3>Nova Resposta Rápida</h3>
+      <form id="crm-qr-form">
+        <label>Atalho * <span style="font-size:.8rem;color:var(--muted)">(sem espaços, ex: oi)</span></label>
+        <input type="text" id="crm-qr-shortcut" placeholder="oi" required pattern="[^\s]+" />
+        <label>Mensagem *</label>
+        <textarea id="crm-qr-content" rows="4" placeholder="Olá! Tudo bem? Como posso ajudar?" required></textarea>
+        <div class="modal-actions">
+          <button type="button" onclick="closeCrmQrModal()">Cancelar</button>
           <button type="submit" class="btn-primary">Salvar</button>
         </div>
       </form>

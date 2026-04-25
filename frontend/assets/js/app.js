@@ -5,6 +5,10 @@ let currentPage = 1;
 let waStatusInterval = null;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
 async function apiFetch(path, options = {}) {
   const res = await fetch(API + path, {
@@ -96,6 +100,9 @@ function navigateTo(page) {
   if (page === 'conversations') loadConversations();
   if (page === 'reports')   initReportsPage();
   if (page === 'tracking')  loadTrackingLinks();
+  if (page === 'crm') { initCRM(); }
+  // Stop CRM polling when leaving the page
+  if (page !== 'crm' && crmPollTimer) { clearInterval(crmPollTimer); crmPollTimer = null; }
 }
 
 document.querySelectorAll('.nav-item').forEach((a) => {
@@ -1846,6 +1853,570 @@ function renderChannelsTable(rows) {
     </tr>`;
   }).join('');
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   CRM
+════════════════════════════════════════════════════════════════════ */
+
+let crmTickets = [];
+let crmActiveTicket = null;
+let crmPollTimer = null;
+let crmAllQuickReplies = [];
+let crmCurrentClientId = '';
+let crmTasksCache = [];
+
+function crmToken() { return localStorage.getItem('token'); }
+
+async function initCRM() {
+  // Populate client filter
+  try {
+    const res = await fetch('/api/clients', { headers: { Authorization: `Bearer ${crmToken()}` } });
+    const clients = await res.json();
+    const sel = document.getElementById('crm-client-filter');
+    sel.innerHTML = '<option value="">Todos os clientes</option>';
+    if (Array.isArray(clients)) {
+      clients.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c.id; o.textContent = c.name;
+        sel.appendChild(o);
+      });
+    }
+  } catch (_) {}
+  await crmLoadStats();
+  await crmLoadTickets();
+  await loadCrmQuickReplies();
+  crmStartPolling();
+}
+
+async function crmLoadStats() {
+  try {
+    const qs = crmCurrentClientId ? `?clientId=${crmCurrentClientId}` : '';
+    const res = await fetch(`/api/crm/stats${qs}`, { headers: { Authorization: `Bearer ${crmToken()}` } });
+    const s = await res.json();
+    document.getElementById('crm-stat-new').textContent      = s.novo      ?? 0;
+    document.getElementById('crm-stat-waiting').textContent  = s.aguardando ?? 0;
+    document.getElementById('crm-stat-attending').textContent = s.atendendo  ?? 0;
+    document.getElementById('crm-stat-resolved').textContent = s.resolvido  ?? 0;
+  } catch (_) {}
+}
+
+async function crmLoadTickets() {
+  try {
+    const params = new URLSearchParams();
+    if (crmCurrentClientId) params.set('clientId', crmCurrentClientId);
+    const statusFilter = document.getElementById('crm-status-filter')?.value;
+    if (statusFilter) params.set('crmStatus', statusFilter);
+    const search = document.getElementById('crm-search')?.value;
+    if (search) params.set('search', search);
+
+    const res = await fetch(`/api/crm/tickets?${params}`, { headers: { Authorization: `Bearer ${crmToken()}` } });
+    crmTickets = await res.json();
+    crmRenderTickets();
+    if (crmActiveTicket) crmLoadMessages(crmActiveTicket.id);
+    crmRenderKanban();
+  } catch (_) {}
+}
+
+function crmApplyFilter() {
+  crmCurrentClientId = document.getElementById('crm-client-filter')?.value || '';
+  crmLoadStats();
+  crmLoadTickets();
+}
+
+function crmStartPolling() {
+  if (crmPollTimer) clearInterval(crmPollTimer);
+  crmPollTimer = setInterval(() => {
+    const page = document.querySelector('.page:not(.hidden)');
+    if (page && page.id === 'page-crm') {
+      crmLoadStats();
+      crmLoadTickets();
+    }
+  }, 5000);
+}
+
+function crmRenderTickets() {
+  const container = document.getElementById('crm-tickets');
+  if (!container) return;
+  if (!crmTickets.length) {
+    container.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--muted);font-size:.85rem">Nenhum atendimento encontrado</div>';
+    return;
+  }
+  container.innerHTML = crmTickets.map(t => {
+    const name = t.name || t.phone || '—';
+    const initials = name.slice(0, 2).toUpperCase();
+    const preview = t.lastMessage ? t.lastMessage.slice(0, 50) : 'Sem mensagens';
+    const ts = t.lastMessageAt || t.createdAt;
+    const timeStr = ts ? crmFormatTime(ts) : '';
+    const status = t.crmStatus || 'new';
+    const unread = t.unread > 0 ? `<span class="crm-ticket-unread">${t.unread}</span>` : '';
+    const isActive = crmActiveTicket?.id === t.id ? 'active' : '';
+
+    // Silence tag
+    const silence = crmSilenceTag(t.lastMessageAt, t.lastDirection);
+
+    return `<div class="crm-ticket-item ${isActive}" onclick="crmSelectTicket(${t.id})">
+      <div class="crm-ticket-name">
+        <span class="crm-status-dot ${status}"></span>
+        ${escapeHtml(name)}
+        ${unread}
+      </div>
+      <div class="crm-ticket-preview">${escapeHtml(preview)}</div>
+      <div class="crm-ticket-meta" style="display:flex;align-items:center;justify-content:space-between">
+        <span>${timeStr}</span>
+        ${silence}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function crmSilenceTag(lastAt, lastDir) {
+  if (!lastAt || lastDir !== 'inbound') return '';
+  const diff = Date.now() - new Date(lastAt).getTime();
+  const hours = diff / 3600000;
+  if (hours < 2) return '';
+  const label = hours < 24 ? `${Math.round(hours)}h sem resposta` : `${Math.floor(hours/24)}d sem resposta`;
+  const cls = hours < 24 ? 'warn' : 'danger';
+  return `<span class="crm-silence-badge ${cls}">${label}</span>`;
+}
+
+function crmFormatTime(ts) {
+  const d = new Date(ts);
+  const now = new Date();
+  const diffDays = Math.floor((now - d) / 86400000);
+  if (diffDays === 0) return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  if (diffDays === 1) return 'Ontem';
+  if (diffDays < 7) return d.toLocaleDateString('pt-BR', { weekday: 'short' });
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
+
+async function crmSelectTicket(id) {
+  const ticket = crmTickets.find(t => t.id === id);
+  if (!ticket) return;
+  crmActiveTicket = ticket;
+
+  // Mark as read
+  fetch(`/api/crm/tickets/${id}/read`, { method: 'PUT', headers: { Authorization: `Bearer ${crmToken()}` } }).catch(() => {});
+
+  // Update UI
+  document.getElementById('crm-chat-empty').classList.add('hidden');
+  document.getElementById('crm-chat-active').classList.remove('hidden');
+
+  const name = ticket.name || ticket.phone || '—';
+  const initials = name.slice(0, 2).toUpperCase();
+  document.getElementById('crm-active-avatar').textContent = initials;
+  document.getElementById('crm-active-name').textContent = name;
+  document.getElementById('crm-active-phone').textContent = ticket.phone || '';
+  document.getElementById('crm-active-status').value = ticket.crmStatus || 'new';
+
+  // Mobile: show chat panel
+  document.getElementById('crm-ticket-list').classList.add('hidden-mobile');
+  document.getElementById('crm-chat-area').classList.add('active-mobile');
+
+  // Re-render ticket list to show active
+  crmRenderTickets();
+
+  // Load messages
+  await crmLoadMessages(id);
+
+  // Populate contact panel
+  crmPopulateContact(ticket);
+  loadCpTasks(id);
+}
+
+async function crmLoadMessages(leadId) {
+  try {
+    const res = await fetch(`/api/crm/messages/${leadId}`, { headers: { Authorization: `Bearer ${crmToken()}` } });
+    const msgs = await res.json();
+    const container = document.getElementById('crm-messages');
+    if (!container) return;
+    container.innerHTML = msgs.map(m => `
+      <div class="crm-msg ${m.direction}">
+        <div class="crm-msg-bubble">${escapeHtml(m.content)}</div>
+        <div class="crm-msg-time">${new Date(m.createdAt).toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}</div>
+      </div>`).join('');
+    container.scrollTop = container.scrollHeight;
+  } catch (_) {}
+}
+
+function crmPopulateContact(t) {
+  const sourceLabels = {
+    whatsapp: 'WhatsApp', whatsapp_meta: 'Meta Ads → WhatsApp',
+    whatsapp_group: 'Grupo WhatsApp', instagram: 'Instagram',
+    website: 'Site', mercadopago: 'Mercado Pago', manual: 'Manual',
+  };
+  document.getElementById('cp-name').textContent   = t.name || '—';
+  document.getElementById('cp-phone').textContent  = t.phone || '—';
+  document.getElementById('cp-source').textContent = sourceLabels[t.source] || t.source || '—';
+  document.getElementById('cp-client').textContent = t.clientName || '—';
+  const statusLabels = { new: 'Novo', waiting: 'Aguardando', attending: 'Atendendo', resolved: 'Resolvido' };
+  document.getElementById('cp-status').textContent = statusLabels[t.crmStatus] || '—';
+  const lastAt = t.lastMessageAt || t.updatedAt;
+  document.getElementById('cp-last').textContent = lastAt ? new Date(lastAt).toLocaleString('pt-BR') : '—';
+
+  // Silence
+  const sil = document.getElementById('cp-silence');
+  if (t.lastMessageAt && t.lastDirection === 'inbound') {
+    const h = (Date.now() - new Date(t.lastMessageAt).getTime()) / 3600000;
+    if (h > 1) {
+      sil.textContent = h < 24 ? `${Math.round(h)}h` : `${Math.floor(h/24)}d ${Math.round(h%24)}h`;
+    } else {
+      sil.textContent = 'Recente';
+    }
+  } else {
+    sil.textContent = '—';
+  }
+}
+
+async function loadCpTasks(leadId) {
+  try {
+    const res = await fetch(`/api/crm/tasks?leadId=${leadId}`, { headers: { Authorization: `Bearer ${crmToken()}` } });
+    const tasks = await res.json();
+    const container = document.getElementById('cp-tasks');
+    if (!tasks.length) { container.innerHTML = '<div style="font-size:.78rem;color:var(--muted)">Sem tarefas</div>'; return; }
+    container.innerHTML = tasks.map(t => `
+      <div style="font-size:.8rem;padding:.3rem 0;border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:.4rem">
+        <span style="color:${t.completed ? 'var(--muted2)' : 'var(--cyan)'}">●</span>
+        <span style="${t.completed ? 'text-decoration:line-through;color:var(--muted)' : ''}">${escapeHtml(t.title)}</span>
+        ${t.dueAt ? `<span style="color:var(--muted2);margin-left:auto">${new Date(t.dueAt).toLocaleDateString('pt-BR')}</span>` : ''}
+      </div>`).join('');
+  } catch (_) {}
+}
+
+async function crmUpdateStatus(status) {
+  if (!crmActiveTicket) return;
+  try {
+    await fetch(`/api/crm/tickets/${crmActiveTicket.id}/status`, {
+      method: 'PUT', headers: { Authorization: `Bearer ${crmToken()}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ crmStatus: status })
+    });
+    crmActiveTicket.crmStatus = status;
+    crmLoadStats();
+    crmLoadTickets();
+  } catch (_) {}
+}
+
+function crmCheckQuickReply(el) {
+  const val = el.value;
+  const suggestions = document.getElementById('crm-qr-suggestions');
+  // Auto-resize textarea
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+
+  if (val.startsWith('/') && val.length > 1) {
+    const query = val.slice(1).toLowerCase();
+    const matches = crmAllQuickReplies.filter(q => q.shortcut.toLowerCase().startsWith(query));
+    if (matches.length) {
+      suggestions.classList.remove('hidden');
+      suggestions.innerHTML = matches.map(q =>
+        `<span class="crm-qr-chip" onclick="crmInsertQuickReply('${escapeHtml(q.content).replace(/'/g,"&#39;")}')">${escapeHtml(q.shortcut)}</span>`
+      ).join('');
+      return;
+    }
+  }
+  suggestions.classList.add('hidden');
+  suggestions.innerHTML = '';
+}
+
+function crmInsertQuickReply(content) {
+  const input = document.getElementById('crm-msg-input');
+  input.value = content;
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  document.getElementById('crm-qr-suggestions').classList.add('hidden');
+  input.focus();
+}
+
+function crmMsgKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    crmSendMessage();
+  }
+}
+
+async function crmSendMessage() {
+  if (!crmActiveTicket) return;
+  const input = document.getElementById('crm-msg-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  input.style.height = 'auto';
+  try {
+    await fetch('/api/crm/send', {
+      method: 'POST', headers: { Authorization: `Bearer ${crmToken()}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leadId: crmActiveTicket.id, message: msg })
+    });
+    crmLoadMessages(crmActiveTicket.id);
+    crmLoadTickets();
+  } catch (e) {
+    showToast('Erro ao enviar mensagem');
+  }
+}
+
+function crmToggleContact() {
+  const panel = document.getElementById('crm-contact-panel');
+  panel.classList.toggle('hidden');
+  panel.classList.toggle('active-mobile');
+}
+
+function crmBackToList() {
+  document.getElementById('crm-ticket-list').classList.remove('hidden-mobile');
+  document.getElementById('crm-chat-area').classList.remove('active-mobile');
+  document.getElementById('crm-contact-panel').classList.add('hidden');
+  document.getElementById('crm-contact-panel').classList.remove('active-mobile');
+}
+
+// ── KANBAN ──
+function crmRenderKanban() {
+  const cols = { new: [], waiting: [], attending: [], resolved: [] };
+  crmTickets.forEach(t => {
+    const s = t.crmStatus || 'new';
+    if (cols[s]) cols[s].push(t);
+  });
+  ['new', 'waiting', 'attending', 'resolved'].forEach(s => {
+    const col = document.getElementById(`k-col-${s}`);
+    const count = document.getElementById(`k-count-${s}`);
+    if (!col) return;
+    count.textContent = cols[s].length;
+    col.innerHTML = cols[s].map(t => {
+      const name = t.name || t.phone || '—';
+      const preview = t.lastMessage ? t.lastMessage.slice(0, 40) : '';
+      const ts = t.lastMessageAt || t.createdAt;
+      return `<div class="crm-kanban-card" onclick="crmSelectTicket(${t.id});switchCrmTab('chats',document.querySelector('[data-tab=chats]'))">
+        <div class="crm-kanban-card-name">${escapeHtml(name)}</div>
+        ${preview ? `<div class="crm-kanban-card-preview">${escapeHtml(preview)}</div>` : ''}
+        <div class="crm-kanban-card-time">${ts ? crmFormatTime(ts) : ''}</div>
+      </div>`;
+    }).join('') || '<div style="padding:.5rem;font-size:.78rem;color:var(--muted);text-align:center">Vazio</div>';
+  });
+}
+
+// ── TAB SWITCHER ──
+function switchCrmTab(tab, btn) {
+  document.querySelectorAll('.crm-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.crm-tab-content').forEach(c => c.classList.add('hidden'));
+  btn.classList.add('active');
+  document.getElementById(`crm-tab-${tab}`).classList.remove('hidden');
+
+  if (tab === 'tasks')        loadCrmTasks();
+  if (tab === 'appointments') loadCrmAppointments();
+  if (tab === 'quick-replies') loadCrmQuickReplies();
+}
+
+// ── TASKS ──
+async function loadCrmTasks() {
+  try {
+    const showCompleted = document.getElementById('crm-tasks-show-completed')?.checked;
+    const params = new URLSearchParams();
+    if (crmCurrentClientId) params.set('clientId', crmCurrentClientId);
+    if (!showCompleted) params.set('completed', 'false');
+    const res = await fetch(`/api/crm/tasks?${params}`, { headers: { Authorization: `Bearer ${crmToken()}` } });
+    const tasks = await res.json();
+    crmTasksCache = tasks;
+    const container = document.getElementById('crm-tasks-list');
+    if (!tasks.length) { container.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:1rem">Nenhuma tarefa</div>'; return; }
+    container.innerHTML = tasks.map(t => {
+      const due = t.dueAt ? new Date(t.dueAt).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : null;
+      const overdue = t.dueAt && !t.completed && new Date(t.dueAt) < new Date();
+      return `<div class="crm-task-item ${t.completed ? 'done' : ''}">
+        <input type="checkbox" class="crm-task-check" ${t.completed ? 'checked' : ''} onchange="crmToggleTask(${t.id},this.checked)" />
+        <div class="crm-task-body">
+          <div class="crm-task-title">${escapeHtml(t.title)}</div>
+          <div class="crm-task-meta">
+            ${t.leadName ? `👤 ${escapeHtml(t.leadName)}` : ''}
+            ${due ? `<span style="color:${overdue ? 'var(--danger)' : 'var(--muted)'}">📅 ${due}${overdue ? ' ⚠️' : ''}</span>` : ''}
+            ${t.description ? `<span style="margin-left:.5rem">— ${escapeHtml(t.description.slice(0,60))}</span>` : ''}
+          </div>
+        </div>
+        <div class="crm-task-actions">
+          <button class="btn-sm btn-edit" onclick="openCrmTaskModal(${t.id})">✏️</button>
+          <button class="btn-sm" style="color:var(--danger)" onclick="deleteCrmTask(${t.id})">🗑</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (_) {}
+}
+
+async function crmToggleTask(id, completed) {
+  const task = crmTasksCache.find(t => t.id === id);
+  if (!task) { loadCrmTasks(); return; }
+  await fetch(`/api/crm/tasks/${id}`, {
+    method: 'PUT', headers: { Authorization: `Bearer ${crmToken()}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: task.title, description: task.description, dueAt: task.dueAt, completed })
+  });
+  loadCrmTasks();
+}
+
+async function deleteCrmTask(id) {
+  if (!confirm('Excluir tarefa?')) return;
+  await fetch(`/api/crm/tasks/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${crmToken()}` } });
+  loadCrmTasks();
+}
+
+let _crmEditTaskId = null;
+async function openCrmTaskModal(taskId) {
+  _crmEditTaskId = taskId || null;
+  const modal = document.getElementById('crm-task-modal');
+  document.getElementById('crm-task-modal-title').textContent = taskId ? 'Editar Tarefa' : 'Nova Tarefa';
+  // Populate lead dropdown
+  const sel = document.getElementById('crm-task-lead');
+  sel.innerHTML = '<option value="">— Nenhum —</option>';
+  crmTickets.forEach(t => {
+    const o = document.createElement('option');
+    o.value = t.id; o.textContent = (t.name || t.phone || `#${t.id}`);
+    sel.appendChild(o);
+  });
+  if (crmActiveTicket) sel.value = crmActiveTicket.id;
+
+  if (taskId) {
+    const task = crmTasksCache.find(t => t.id === taskId);
+    if (task) {
+      document.getElementById('crm-task-title').value = task.title || '';
+      document.getElementById('crm-task-desc').value  = task.description || '';
+      document.getElementById('crm-task-due').value   = task.dueAt ? task.dueAt.slice(0,16) : '';
+      if (task.leadId) sel.value = task.leadId;
+    }
+  } else {
+    document.getElementById('crm-task-form').reset();
+    if (crmActiveTicket) sel.value = crmActiveTicket.id;
+  }
+  modal.classList.remove('hidden');
+}
+function closeCrmTaskModal() { document.getElementById('crm-task-modal').classList.add('hidden'); }
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('crm-task-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const title = document.getElementById('crm-task-title').value.trim();
+    const description = document.getElementById('crm-task-desc').value.trim();
+    const dueAt = document.getElementById('crm-task-due').value;
+    const leadId = document.getElementById('crm-task-lead').value;
+    const body = { title, description, dueAt, leadId, clientId: crmCurrentClientId };
+    if (_crmEditTaskId) {
+      await fetch(`/api/crm/tasks/${_crmEditTaskId}`, {
+        method: 'PUT', headers: { Authorization: `Bearer ${crmToken()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description, dueAt, completed: false })
+      });
+    } else {
+      await fetch('/api/crm/tasks', {
+        method: 'POST', headers: { Authorization: `Bearer ${crmToken()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+    }
+    closeCrmTaskModal();
+    loadCrmTasks();
+    if (crmActiveTicket) loadCpTasks(crmActiveTicket.id);
+  });
+});
+
+// ── APPOINTMENTS ──
+async function loadCrmAppointments() {
+  try {
+    const params = new URLSearchParams();
+    if (crmCurrentClientId) params.set('clientId', crmCurrentClientId);
+    const res = await fetch(`/api/crm/appointments?${params}`, { headers: { Authorization: `Bearer ${crmToken()}` } });
+    const appts = await res.json();
+    const container = document.getElementById('crm-appointments-list');
+    if (!appts.length) { container.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:1rem">Nenhum agendamento</div>'; return; }
+    container.innerHTML = appts.map(a => {
+      const dt = a.scheduledAt ? new Date(a.scheduledAt).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+      const isPast = a.scheduledAt && new Date(a.scheduledAt) < new Date();
+      return `<div class="crm-appt-item">
+        <span class="crm-appt-icon">📅</span>
+        <div class="crm-appt-body">
+          <div class="crm-appt-title">${escapeHtml(a.title)}</div>
+          <div class="crm-appt-meta">
+            ${a.leadName ? `👤 ${escapeHtml(a.leadName)} · ` : ''}
+            <span style="color:${isPast ? 'var(--danger)' : 'var(--cyan)'}">${dt}</span>
+            ${a.notes ? ` — ${escapeHtml(a.notes.slice(0,60))}` : ''}
+          </div>
+        </div>
+        <span class="crm-appt-badge">${a.detectedBy === 'ai' ? '🤖 IA' : '✍️ Manual'}</span>
+        <button class="btn-sm" style="color:var(--danger);margin-left:.5rem" onclick="deleteCrmAppt(${a.id})">🗑</button>
+      </div>`;
+    }).join('');
+  } catch (_) {}
+}
+
+async function deleteCrmAppt(id) {
+  if (!confirm('Excluir agendamento?')) return;
+  await fetch(`/api/crm/appointments/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${crmToken()}` } });
+  loadCrmAppointments();
+}
+
+function openCrmApptModal() {
+  const modal = document.getElementById('crm-appt-modal');
+  document.getElementById('crm-appt-form').reset();
+  const sel = document.getElementById('crm-appt-lead');
+  sel.innerHTML = '<option value="">— Nenhum —</option>';
+  crmTickets.forEach(t => {
+    const o = document.createElement('option');
+    o.value = t.id; o.textContent = (t.name || t.phone || `#${t.id}`);
+    sel.appendChild(o);
+  });
+  if (crmActiveTicket) sel.value = crmActiveTicket.id;
+  modal.classList.remove('hidden');
+}
+function closeCrmApptModal() { document.getElementById('crm-appt-modal').classList.add('hidden'); }
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('crm-appt-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const title = document.getElementById('crm-appt-title').value.trim();
+    const scheduledAt = document.getElementById('crm-appt-date').value;
+    const notes = document.getElementById('crm-appt-notes').value.trim();
+    const leadId = document.getElementById('crm-appt-lead').value;
+    await fetch('/api/crm/appointments', {
+      method: 'POST', headers: { Authorization: `Bearer ${crmToken()}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, scheduledAt, notes, leadId, clientId: crmCurrentClientId })
+    });
+    closeCrmApptModal();
+    loadCrmAppointments();
+  });
+});
+
+// ── QUICK REPLIES ──
+async function loadCrmQuickReplies() {
+  try {
+    const qs = crmCurrentClientId ? `?clientId=${crmCurrentClientId}` : '';
+    const res = await fetch(`/api/crm/quick-replies${qs}`, { headers: { Authorization: `Bearer ${crmToken()}` } });
+    crmAllQuickReplies = await res.json();
+    const container = document.getElementById('crm-qr-list');
+    if (!container) return;
+    if (!crmAllQuickReplies.length) { container.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:1rem">Nenhuma resposta rápida cadastrada</div>'; return; }
+    container.innerHTML = crmAllQuickReplies.map(q => `
+      <div class="crm-qr-item">
+        <span class="crm-qr-shortcut">/${escapeHtml(q.shortcut)}</span>
+        <span class="crm-qr-body">${escapeHtml(q.content)}</span>
+        <button class="btn-sm" style="color:var(--danger)" onclick="deleteCrmQr(${q.id})">🗑</button>
+      </div>`).join('');
+  } catch (_) {}
+}
+
+async function deleteCrmQr(id) {
+  if (!confirm('Excluir resposta rápida?')) return;
+  await fetch(`/api/crm/quick-replies/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${crmToken()}` } });
+  loadCrmQuickReplies();
+}
+
+function openCrmQrModal() {
+  document.getElementById('crm-qr-form').reset();
+  document.getElementById('crm-qr-modal').classList.remove('hidden');
+}
+function closeCrmQrModal() { document.getElementById('crm-qr-modal').classList.add('hidden'); }
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('crm-qr-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const shortcut = document.getElementById('crm-qr-shortcut').value.trim();
+    const content  = document.getElementById('crm-qr-content').value.trim();
+    await fetch('/api/crm/quick-replies', {
+      method: 'POST', headers: { Authorization: `Bearer ${crmToken()}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shortcut, content, clientId: crmCurrentClientId || null })
+    });
+    closeCrmQrModal();
+    loadCrmQuickReplies();
+  });
+});
+
+// ─── Silence auto-reply ────────────────────────────────────────────────────────
+// (future feature — to be implemented server-side)
 
 async function initReportsPage() {
   // Set default date range: last 30 days

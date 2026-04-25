@@ -2174,15 +2174,32 @@ async function crmSendMessage() {
   if (!msg) return;
   input.value = '';
   input.style.height = 'auto';
+
+  // Mostra imediatamente no chat (otimista)
+  const container = document.getElementById('crm-messages');
+  if (container) {
+    const now = new Date().toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+    container.innerHTML += `
+      <div class="crm-msg outbound crm-msg-sending">
+        <div class="crm-msg-bubble">${escapeHtml(msg)}</div>
+        <div class="crm-msg-time">${now}</div>
+      </div>`;
+    container.scrollTop = container.scrollHeight;
+  }
+
   try {
     await fetch('/api/crm/send', {
       method: 'POST', headers: { Authorization: `Bearer ${crmToken()}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ leadId: crmActiveTicket.id, message: msg })
     });
+    // Recarrega do servidor para confirmar e pegar timestamp real
     crmLoadMessages(crmActiveTicket.id);
     crmLoadTickets();
   } catch (e) {
     showToast('Erro ao enviar mensagem');
+    // Remove o otimista em caso de erro
+    const sending = container?.querySelector('.crm-msg-sending');
+    if (sending) sending.remove();
   }
 }
 

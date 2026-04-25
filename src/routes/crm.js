@@ -82,7 +82,8 @@ router.post('/send', async (req, res) => {
       Number(leadId)
     );
     if (!lead) return res.status(404).json({ error: 'Lead não encontrado' });
-    await evolutionService.sendClientMessage(lead.instanceName, lead.phone, message);
+
+    // Salva PRIMEIRO — mensagem aparece no CRM independente do WhatsApp
     await prisma.$executeRawUnsafe(
       `INSERT INTO interactions ("leadId", type, direction, content) VALUES ($1, 'message', 'outbound', $2)`,
       Number(leadId), message
@@ -90,6 +91,16 @@ router.post('/send', async (req, res) => {
     if (!lead.crmStatus || lead.crmStatus === 'new') {
       await prisma.$executeRawUnsafe(`UPDATE leads SET "crmStatus"='attending' WHERE id=$1`, Number(leadId));
     }
+
+    // Tenta enviar pelo WhatsApp (falha silenciosa se instância offline)
+    if (lead.instanceName) {
+      try {
+        await evolutionService.sendClientMessage(lead.instanceName, lead.phone, message);
+      } catch (sendErr) {
+        console.warn(`[CRM] Falha ao enviar WA para ${lead.phone}:`, sendErr.message);
+      }
+    }
+
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

@@ -25,6 +25,22 @@ function show(id) { document.getElementById(id).classList.remove('hidden'); }
 function hide(id) { document.getElementById(id).classList.add('hidden'); }
 function el(id) { return document.getElementById(id); }
 
+function showToast(msg, duration = 3500) {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;pointer-events:none';
+    document.body.appendChild(container);
+  }
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  t.style.cssText = 'background:#1e2235;color:#e2e8f0;padding:.65rem 1.1rem;border-radius:10px;font-size:.84rem;border:1px solid rgba(255,255,255,.1);box-shadow:0 4px 16px rgba(0,0,0,.4);max-width:320px;pointer-events:auto';
+  container.appendChild(t);
+  setTimeout(() => { t.style.transition='opacity .3s'; t.style.opacity='0'; setTimeout(() => t.remove(), 300); }, duration);
+}
+
 function statusBadge(status) {
   const labels = { new: 'Novo', contacted: 'Contactado', qualified: 'Qualificado', converted: 'Convertido', lost: 'Perdido', disqualified: 'Desclassificado' };
   return `<span class="status-badge status-${status}">${labels[status] || status}</span>`;
@@ -103,6 +119,7 @@ function navigateTo(page) {
   if (page === 'crm') { initCRM(); }
   // Stop CRM polling when leaving the page
   if (page !== 'crm' && crmPollTimer) { clearInterval(crmPollTimer); crmPollTimer = null; }
+  if (page !== 'crm' && crmApptNotifTimer) { clearInterval(crmApptNotifTimer); crmApptNotifTimer = null; }
 }
 
 document.querySelectorAll('.nav-item').forEach((a) => {
@@ -1866,6 +1883,7 @@ async function initCRM() {
   await crmLoadTickets();
   await loadCrmQuickReplies();
   crmStartPolling();
+  crmStartApptNotifPolling();
 }
 
 async function crmLoadStats() {
@@ -2249,7 +2267,12 @@ function switchCrmTab(tab, btn) {
   document.getElementById(`crm-tab-${tab}`).classList.remove('hidden');
 
   if (tab === 'tasks')        loadCrmTasks();
-  if (tab === 'appointments') loadCrmAppointments();
+  if (tab === 'appointments') {
+    loadCrmAppointments();
+    // Limpa badge de notificação ao abrir a aba
+    const badge = document.getElementById('crm-appt-tab-badge');
+    if (badge) badge.classList.add('hidden');
+  }
   if (tab === 'quick-replies') loadCrmQuickReplies();
 }
 
@@ -2359,37 +2382,112 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── APPOINTMENTS ──
+let crmApptFilter = 'active'; // 'active' | 'cancelled'
+let crmApptNotifSince = new Date().toISOString(); // timestamp da última verificação
+let crmApptNotifTimer = null;
+
+function crmSetApptFilter(status, btn) {
+  crmApptFilter = status;
+  document.querySelectorAll('.crm-appt-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadCrmAppointments();
+}
+
 async function loadCrmAppointments() {
   try {
     const params = new URLSearchParams();
     if (crmCurrentClientId) params.set('clientId', crmCurrentClientId);
+    if (crmApptFilter === 'cancelled') params.set('status', 'cancelled');
     const res = await fetch(`/api/crm/appointments?${params}`, { headers: { Authorization: `Bearer ${crmToken()}` } });
     const appts = await res.json();
     const container = document.getElementById('crm-appointments-list');
-    if (!appts.length) { container.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:1rem">Nenhum agendamento</div>'; return; }
+    if (!appts.length) { container.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:1.5rem 0">Nenhum agendamento</div>'; return; }
     container.innerHTML = appts.map(a => {
       const dt = a.scheduledAt ? new Date(a.scheduledAt).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
       const isPast = a.scheduledAt && new Date(a.scheduledAt) < new Date();
-      return `<div class="crm-appt-item">
+      const isCancelled = a.status === 'cancelled';
+      const statusLabel = isCancelled ? 'Cancelado' : a.detectedBy === 'ai' ? 'IA' : 'Manual';
+      return `<div class="crm-appt-item${isCancelled ? ' cancelled' : ''}">
         <div class="crm-appt-body">
           <div class="crm-appt-title">${escapeHtml(a.title)}</div>
           <div class="crm-appt-meta">
             ${a.leadName ? `${escapeHtml(a.leadName)} · ` : ''}
-            <span style="color:${isPast ? 'var(--danger)' : 'var(--cyan)'}">${dt}</span>
-            ${a.notes ? ` — ${escapeHtml(a.notes.slice(0,60))}` : ''}
+            <span style="color:${isCancelled ? 'var(--muted)' : isPast ? 'var(--danger)' : 'var(--cyan)'}">${dt}</span>
+            ${a.notes ? ` — ${escapeHtml(a.notes.slice(0,80))}` : ''}
           </div>
         </div>
-        <span class="crm-appt-badge">${a.detectedBy === 'ai' ? 'IA' : 'Manual'}</span>
-        <button class="btn-sm" style="color:var(--danger);margin-left:.5rem" onclick="deleteCrmAppt(${a.id})">Excluir</button>
+        <span class="crm-appt-badge${isCancelled ? ' cancelled' : ''}">${statusLabel}</span>
+        ${!isCancelled ? `
+          <button class="btn-sm btn-edit" style="margin-left:.5rem;font-size:.75rem" onclick="crmRescheduleAppt(${a.id})">Remarcar</button>
+          <button class="btn-sm" style="color:var(--warning);margin-left:.25rem;font-size:.75rem" onclick="crmCancelAppt(${a.id})">Cancelar</button>
+        ` : ''}
+        <button class="btn-sm" style="color:var(--danger);margin-left:.25rem;font-size:.75rem" onclick="deleteCrmAppt(${a.id})">Excluir</button>
       </div>`;
     }).join('');
   } catch (_) {}
 }
 
+async function crmCancelAppt(id) {
+  if (!confirm('Cancelar este agendamento?')) return;
+  await fetch(`/api/crm/appointments/${id}/status`, {
+    method: 'PATCH', headers: { Authorization: `Bearer ${crmToken()}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: 'cancelled' })
+  });
+  loadCrmAppointments();
+  showToast('Agendamento cancelado');
+}
+
+async function crmRescheduleAppt(id) {
+  const newDate = prompt('Nova data e hora (ex: 2025-05-10T14:00):');
+  if (!newDate) return;
+  const dt = new Date(newDate);
+  if (isNaN(dt)) { showToast('Data inválida'); return; }
+  await fetch(`/api/crm/appointments/${id}/status`, {
+    method: 'PATCH', headers: { Authorization: `Bearer ${crmToken()}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: 'confirmed', scheduledAt: dt.toISOString() })
+  });
+  loadCrmAppointments();
+  showToast('Agendamento remarcado');
+}
+
 async function deleteCrmAppt(id) {
-  if (!confirm('Excluir agendamento?')) return;
+  if (!confirm('Excluir agendamento permanentemente?')) return;
   await fetch(`/api/crm/appointments/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${crmToken()}` } });
   loadCrmAppointments();
+}
+
+// ── Polling de notificações de agendamento (verifica a cada 30s) ──
+function crmStartApptNotifPolling() {
+  crmApptNotifSince = new Date().toISOString();
+  if (crmApptNotifTimer) clearInterval(crmApptNotifTimer);
+  crmApptNotifTimer = setInterval(crmCheckApptNotifs, 30000);
+}
+
+async function crmCheckApptNotifs() {
+  try {
+    const params = new URLSearchParams({ since: crmApptNotifSince });
+    if (crmCurrentClientId) params.set('clientId', crmCurrentClientId);
+    const res = await fetch(`/api/crm/appointments/notify?${params}`, { headers: { Authorization: `Bearer ${crmToken()}` } });
+    const data = await res.json();
+    if (data.count > 0) {
+      crmApptNotifSince = new Date().toISOString();
+      // Mostra badge na aba
+      const badge = document.getElementById('crm-appt-tab-badge');
+      if (badge) { badge.textContent = data.count; badge.classList.remove('hidden'); }
+      // Toast para cada mudança
+      data.items.forEach(item => {
+        const dt = item.scheduledAt ? new Date(item.scheduledAt).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+        const msg = item.status === 'cancelled'
+          ? `Cancelamento: ${item.leadName || 'Lead'} — ${item.title}`
+          : `Agendamento: ${item.leadName || 'Lead'} — ${item.title}${dt ? ' · ' + dt : ''}`;
+        showToast(msg, 6000);
+      });
+      // Recarrega lista se a aba estiver visível
+      if (!document.getElementById('crm-tab-appointments')?.classList.contains('hidden')) {
+        loadCrmAppointments();
+      }
+    }
+  } catch (_) {}
 }
 
 function openCrmApptModal() {

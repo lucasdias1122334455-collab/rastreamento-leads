@@ -2465,6 +2465,27 @@ select:focus {
 .crm-appt-title { font-size: .87rem; font-weight: 600; color: var(--crm-text); margin-bottom: 4px; }
 .crm-appt-meta  { font-size: .75rem; color: var(--crm-muted); }
 .crm-appt-badge { font-size: .7rem; padding: 3px 8px; border-radius: 6px; font-weight: 600; background: rgba(108,99,255,.15); color: #a89fff; flex-shrink: 0; }
+.crm-appt-badge.cancelled { background: rgba(255,100,100,.12); color: #ff6b6b; }
+.crm-appt-item.cancelled { opacity: .65; border-style: dashed; }
+
+/* Notificação badge */
+.crm-notif-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px;
+  font-size: .65rem; font-weight: 800; line-height: 1;
+  background: #ff6b6b; color: #fff; margin-left: 4px; vertical-align: middle;
+}
+.crm-notif-badge.hidden { display: none; }
+
+/* Filtros de agendamento (Ativos / Cancelados) */
+.crm-appt-filter-btn {
+  padding: 4px 12px; border-radius: 8px; border: 1px solid var(--crm-border);
+  background: transparent; color: var(--crm-muted); font-size: .78rem; cursor: pointer;
+  transition: all .15s; font-family: inherit;
+}
+.crm-appt-filter-btn.active, .crm-appt-filter-btn:hover {
+  background: var(--crm-cyan-dim); border-color: var(--crm-cyan-border); color: var(--crm-cyan);
+}
 
 .crm-qr-item {
   background: var(--crm-surface); border: 1px solid var(--crm-border);

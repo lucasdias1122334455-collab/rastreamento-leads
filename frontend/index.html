@@ -538,7 +538,7 @@
             <button class="crm-tab active" data-tab="chats" onclick="switchCrmTab('chats',this)">Atendimentos</button>
             <button class="crm-tab" data-tab="kanban" onclick="switchCrmTab('kanban',this)">Kanban</button>
             <button class="crm-tab" data-tab="tasks" onclick="switchCrmTab('tasks',this)">Tarefas</button>
-            <button class="crm-tab" data-tab="appointments" onclick="switchCrmTab('appointments',this)">Agendamentos</button>
+            <button class="crm-tab" data-tab="appointments" onclick="switchCrmTab('appointments',this)">Agendamentos <span id="crm-appt-tab-badge" class="crm-notif-badge hidden">!</span></button>
             <button class="crm-tab" data-tab="quick-replies" onclick="switchCrmTab('quick-replies',this)">Respostas Rápidas</button>
           </div>
           <div class="crm-topbar-right">
@@ -681,6 +681,12 @@
         <div id="crm-tab-appointments" class="crm-tab-content hidden">
           <div class="page-header" style="margin-bottom:1rem">
             <h3 style="font-size:1rem">Agendamentos</h3>
+            <div style="display:flex;gap:.5rem;align-items:center">
+              <button class="crm-appt-filter-btn active" data-status="active" onclick="crmSetApptFilter('active',this)">Ativos</button>
+              <button class="crm-appt-filter-btn" data-status="cancelled" onclick="crmSetApptFilter('cancelled',this)">
+                Cancelados <span id="crm-cancelled-badge" class="crm-notif-badge hidden">0</span>
+              </button>
+            </div>
             <button class="btn-primary btn-sm" onclick="openCrmApptModal()">+ Novo Agendamento</button>
           </div>
           <div id="crm-appointments-list"></div>

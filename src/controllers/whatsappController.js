@@ -237,14 +237,86 @@ async function runAIAgent({ lead, client, instance }) {
 
     console.log(`[AI] Respondeu lead ${lead.phone}: ${result.reply.substring(0, 60)}...`);
 
+    // ─── AGENDAMENTOS AUTOMÁTICOS ─────────────────────────────────────────────
+    if (result.appointmentAction && client) {
+      try {
+        const leadName = lead.name || lead.phone;
+        const action = result.appointmentAction;
+        const apptData = result.appointmentData || {};
+
+        if (action === 'create' && apptData.scheduledAt) {
+          // Cria novo agendamento
+          const [newAppt] = await prisma.$queryRawUnsafe(
+            `INSERT INTO crm_appointments (title, "scheduledAt", notes, "leadId", "clientId", "detectedBy", status)
+             VALUES ($1, $2, $3, $4, $5, 'ai', 'confirmed') RETURNING *`,
+            apptData.title || 'Agendamento',
+            new Date(apptData.scheduledAt),
+            apptData.notes || null,
+            lead.id,
+            client.id
+          );
+          console.log(`[AI] Agendamento criado: ${apptData.title} em ${apptData.scheduledAt}`);
+
+          // Notifica o responsável
+          if (client.phone && instance) {
+            const dt = new Date(apptData.scheduledAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
+            const notifMsg = `*Novo Agendamento*\n\nLead: ${leadName}\nTipo: ${apptData.title || 'Agendamento'}\nData: ${dt}\n${apptData.notes ? 'Obs: ' + apptData.notes : ''}\n\nAcesse o CRM para mais detalhes.`;
+            await evolutionService.sendClientMessage(instance, client.phone, notifMsg).catch(() => {});
+          }
+
+        } else if (action === 'reschedule' && apptData.scheduledAt) {
+          // Encontra o agendamento mais recente desse lead (não cancelado)
+          const [existing] = await prisma.$queryRawUnsafe(
+            `SELECT id, title FROM crm_appointments WHERE "leadId" = $1 AND status != 'cancelled' ORDER BY "scheduledAt" DESC LIMIT 1`,
+            lead.id
+          );
+          if (existing) {
+            await prisma.$executeRawUnsafe(
+              `UPDATE crm_appointments SET "scheduledAt"=$1, notes=$2, status='confirmed', "updatedAt"=NOW() WHERE id=$3`,
+              new Date(apptData.scheduledAt),
+              apptData.notes || null,
+              existing.id
+            );
+            console.log(`[AI] Agendamento ${existing.id} remarcado para ${apptData.scheduledAt}`);
+
+            if (client.phone && instance) {
+              const dt = new Date(apptData.scheduledAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
+              const notifMsg = `*Reagendamento*\n\nLead: ${leadName}\nTipo: ${existing.title}\nNova data: ${dt}\n${apptData.notes ? 'Motivo: ' + apptData.notes : ''}\n\nAcesse o CRM para confirmar.`;
+              await evolutionService.sendClientMessage(instance, client.phone, notifMsg).catch(() => {});
+            }
+          }
+
+        } else if (action === 'cancel') {
+          // Cancela o agendamento mais recente
+          const [existing] = await prisma.$queryRawUnsafe(
+            `SELECT id, title, "scheduledAt" FROM crm_appointments WHERE "leadId" = $1 AND status != 'cancelled' ORDER BY "scheduledAt" DESC LIMIT 1`,
+            lead.id
+          );
+          if (existing) {
+            await prisma.$executeRawUnsafe(
+              `UPDATE crm_appointments SET status='cancelled', notes=COALESCE($1, notes), "updatedAt"=NOW() WHERE id=$2`,
+              apptData.notes || null,
+              existing.id
+            );
+            console.log(`[AI] Agendamento ${existing.id} cancelado`);
+
+            if (client.phone && instance) {
+              const notifMsg = `*Cancelamento*\n\nLead: ${leadName} cancelou o agendamento.\nTipo: ${existing.title}\n${apptData.notes ? 'Motivo: ' + apptData.notes : ''}\n\nAcesse o CRM para ver detalhes.`;
+              await evolutionService.sendClientMessage(instance, client.phone, notifMsg).catch(() => {});
+            }
+          }
+        }
+      } catch (apptErr) {
+        console.error('[AI] Erro ao processar agendamento:', apptErr.message);
+      }
+    }
+
     // Alerta de preço → manda WhatsApp pro responsável do cliente
     if (result.needsPriceAlert && client.phone && instance) {
       try {
         const leadName = lead.name || lead.phone;
         const alertMsg =
-          `🔔 *Alerta de Lead — Preço Solicitado*\n\n` +
-          `O lead *${leadName}* (${lead.phone}) perguntou sobre o preço de um produto.\n\n` +
-          `Acesse o sistema e responda manualmente para não perder a venda! 💬`;
+          `*Alerta de Lead — Preço Solicitado*\n\nO lead ${leadName} (${lead.phone}) perguntou sobre o preço de um produto.\n\nAcesse o CRM e responda para não perder a venda.`;
         await evolutionService.sendClientMessage(instance, client.phone, alertMsg);
         console.log(`[AI] Alerta de preço enviado para cliente ${client.phone}`);
       } catch (alertErr) {

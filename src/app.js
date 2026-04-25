@@ -238,6 +238,9 @@ app.listen(PORT, async () => {
         "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
       )
     `);
+    // CRM — agendamentos: status + updatedAt
+    await prisma.$executeRawUnsafe(`ALTER TABLE crm_appointments ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'confirmed'`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE crm_appointments ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()`);
     // CRM — respostas rápidas
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS crm_quick_replies (

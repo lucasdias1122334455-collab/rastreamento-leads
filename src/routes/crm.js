@@ -156,10 +156,13 @@ router.delete('/tasks/:id', async (req, res) => {
 // ─── APPOINTMENTS ─────────────────────────────────────────────────────────────
 router.get('/appointments', async (req, res) => {
   try {
-    const { clientId, leadId } = req.query;
+    const { clientId, leadId, status, since } = req.query;
     const conditions = [];
     if (clientId) conditions.push(`a."clientId" = ${Number(clientId)}`);
     if (leadId) conditions.push(`a."leadId" = ${Number(leadId)}`);
+    if (status) conditions.push(`a.status = '${status}'`);
+    else conditions.push(`a.status != 'cancelled'`); // por padrão não mostra cancelados
+    if (since) conditions.push(`a."updatedAt" > '${new Date(since).toISOString()}'`);
     const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
     const appts = await prisma.$queryRawUnsafe(`
       SELECT a.*, l.name as "leadName", l.phone as "leadPhone"
@@ -174,11 +177,46 @@ router.post('/appointments', async (req, res) => {
   try {
     const { title, scheduledAt, notes, leadId, clientId, detectedBy } = req.body;
     const rows = await prisma.$queryRawUnsafe(
-      `INSERT INTO crm_appointments (title, "scheduledAt", notes, "leadId", "clientId", "detectedBy") VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      `INSERT INTO crm_appointments (title, "scheduledAt", notes, "leadId", "clientId", "detectedBy", status) VALUES ($1,$2,$3,$4,$5,$6,'confirmed') RETURNING *`,
       title, scheduledAt ? new Date(scheduledAt) : null, notes || null,
       leadId ? Number(leadId) : null, clientId ? Number(clientId) : null, detectedBy || 'manual'
     );
     res.json(rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Atualiza status de um agendamento (confirmed / cancelled / rescheduled)
+router.patch('/appointments/:id/status', async (req, res) => {
+  try {
+    const { status, scheduledAt, notes } = req.body;
+    if (scheduledAt) {
+      await prisma.$executeRawUnsafe(
+        `UPDATE crm_appointments SET status=$1, "scheduledAt"=$2, notes=COALESCE($3,notes), "updatedAt"=NOW() WHERE id=$4`,
+        status, new Date(scheduledAt), notes || null, Number(req.params.id)
+      );
+    } else {
+      await prisma.$executeRawUnsafe(
+        `UPDATE crm_appointments SET status=$1, notes=COALESCE($2,notes), "updatedAt"=NOW() WHERE id=$3`,
+        status, notes || null, Number(req.params.id)
+      );
+    }
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Contagem de agendamentos novos/alterados desde timestamp (para notificações)
+router.get('/appointments/notify', async (req, res) => {
+  try {
+    const { clientId, since } = req.query;
+    if (!since) return res.json({ count: 0, items: [] });
+    const cf = clientId ? `AND a."clientId" = ${Number(clientId)}` : '';
+    const items = await prisma.$queryRawUnsafe(`
+      SELECT a.id, a.title, a.status, a."scheduledAt", a."updatedAt", l.name as "leadName"
+      FROM crm_appointments a LEFT JOIN leads l ON l.id = a."leadId"
+      WHERE a."updatedAt" > $1 ${cf}
+      ORDER BY a."updatedAt" DESC LIMIT 20
+    `, new Date(since));
+    res.json({ count: items.length, items });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

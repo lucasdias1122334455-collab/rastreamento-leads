@@ -135,9 +135,9 @@ async function loadFunnel(days) {
     }).join('');
 
     el('funnel-meta').innerHTML = `
-      <span>⏱ Tempo médio de conversão: <strong>${data.avgConversionDays ? data.avgConversionDays + ' dias' : '—'}</strong></span>
-      <span>✅ Convertidos: <strong>${data.byStatus.converted || 0}</strong></span>
-      <span>❌ Perdidos: <strong>${data.byStatus.lost || 0}</strong></span>
+      <span>Tempo médio de conversão: <strong>${data.avgConversionDays ? data.avgConversionDays + ' dias' : '—'}</strong></span>
+      <span>Convertidos: <strong>${data.byStatus.converted || 0}</strong></span>
+      <span>Perdidos: <strong>${data.byStatus.lost || 0}</strong></span>
     `;
 
     // Leads parados
@@ -467,7 +467,7 @@ function copyWebhookUrl(el) {
 }
 el('client-ai-enabled').addEventListener('change', function() {
   el('client-ai-fields').style.display = this.checked ? 'block' : 'none';
-  if (el('client-ai-enabled-label')) el('client-ai-enabled-label').textContent = this.checked ? 'IA ativada ✅' : 'IA desativada';
+  if (el('client-ai-enabled-label')) el('client-ai-enabled-label').textContent = this.checked ? 'IA ativada' : 'IA desativada';
 });
 el('qr-modal-close').addEventListener('click', () => { clearInterval(qrPollTimer); hide('qr-modal'); });
 
@@ -487,7 +487,7 @@ function openClientModal(client = null) {
   // Campos IA
   const aiEnabled = Boolean(client?.aiEnabled);
   el('client-ai-enabled').checked = aiEnabled;
-  if (el('client-ai-enabled-label')) el('client-ai-enabled-label').textContent = aiEnabled ? 'IA ativada ✅' : 'IA desativada';
+  if (el('client-ai-enabled-label')) el('client-ai-enabled-label').textContent = aiEnabled ? 'IA ativada' : 'IA desativada';
   el('client-ai-fields').style.display = aiEnabled ? 'block' : 'none';
   el('client-voice-enabled').checked = Boolean(client?.voiceEnabled);
   el('client-payment-link').value = client?.paymentLink || '';
@@ -582,7 +582,7 @@ async function openClientQR(id, name) {
       el('qr-modal-status').textContent = `Status: ${labels[status] || status}`;
 
       if (status === 'connected') {
-        el('qr-modal-img-wrap').innerHTML = '<p style="color:#22c55e;font-size:1.2rem">✓ Conectado!</p>';
+        el('qr-modal-img-wrap').innerHTML = '<p style="color:#22c55e;font-size:1.2rem">Conectado!</p>';
         clearInterval(qrPollTimer);
         loadClients();
       } else if (qrCode) {
@@ -837,18 +837,8 @@ async function loadSalesList() {
       return;
     }
 
-    const canalIcon = {
-      'WhatsApp':              '💬',
-      'Meta Ads → WhatsApp':   '📢',
-      'Grupo WhatsApp':        '👥',
-      'Instagram':             '📸',
-      'Site':                  '🌐',
-      'Mercado Pago':          '💳',
-      'Manual':                '✍️',
-    };
-
     tbody.innerHTML = rows.map(r => {
-      const icon  = canalIcon[r.canal] || '📌';
+      const icon  = '';
       const valor = r.valor != null ? fmtBRL(r.valor) : '<span style="color:rgba(255,255,255,0.3)">—</span>';
       const data  = r.convertedAt ? new Date(r.convertedAt).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
       const tel   = r.telefone !== '—' ? `<a href="https://wa.me/${r.telefone}" target="_blank" style="color:#00d4aa;text-decoration:none">${r.telefone}</a>` : '—';
@@ -1205,7 +1195,7 @@ async function saveConvLeadValue(leadId) {
       method: 'PUT',
       body: JSON.stringify({ value, status: 'converted' }),
     });
-    showToast('✅ Valor salvo!');
+    showToast('Valor salvo!');
     input.style.borderColor = 'rgba(62,207,207,0.6)';
     setTimeout(() => { if (el('conv-lead-value')) el('conv-lead-value').style.borderColor = 'rgba(255,255,255,0.15)'; }, 2000);
   } catch (err) {
@@ -1428,7 +1418,7 @@ async function analystPageSend() {
   const imgHtml = imageToSend ? `<img src="${imageToSend.preview}" style="max-width:200px;border-radius:8px;display:block;margin-bottom:6px">` : '';
   msgs.innerHTML += `
     <div class="analyst-page-msg analyst-page-msg-user">
-      <div class="analyst-page-avatar">👤</div>
+      <div class="analyst-page-avatar">EU</div>
       <div class="analyst-page-bubble">${imgHtml}${sendText.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
     </div>`;
 
@@ -1436,7 +1426,7 @@ async function analystPageSend() {
   const typingId = 'analyst-typing-' + Date.now();
   msgs.innerHTML += `
     <div class="analyst-page-msg analyst-page-msg-ai" id="${typingId}">
-      <div class="analyst-page-avatar">🧠</div>
+      <div class="analyst-page-avatar">IA</div>
       <div class="analyst-page-bubble analyst-typing-dots">Analisando${imageToSend ? ' imagem' : ' dados'}...</div>
     </div>`;
   msgs.scrollTop = msgs.scrollHeight;
@@ -1481,7 +1471,7 @@ async function analystPageSend() {
 
     msgs.innerHTML += `
       <div class="analyst-page-msg analyst-page-msg-ai">
-        <div class="analyst-page-avatar">🧠</div>
+        <div class="analyst-page-avatar">IA</div>
         <div class="analyst-page-bubble">${formatted}</div>
       </div>`;
     msgs.scrollTop = msgs.scrollHeight;
@@ -1489,7 +1479,7 @@ async function analystPageSend() {
     document.getElementById(typingId)?.remove();
     msgs.innerHTML += `
       <div class="analyst-page-msg analyst-page-msg-ai">
-        <div class="analyst-page-avatar">🧠</div>
+        <div class="analyst-page-avatar">IA</div>
         <div class="analyst-page-bubble" style="color:#ff6b6b">Erro ao conectar. Tente novamente.<br><small>${err.message}</small></div>
       </div>`;
     msgs.scrollTop = msgs.scrollHeight;
@@ -1538,7 +1528,7 @@ function copyLink(url) {
   navigator.clipboard.writeText(url).then(() => {
     const btn = event.target;
     const orig = btn.textContent;
-    btn.textContent = '✓ Copiado';
+    btn.textContent = 'Copiado';
     btn.style.color = '#00d4aa';
     setTimeout(() => { btn.textContent = orig; btn.style.color = '#ccc'; }, 2000);
   });
@@ -1828,22 +1818,11 @@ function renderChannelsTable(rows) {
     return;
   }
 
-  const icons = {
-    'whatsapp':       '💬',
-    'whatsapp_meta':  '📢',
-    'whatsapp_group': '👥',
-    'instagram':      '📸',
-    'mercadopago':    '💳',
-    'site':           '🌐',
-    'manual':         '✍️',
-  };
-
   tbody.innerHTML = rows.map(r => {
-    const icon = icons[r.canal_raw] || '📌';
     const cvr  = `<span style="color:${r.cvr >= 10 ? '#00d4aa' : r.cvr >= 5 ? '#ffd93d' : '#ff6b6b'}">${r.cvr}%</span>`;
     const brl  = v => v > 0 ? 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '—';
     return `<tr>
-      <td><span style="margin-right:6px">${icon}</span><strong>${r.canal}</strong></td>
+      <td><strong>${r.canal}</strong></td>
       <td>${r.leads}</td>
       <td style="color:#00d4aa;font-weight:600">${r.convertidos}</td>
       <td style="color:#ff6b6b">${r.perdidos}</td>
@@ -2277,14 +2256,14 @@ async function loadCrmTasks() {
         <div class="crm-task-body">
           <div class="crm-task-title">${escapeHtml(t.title)}</div>
           <div class="crm-task-meta">
-            ${t.leadName ? `👤 ${escapeHtml(t.leadName)}` : ''}
-            ${due ? `<span style="color:${overdue ? 'var(--danger)' : 'var(--muted)'}">📅 ${due}${overdue ? ' ⚠️' : ''}</span>` : ''}
+            ${t.leadName ? `${escapeHtml(t.leadName)}` : ''}
+            ${due ? `<span style="color:${overdue ? 'var(--danger)' : 'var(--muted)'}">${due}${overdue ? ' (atrasado)' : ''}</span>` : ''}
             ${t.description ? `<span style="margin-left:.5rem">— ${escapeHtml(t.description.slice(0,60))}</span>` : ''}
           </div>
         </div>
         <div class="crm-task-actions">
-          <button class="btn-sm btn-edit" onclick="openCrmTaskModal(${t.id})">✏️</button>
-          <button class="btn-sm" style="color:var(--danger)" onclick="deleteCrmTask(${t.id})">🗑</button>
+          <button class="btn-sm btn-edit" onclick="openCrmTaskModal(${t.id})">Editar</button>
+          <button class="btn-sm" style="color:var(--danger)" onclick="deleteCrmTask(${t.id})">Excluir</button>
         </div>
       </div>`;
     }).join('');
@@ -2375,17 +2354,16 @@ async function loadCrmAppointments() {
       const dt = a.scheduledAt ? new Date(a.scheduledAt).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
       const isPast = a.scheduledAt && new Date(a.scheduledAt) < new Date();
       return `<div class="crm-appt-item">
-        <span class="crm-appt-icon">📅</span>
         <div class="crm-appt-body">
           <div class="crm-appt-title">${escapeHtml(a.title)}</div>
           <div class="crm-appt-meta">
-            ${a.leadName ? `👤 ${escapeHtml(a.leadName)} · ` : ''}
+            ${a.leadName ? `${escapeHtml(a.leadName)} · ` : ''}
             <span style="color:${isPast ? 'var(--danger)' : 'var(--cyan)'}">${dt}</span>
             ${a.notes ? ` — ${escapeHtml(a.notes.slice(0,60))}` : ''}
           </div>
         </div>
-        <span class="crm-appt-badge">${a.detectedBy === 'ai' ? '🤖 IA' : '✍️ Manual'}</span>
-        <button class="btn-sm" style="color:var(--danger);margin-left:.5rem" onclick="deleteCrmAppt(${a.id})">🗑</button>
+        <span class="crm-appt-badge">${a.detectedBy === 'ai' ? 'IA' : 'Manual'}</span>
+        <button class="btn-sm" style="color:var(--danger);margin-left:.5rem" onclick="deleteCrmAppt(${a.id})">Excluir</button>
       </div>`;
     }).join('');
   } catch (_) {}
@@ -2440,7 +2418,7 @@ async function loadCrmQuickReplies() {
       <div class="crm-qr-item">
         <span class="crm-qr-shortcut">/${escapeHtml(q.shortcut)}</span>
         <span class="crm-qr-body">${escapeHtml(q.content)}</span>
-        <button class="btn-sm" style="color:var(--danger)" onclick="deleteCrmQr(${q.id})">🗑</button>
+        <button class="btn-sm" style="color:var(--danger)" onclick="deleteCrmQr(${q.id})">Excluir</button>
       </div>`).join('');
   } catch (_) {}
 }

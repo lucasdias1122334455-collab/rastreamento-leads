@@ -15,11 +15,11 @@
     <div class="login-bg-glow"></div>
     <div class="login-left">
       <div class="login-brand">
-        <div class="login-logo-icon">⚡</div>
+        <div class="login-logo-icon">C</div>
         <span class="login-logo-text">Closy CRM</span>
       </div>
       <div class="login-hero">
-        <div class="login-badge">🚀 Plataforma de rastreamento de leads</div>
+        <div class="login-badge">Plataforma de rastreamento de leads</div>
         <h1 class="login-title">Converta mais com <span>inteligência</span></h1>
         <p class="login-desc">Rastreie leads, automatize vendas com IA e acompanhe sua performance em tempo real.</p>
         <div class="login-stats">
@@ -55,25 +55,25 @@
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="sidebar-logo">
-          <div class="sidebar-logo-icon">⚡</div>
+          <div class="sidebar-logo-icon">C</div>
           <span class="logo">Closy CRM</span>
         </div>
         <span id="wa-indicator" class="wa-dot disconnected" title="WhatsApp desconectado"></span>
       </div>
       <nav>
-        <a href="#" class="nav-item active" data-page="dashboard" data-icon="📊">Dashboard</a>
-        <a href="#" class="nav-item" data-page="leads" data-icon="🎯">Leads</a>
-        <a href="#" class="nav-item" data-page="clients" data-icon="🏢">Clientes</a>
-        <a href="#" class="nav-item" data-page="whatsapp" data-icon="📱">WhatsApp</a>
-        <a href="#" class="nav-item" data-page="conversations" data-icon="💬">Conversas</a>
-        <a href="#" class="nav-item" data-page="conversions" data-icon="📈">Conversões</a>
-        <a href="#" class="nav-item" data-page="meta-stats" data-icon="📢">Meta Ads</a>
-        <a href="#" class="nav-item nav-admin hidden" data-page="users" data-icon="👥">Usuários</a>
-        <a href="#" class="nav-item" data-page="analyst" data-icon="🧠">Analista IA</a>
-        <a href="#" class="nav-item" data-page="reports" data-icon="📑">Relatórios</a>
-        <a href="#" class="nav-item" data-page="tracking" data-icon="🔗">Links</a>
-        <a href="#" class="nav-item" data-page="crm" data-icon="🎧">CRM</a>
-        <a href="/launch.html" class="nav-item nav-admin hidden" data-icon="🎀" target="_blank">Lançamento</a>
+        <a href="#" class="nav-item active" data-page="dashboard">Dashboard</a>
+        <a href="#" class="nav-item" data-page="leads">Leads</a>
+        <a href="#" class="nav-item" data-page="clients">Clientes</a>
+        <a href="#" class="nav-item" data-page="whatsapp">WhatsApp</a>
+        <a href="#" class="nav-item" data-page="conversations">Conversas</a>
+        <a href="#" class="nav-item" data-page="conversions">Conversões</a>
+        <a href="#" class="nav-item" data-page="meta-stats">Meta Ads</a>
+        <a href="#" class="nav-item nav-admin hidden" data-page="users">Usuários</a>
+        <a href="#" class="nav-item" data-page="analyst">Analista IA</a>
+        <a href="#" class="nav-item" data-page="reports">Relatórios</a>
+        <a href="#" class="nav-item" data-page="tracking">Links</a>
+        <a href="#" class="nav-item" data-page="crm">CRM</a>
+        <a href="/launch.html" class="nav-item nav-admin hidden" target="_blank">Lançamento</a>
       </nav>
       <div class="sidebar-footer">
         <button id="profile-btn" class="profile-btn" title="Editar perfil"><span id="user-name"></span></button>
@@ -120,7 +120,7 @@
         <div class="page-header">
           <h2>Leads</h2>
           <button id="new-lead-btn" class="btn-primary">+ Novo Lead</button>
-          <button id="export-leads-btn" class="btn-sm btn-edit">⬇ Exportar CSV</button>
+          <button id="export-leads-btn" class="btn-sm btn-edit">Exportar CSV</button>
         </div>
         <div class="filters">
           <input type="text" id="search-input" placeholder="Buscar por nome, telefone..." />
@@ -138,8 +138,8 @@
           </select>
           <select id="filter-origin">
             <option value="">Todos os leads</option>
-            <option value="ads">📢 De Anúncios</option>
-            <option value="organic">🌱 Orgânicos</option>
+            <option value="ads">De Anúncios</option>
+            <option value="organic">Orgânicos</option>
           </select>
         </div>
         <table class="leads-table">
@@ -251,7 +251,7 @@
           <button class="conv-tab active" data-tab="monthly">Por Mês</button>
           <button class="conv-tab" data-tab="weekly">Por Semana</button>
           <button class="conv-tab" data-tab="daily">Por Dia</button>
-          <button class="conv-tab" data-tab="range">📅 Período</button>
+          <button class="conv-tab" data-tab="range">Período</button>
         </div>
         <div id="conv-date-range" class="conv-date-range hidden">
           <input type="date" id="conv-date-from" />
@@ -355,7 +355,7 @@
         <div class="conv-layout" style="flex:1;overflow:hidden">
           <!-- Coluna 1: Anúncios/Pastas -->
           <div class="conv-ads" id="conv-ads-list">
-            <div class="conv-col-header">📂 Pastas</div>
+            <div class="conv-col-header">Pastas</div>
             <div id="conv-ads-items"></div>
           </div>
           <!-- Coluna 2: Leads da pasta -->
@@ -383,27 +383,27 @@
       <section id="page-analyst" class="page hidden" style="padding:0;height:100%;display:flex;flex-direction:column;overflow:hidden">
         <div id="analyst-page">
           <div id="analyst-page-header">
-            <div id="analyst-logo">🧠</div>
+            <div id="analyst-logo">IA</div>
             <h1 id="analyst-greeting">Olá, como posso ajudar?</h1>
             <p id="analyst-subtitle">Analista sênior de Meta Ads com acesso aos seus dados em tempo real</p>
           </div>
           <div id="analyst-page-messages" class="hidden"></div>
           <div id="analyst-page-suggestions">
-            <button class="analyst-suggestion" onclick="analystQuickSend('Como está minha performance esse mês?')">📊 Como está minha performance esse mês?</button>
-            <button class="analyst-suggestion" onclick="analystQuickSend('Qual anúncio está performando melhor?')">🏆 Qual anúncio está performando melhor?</button>
-            <button class="analyst-suggestion" onclick="analystQuickSend('Meu CPL está bom? O que posso melhorar?')">💰 Meu CPL está bom?</button>
-            <button class="analyst-suggestion" onclick="analystQuickSend('Quais são as minhas maiores oportunidades agora?')">🚀 Quais são minhas maiores oportunidades?</button>
+            <button class="analyst-suggestion" onclick="analystQuickSend('Como está minha performance esse mês?')">Como está minha performance esse mês?</button>
+            <button class="analyst-suggestion" onclick="analystQuickSend('Qual anúncio está performando melhor?')">Qual anúncio está performando melhor?</button>
+            <button class="analyst-suggestion" onclick="analystQuickSend('Meu CPL está bom? O que posso melhorar?')">Meu CPL está bom?</button>
+            <button class="analyst-suggestion" onclick="analystQuickSend('Quais são as minhas maiores oportunidades agora?')">Quais são minhas maiores oportunidades?</button>
           </div>
           <div id="analyst-page-input-wrap">
             <div id="analyst-image-preview" class="hidden" style="padding:0 4px 8px"></div>
             <div id="analyst-page-input-box">
-              <button onclick="analystAttachImage()" title="Enviar imagem" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:20px;cursor:pointer;padding:4px;flex-shrink:0;transition:color 0.2s" onmouseover="this.style.color='rgba(108,99,255,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.4)'">📎</button>
+              <button onclick="analystAttachImage()" title="Enviar imagem" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:13px;cursor:pointer;padding:4px 8px;flex-shrink:0;transition:color 0.2s;letter-spacing:.04em" onmouseover="this.style.color='rgba(108,99,255,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.4)'">Imagem</button>
               <textarea id="analyst-page-input" placeholder="Pergunte algo sobre seus anúncios, leads, conversões..." rows="1" onkeydown="analystPageKeydown(event)" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
               <button id="analyst-page-send" onclick="analystPageSend()">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
               </button>
             </div>
-            <p id="analyst-page-hint">Enter para enviar · Shift+Enter para nova linha · 📎 para enviar imagem</p>
+            <p id="analyst-page-hint">Enter para enviar · Shift+Enter para nova linha</p>
           </div>
         </div>
       </section>
@@ -535,11 +535,11 @@
         <!-- Top bar -->
         <div class="crm-topbar">
           <div class="crm-tabs">
-            <button class="crm-tab active" data-tab="chats" onclick="switchCrmTab('chats',this)">💬 Atendimentos</button>
-            <button class="crm-tab" data-tab="kanban" onclick="switchCrmTab('kanban',this)">📋 Kanban</button>
-            <button class="crm-tab" data-tab="tasks" onclick="switchCrmTab('tasks',this)">✅ Tarefas</button>
-            <button class="crm-tab" data-tab="appointments" onclick="switchCrmTab('appointments',this)">📅 Agendamentos</button>
-            <button class="crm-tab" data-tab="quick-replies" onclick="switchCrmTab('quick-replies',this)">⚡ Respostas Rápidas</button>
+            <button class="crm-tab active" data-tab="chats" onclick="switchCrmTab('chats',this)">Atendimentos</button>
+            <button class="crm-tab" data-tab="kanban" onclick="switchCrmTab('kanban',this)">Kanban</button>
+            <button class="crm-tab" data-tab="tasks" onclick="switchCrmTab('tasks',this)">Tarefas</button>
+            <button class="crm-tab" data-tab="appointments" onclick="switchCrmTab('appointments',this)">Agendamentos</button>
+            <button class="crm-tab" data-tab="quick-replies" onclick="switchCrmTab('quick-replies',this)">Respostas Rápidas</button>
           </div>
           <div class="crm-topbar-right">
             <select id="crm-client-filter" onchange="crmApplyFilter()">
@@ -563,7 +563,7 @@
             <!-- Ticket list (left panel) -->
             <div class="crm-ticket-list" id="crm-ticket-list">
               <div class="crm-list-header">
-                <input type="text" id="crm-search" placeholder="🔍 Buscar contato..." oninput="crmApplyFilter()" />
+                <input type="text" id="crm-search" placeholder="Buscar contato..." oninput="crmApplyFilter()" />
                 <select id="crm-status-filter" onchange="crmApplyFilter()">
                   <option value="">Todos</option>
                   <option value="new">Novo</option>
@@ -579,7 +579,6 @@
             <div class="crm-chat-area" id="crm-chat-area">
               <!-- Empty state -->
               <div class="crm-chat-empty" id="crm-chat-empty">
-                <span>🎧</span>
                 <p>Selecione um atendimento para começar</p>
               </div>
 
@@ -596,12 +595,12 @@
                   </div>
                   <div class="crm-chat-actions">
                     <select id="crm-active-status" onchange="crmUpdateStatus(this.value)" class="crm-status-select">
-                      <option value="new">🔵 Novo</option>
-                      <option value="waiting">🟡 Aguardando</option>
-                      <option value="attending">🟢 Atendendo</option>
-                      <option value="resolved">⚫ Resolvido</option>
+                      <option value="new">Novo</option>
+                      <option value="waiting">Aguardando</option>
+                      <option value="attending">Atendendo</option>
+                      <option value="resolved">Resolvido</option>
                     </select>
-                    <button class="btn-sm btn-edit" onclick="crmToggleContact()" title="Info do contato" style="border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center">👤</button>
+                    <button class="btn-sm btn-edit" onclick="crmToggleContact()" title="Info do contato" style="border-radius:8px;padding:0 10px;height:32px;display:flex;align-items:center;justify-content:center;font-size:12px">Info</button>
                   </div>
                 </div>
                 <div class="crm-messages" id="crm-messages"></div>
@@ -609,7 +608,9 @@
                 <div class="crm-qr-suggestions hidden" id="crm-qr-suggestions"></div>
                 <div class="crm-input-area">
                   <textarea id="crm-msg-input" rows="1" placeholder="Digite uma mensagem... (/ para respostas rápidas)" oninput="crmCheckQuickReply(this)" onkeydown="crmMsgKeydown(event)"></textarea>
-                  <button class="crm-send-btn" onclick="crmSendMessage()">↑</button>
+                  <button class="crm-send-btn" onclick="crmSendMessage()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  </button>
                 </div>
               </div>
             </div>
@@ -630,8 +631,8 @@
                 <div class="crm-contact-field"><label>Cliente</label><span id="cp-client">—</span></div>
               </div>
               <div class="crm-contact-actions">
-                <button class="btn-sm btn-primary" style="width:100%" onclick="openCrmTaskModal()">✅ Nova Tarefa</button>
-                <button class="btn-sm btn-edit" style="width:100%" onclick="openCrmApptModal()">📅 Novo Agendamento</button>
+                <button class="btn-sm btn-primary" style="width:100%" onclick="openCrmTaskModal()">Nova Tarefa</button>
+                <button class="btn-sm btn-edit" style="width:100%" onclick="openCrmApptModal()">Novo Agendamento</button>
               </div>
               <div style="padding:.75rem 1rem;border-top:1px solid var(--border)">
                 <div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted2);margin-bottom:.6rem;font-weight:600">Tarefas do Lead</div>
@@ -743,7 +744,7 @@
           <select id="tl-client"><option value="">Selecione o cliente</option></select>
         </div>
         <div id="tl-preview" style="background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:8px;padding:.75rem;font-size:12px;color:#a89fff;display:none">
-          🔗 Seu link: <span id="tl-preview-url" style="word-break:break-all"></span>
+          Seu link: <span id="tl-preview-url" style="word-break:break-all"></span>
         </div>
         <div style="display:flex;gap:.75rem;justify-content:flex-end">
           <button type="button" onclick="closeTrackingModal()" style="padding:8px 18px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#ccc;border-radius:8px;cursor:pointer">Cancelar</button>
@@ -769,7 +770,7 @@
         <!-- ── Dados básicos ── -->
         <div class="cm-section cm-section-base">
           <div class="cm-section-head">
-            <span class="cm-section-icon">👤</span>
+            <span class="cm-section-icon">01</span>
             <div>
               <span class="cm-section-title">Dados do Cliente</span>
               <span class="cm-section-sub">Informações principais</span>
@@ -798,7 +799,7 @@
         <!-- ── Agente de IA ── -->
         <div class="cm-section cm-section-ai">
           <div class="cm-section-head">
-            <span class="cm-section-icon">🤖</span>
+            <span class="cm-section-icon">02</span>
             <div>
               <span class="cm-section-title">Agente de IA</span>
               <span class="cm-section-sub">Responde leads e detecta conversões automaticamente</span>
@@ -810,7 +811,7 @@
           </div>
           <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem 0;border-bottom:1px solid rgba(255,255,255,0.06)">
             <div>
-              <div style="font-weight:600;font-size:.9rem">🎙️ Ricardo — Agente de Voz</div>
+              <div style="font-weight:600;font-size:.9rem">Ricardo — Agente de Voz</div>
               <span class="cm-section-sub">Especialista em vendas e atendimento — transcreve áudios e responde com voz</span>
             </div>
             <label class="ai-toggle-label" style="margin-left:auto">
@@ -827,7 +828,7 @@
             <div class="cm-field" style="margin-top:.75rem">
               <label>Contexto do Negócio <span style="font-weight:400;color:var(--muted)">(opcional)</span></label>
               <textarea id="client-ai-script" rows="4" placeholder="Ex: Academia com mensalidade de R$89. Equipamentos novos. Personal incluso. +500 alunos. Sem fidelidade."></textarea>
-              <span class="cm-hint">💡 A IA já sabe vender em qualquer nicho — adicione aqui só informações específicas do seu negócio (preço, diferenciais, prova social). Se deixar em branco, ela detecta o nicho automaticamente pela conversa.</span>
+              <span class="cm-hint">A IA já sabe vender em qualquer nicho — adicione aqui só informações específicas do seu negócio (preço, diferenciais, prova social). Se deixar em branco, ela detecta o nicho automaticamente pela conversa.</span>
             </div>
           </div>
         </div>
@@ -835,7 +836,7 @@
         <!-- ── WhatsApp / Meta Business ── -->
         <div class="cm-section cm-section-meta">
           <div class="cm-section-head">
-            <span class="cm-section-icon">📱</span>
+            <span class="cm-section-icon">03</span>
             <div>
               <span class="cm-section-title">WhatsApp / Meta Business</span>
               <span class="cm-section-sub">Para anúncios Click-to-WhatsApp</span>
@@ -851,7 +852,7 @@
         <!-- ── Mercado Pago ── -->
         <div class="cm-section cm-section-mp">
           <div class="cm-section-head">
-            <span class="cm-section-icon">💳</span>
+            <span class="cm-section-icon">04</span>
             <div>
               <span class="cm-section-title">Mercado Pago</span>
               <span class="cm-section-sub">Converte lead automaticamente ao pagar</span>
@@ -872,7 +873,7 @@
         <!-- ── Meta Pixel ── -->
         <div class="cm-section cm-section-pixel">
           <div class="cm-section-head">
-            <span class="cm-section-icon">📊</span>
+            <span class="cm-section-icon">05</span>
             <div>
               <span class="cm-section-title">Meta Pixel</span>
               <span class="cm-section-sub">Dispara evento Purchase a cada venda confirmada</span>
@@ -900,7 +901,7 @@
         <!-- ── Brendi ── -->
         <div class="cm-section cm-section-brendi">
           <div class="cm-section-head">
-            <span class="cm-section-icon">🛒</span>
+            <span class="cm-section-icon">06</span>
             <div>
               <span class="cm-section-title">Brendi</span>
               <span class="cm-section-sub">Integração com pedidos da loja Brendi</span>
@@ -928,7 +929,7 @@
         <!-- ── Instagram DM ── -->
         <div class="cm-section cm-section-insta">
           <div class="cm-section-head">
-            <span class="cm-section-icon">📸</span>
+            <span class="cm-section-icon">07</span>
             <div>
               <span class="cm-section-title">Instagram DM</span>
               <span class="cm-section-sub">Recebe e responde mensagens diretas do Instagram</span>

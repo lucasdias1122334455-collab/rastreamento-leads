@@ -17,30 +17,21 @@ router.get('/export-leads', exportLeads);
 router.get('/sales-list', async (req, res) => {
   try {
     const { clientId, startDate, endDate, limit = 100 } = req.query;
-    const where = { status: 'converted' };
-    if (clientId) where.clientId = Number(clientId);
-    if (startDate || endDate) {
-      where.convertedAt = {};
-      if (startDate) where.convertedAt.gte = new Date(startDate + 'T00:00:00');
-      if (endDate)   where.convertedAt.lte = new Date(endDate   + 'T23:59:59');
-    }
 
-    const leads = await prisma.lead.findMany({
-      where,
-      orderBy: { convertedAt: 'desc' },
-      take: Number(limit),
-      select: {
-        id: true,
-        name: true,
-        phone: true,
-        email: true,
-        source: true,
-        value: true,
-        convertedAt: true,
-        tags: true,
-        client: { select: { name: true } },
-      },
-    });
+    const conditions = [`l.status = 'converted'`];
+    if (clientId)  conditions.push(`l."clientId" = ${Number(clientId)}`);
+    if (startDate) conditions.push(`l."convertedAt" >= '${startDate}T00:00:00'`);
+    if (endDate)   conditions.push(`l."convertedAt" <= '${endDate}T23:59:59'`);
+    const where = conditions.join(' AND ');
+
+    const leads = await prisma.$queryRawUnsafe(`
+      SELECT l.id, l.name, l.phone, l.email, l.source, l.value, l."convertedAt", l.tags, c.name as "clientName"
+      FROM leads l
+      LEFT JOIN clients c ON c.id = l."clientId"
+      WHERE ${where}
+      ORDER BY l."convertedAt" DESC NULLS LAST
+      LIMIT ${Number(limit)}
+    `);
 
     const sourceLabel = {
       whatsapp:       'WhatsApp',
@@ -65,7 +56,7 @@ router.get('/sales-list', async (req, res) => {
         anuncio:     adName,
         valor:       l.value ? Number(l.value) : null,
         convertedAt: l.convertedAt,
-        cliente:     l.client?.name || null,
+        cliente:     l.clientName || null,
       };
     });
 

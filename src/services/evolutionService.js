@@ -106,8 +106,37 @@ async function getGroupInfo(instanceName, groupJid) {
   }
 }
 
+// Cache in-memory: { "instance:phone": { url, ts } }
+const _picCache = {};
+const PIC_CACHE_TTL = 12 * 3600 * 1000; // 12 horas
+
+async function fetchProfilePicture(instanceName, phone) {
+  const number = phone.replace(/\D/g, '');
+  const key = `${instanceName}:${number}`;
+
+  // Cache hit
+  if (_picCache[key] && Date.now() - _picCache[key].ts < PIC_CACHE_TTL) {
+    return _picCache[key].url;
+  }
+
+  try {
+    const { data } = await axios.post(
+      `${BASE_URL}/chat/fetchProfilePictureUrl/${instanceName}`,
+      { number },
+      { headers, timeout: 6000 }
+    );
+    const url = data?.profilePictureUrl || null;
+    _picCache[key] = { url, ts: Date.now() };
+    return url;
+  } catch (_) {
+    _picCache[key] = { url: null, ts: Date.now() };
+    return null;
+  }
+}
+
 module.exports = {
   getStatus, getQRCode, sendMessage, disconnectInstance,
   createClientInstance, getClientQRCode, getClientStatus, deleteClientInstance,
   sendClientMessage, getMediaBase64, getGroupInfo, sendAudioMessage,
+  fetchProfilePicture,
 };

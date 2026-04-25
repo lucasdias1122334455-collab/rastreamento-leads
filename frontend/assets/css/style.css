@@ -2244,6 +2244,10 @@ select:focus {
   display: flex; align-items: center; justify-content: center;
   font-size: .85rem; font-weight: 700; color: #fff; background: var(--surface-3);
 }
+.crm-ticket-avatar-img {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  object-fit: cover; display: block; border: 1.5px solid rgba(255,255,255,.1);
+}
 .crm-ticket-body { flex: 1; min-width: 0; }
 .crm-ticket-row1 { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
 .crm-ticket-name { font-size: .88rem; font-weight: 600; color: var(--text); }

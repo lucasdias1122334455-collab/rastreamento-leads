@@ -206,6 +206,19 @@ router.delete('/quick-replies/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ─── PROFILE PICTURE ──────────────────────────────────────────────────────────
+router.get('/profile-pic/:leadId', async (req, res) => {
+  try {
+    const [lead] = await prisma.$queryRawUnsafe(
+      `SELECT l.phone, c."instanceName" FROM leads l LEFT JOIN clients c ON c.id = l."clientId" WHERE l.id = $1`,
+      Number(req.params.leadId)
+    );
+    if (!lead || !lead.instanceName || !lead.phone) return res.json({ url: null });
+    const url = await evolutionService.fetchProfilePicture(lead.instanceName, lead.phone);
+    res.json({ url });
+  } catch (_) { res.json({ url: null }); }
+});
+
 // ─── MESSAGES for a lead ──────────────────────────────────────────────────────
 router.get('/messages/:leadId', async (req, res) => {
   try {

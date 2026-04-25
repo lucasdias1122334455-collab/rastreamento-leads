@@ -1864,6 +1864,7 @@ let crmPollTimer = null;
 let crmAllQuickReplies = [];
 let crmCurrentClientId = '';
 let crmTasksCache = [];
+const crmPicCache = {}; // leadId → url | null
 
 function crmToken() { return localStorage.getItem('token'); }
 
@@ -1954,10 +1955,14 @@ function crmRenderTickets() {
     const isActive = crmActiveTicket?.id === t.id ? 'active' : '';
     const silence = crmSilenceTag(t.lastMessageAt, t.lastDirection);
 
+    // Avatar: use cached pic if available, else colored initials
+    const picUrl = crmPicCache[t.id];
+    const avatarHtml = picUrl
+      ? `<img src="${picUrl}" class="crm-ticket-avatar crm-ticket-avatar-img" alt="" onerror="this.parentElement.innerHTML='<div class=&quot;crm-ticket-avatar&quot; style=&quot;background:${color}22;color:${color};border:1.5px solid ${color}44&quot;>${initials}</div>'" />`
+      : `<div class="crm-ticket-avatar" style="background:${color}22;color:${color};border:1.5px solid ${color}44" data-lead-id="${t.id}">${initials}</div>`;
+
     return `<div class="crm-ticket-item ${isActive}" onclick="crmSelectTicket(${t.id})">
-      <div class="crm-ticket-avatar" style="background:${color}22;color:${color};border:1.5px solid ${color}44">
-        ${initials}
-      </div>
+      ${avatarHtml}
       <div class="crm-ticket-body">
         <div class="crm-ticket-row1">
           <span class="crm-ticket-name">
@@ -1972,6 +1977,48 @@ function crmRenderTickets() {
       </div>
     </div>`;
   }).join('');
+
+  // Lazy-load profile pictures for tickets not yet cached
+  crmLazyLoadPics();
+}
+
+async function crmLazyLoadPics() {
+  const pending = crmTickets.filter(t => !(t.id in crmPicCache));
+  if (!pending.length) return;
+
+  // Fetch in small batches to avoid hammering the server
+  const batch = pending.slice(0, 10);
+  await Promise.all(batch.map(async t => {
+    try {
+      const res = await fetch(`/api/crm/profile-pic/${t.id}`, {
+        headers: { Authorization: `Bearer ${crmToken()}` }
+      });
+      const { url } = await res.json();
+      crmPicCache[t.id] = url || null;
+
+      // Update just this avatar in the DOM without re-rendering the whole list
+      if (url) {
+        const avatarEl = document.querySelector(`[data-lead-id="${t.id}"]`);
+        if (avatarEl) {
+          const img = document.createElement('img');
+          img.src = url;
+          img.className = 'crm-ticket-avatar crm-ticket-avatar-img';
+          img.alt = '';
+          img.onerror = () => { /* keep initials on error */ };
+          avatarEl.replaceWith(img);
+        }
+        // Also update chat header avatar if this is the active ticket
+        if (crmActiveTicket?.id === t.id) {
+          const chatAv = document.getElementById('crm-active-avatar');
+          if (chatAv) {
+            chatAv.innerHTML = `<img src="${url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.remove()" />`;
+          }
+        }
+      }
+    } catch (_) {
+      crmPicCache[t.id] = null;
+    }
+  }));
 }
 
 function crmSilenceTag(lastAt, lastDir) {

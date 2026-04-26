@@ -1,0 +1,31 @@
+workflows:
+  android-build:
+    name: Yide Vibe - Android APK
+    max_build_duration: 30
+    environment:
+      node: 20
+      java: 17
+
+    scripts:
+      - name: Install dependencies
+        script: npm install --ignore-scripts
+
+      - name: Sync Capacitor
+        script: npx cap sync android
+
+      - name: Build APK
+        script: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+    artifacts:
+      - android/app/build/outputs/apk/debug/app-debug.apk
+
+    publishing:
+      email:
+        recipients:
+          - lucasdias1122334455@gmail.com
+        notify:
+          success: true
+          failure: true

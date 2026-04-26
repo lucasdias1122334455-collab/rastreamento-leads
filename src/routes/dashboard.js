@@ -12,6 +12,54 @@ router.get('/conversion-values', getConversionValues);
 router.get('/funnel', getFunnelStats);
 router.get('/export-leads', exportLeads);
 
+// ─── KPIs em Tempo Real ───────────────────────────────────────────────────────
+router.get('/kpis', async (req, res) => {
+  try {
+    const { clientId } = req.query;
+    const cf = clientId ? `AND l."clientId" = ${Number(clientId)}` : '';
+
+    const [rows] = await Promise.all([
+      prisma.$queryRawUnsafe(`
+        SELECT
+          -- Total de conversas (interações de entrada)
+          (SELECT COUNT(*)::int FROM interactions i LEFT JOIN leads l ON l.id = i."leadId" WHERE i.direction='inbound' ${cf.replace(/l\./g,'l.')}) AS "totalConversas",
+
+          -- Conversas ativas (lead com mensagem nas últimas 24h)
+          (SELECT COUNT(DISTINCT l.id)::int FROM leads l
+           JOIN interactions i ON i."leadId" = l.id
+           WHERE i."createdAt" > NOW() - INTERVAL '24 hours' AND i.direction = 'inbound' ${cf}) AS "ativas",
+
+          -- Aguardando resposta (última msg foi do lead, sem resposta nossa)
+          (SELECT COUNT(DISTINCT l.id)::int FROM leads l
+           JOIN interactions i ON i."leadId" = l.id AND i.direction = 'inbound'
+           WHERE NOT EXISTS (
+             SELECT 1 FROM interactions o WHERE o."leadId" = l.id AND o.direction = 'outbound' AND o."createdAt" > i."createdAt"
+           )
+           AND i."createdAt" > NOW() - INTERVAL '7 days' ${cf}) AS "aguardando",
+
+          -- Finalizadas (leads convertidos)
+          (SELECT COUNT(*)::int FROM leads l WHERE l.status = 'converted' ${cf}) AS "finalizadas",
+
+          -- Taxa de conversão %
+          (SELECT CASE WHEN COUNT(*) = 0 THEN 0
+            ELSE ROUND((COUNT(*) FILTER (WHERE status = 'converted') * 100.0 / COUNT(*))::numeric, 1)
+            END FROM leads l WHERE 1=1 ${cf}) AS "taxaConversao",
+
+          -- Novos hoje
+          (SELECT COUNT(*)::int FROM leads l WHERE l."createdAt" >= CURRENT_DATE ${cf}) AS "novoHoje",
+
+          -- Total de leads
+          (SELECT COUNT(*)::int FROM leads l WHERE 1=1 ${cf}) AS "totalLeads"
+      `)
+    ]);
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('[KPIs]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── GET /api/dashboard/sales-list ───────────────────────────────────────────
 // Lista individual de vendas convertidas com nome, telefone, valor, canal, data
 router.get('/sales-list', async (req, res) => {

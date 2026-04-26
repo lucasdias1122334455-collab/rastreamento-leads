@@ -262,7 +262,42 @@
       <!-- Dashboard -->
       <section id="page-dashboard" class="page">
         <h2>Dashboard</h2>
-        <div class="stats-grid">
+
+        <!-- KPIs em Tempo Real -->
+        <div class="kpi-header">
+          <h3 style="margin:0;font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">📊 Indicadores em Tempo Real</h3>
+          <select id="kpi-client-filter" onchange="loadKpis()" style="font-size:.75rem;padding:.25rem .5rem;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
+            <option value="">Todos os clientes</option>
+          </select>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-blue">
+            <div class="kpi-value" id="kpi-total-conversas">—</div>
+            <div class="kpi-label">Total de Conversas</div>
+          </div>
+          <div class="kpi-card kpi-green">
+            <div class="kpi-value" id="kpi-ativas">—</div>
+            <div class="kpi-label">Ativas (24h)</div>
+          </div>
+          <div class="kpi-card kpi-orange">
+            <div class="kpi-value" id="kpi-aguardando">—</div>
+            <div class="kpi-label">Aguardando Resposta</div>
+          </div>
+          <div class="kpi-card kpi-purple">
+            <div class="kpi-value" id="kpi-finalizadas">—</div>
+            <div class="kpi-label">Finalizadas</div>
+          </div>
+          <div class="kpi-card kpi-cyan">
+            <div class="kpi-value" id="kpi-taxa"><span style="font-size:1.2rem">—</span><span class="kpi-unit">%</span></div>
+            <div class="kpi-label">Taxa de Conversão</div>
+          </div>
+          <div class="kpi-card kpi-teal">
+            <div class="kpi-value" id="kpi-hoje">—</div>
+            <div class="kpi-label">Novas Hoje</div>
+          </div>
+        </div>
+
+        <div class="stats-grid" style="margin-top:1.5rem">
           <div class="stat-card"><span class="stat-value" id="stat-total">—</span><span class="stat-label">Total de Leads</span></div>
           <div class="stat-card"><span class="stat-value" id="stat-today">—</span><span class="stat-label">Novos Hoje</span></div>
           <div class="stat-card"><span class="stat-value" id="stat-converted">—</span><span class="stat-label">Convertidos</span></div>

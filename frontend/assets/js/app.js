@@ -175,7 +175,7 @@ function navigateTo(page) {
   show(`page-${page}`);
   document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
 
-  if (page === 'dashboard') { loadDashboard(); loadFunnel(); }
+  if (page === 'dashboard') { loadDashboard(); loadFunnel(); loadKpis(); populateKpiClientFilter(); }
   if (page === 'leads') { loadClientFilter(); loadLeads(1); }
   if (page === 'clients') loadClients();
   if (page === 'whatsapp') loadWAStatus();
@@ -252,6 +252,33 @@ async function loadFunnel(days) {
 }
 
 el('stuck-days-select')?.addEventListener('change', () => loadFunnel());
+
+// ─── Dashboard KPIs ───────────────────────────────────────────────────────────
+
+async function loadKpis() {
+  try {
+    const clientId = el('kpi-client-filter')?.value || '';
+    const qs = clientId ? `?clientId=${clientId}` : '';
+    const d = await apiFetch(`/dashboard/kpis${qs}`);
+    const set = (id, val) => { if (el(id)) el(id).innerHTML = val; };
+    set('kpi-total-conversas', d.totalConversas ?? '—');
+    set('kpi-ativas',          d.ativas ?? '—');
+    set('kpi-aguardando',      d.aguardando ?? '—');
+    set('kpi-finalizadas',     d.finalizadas ?? '—');
+    set('kpi-taxa',            `<span>${d.taxaConversao ?? '—'}</span><span class="kpi-unit">%</span>`);
+    set('kpi-hoje',            d.novoHoje ?? '—');
+  } catch (err) { console.error('[KPIs]', err); }
+}
+
+async function populateKpiClientFilter() {
+  try {
+    const clients = await apiFetch('/clients');
+    const sel = el('kpi-client-filter');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Todos os clientes</option>' +
+      clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  } catch (_) {}
+}
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 

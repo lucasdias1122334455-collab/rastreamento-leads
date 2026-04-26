@@ -650,6 +650,60 @@ nav { flex: 1; padding: .5rem .625rem .625rem; display: flex; flex-direction: co
   text-transform: uppercase;
 }
 
+/* ─── KPI CARDS ──────────────────────────────────────────── */
+.kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .75rem;
+}
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: .75rem;
+  margin-bottom: .5rem;
+}
+.kpi-card {
+  border-radius: 10px;
+  padding: 1rem 1.25rem .875rem;
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  border: 1px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+.kpi-value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: .03em;
+}
+.kpi-unit { font-size: 1rem; font-weight: 700; opacity: .8; }
+.kpi-label {
+  font-size: .72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  opacity: .75;
+}
+/* Color variants */
+.kpi-blue   { background: rgba(41,182,246,.10); border-color: rgba(41,182,246,.2); color: #29b6f6; }
+.kpi-green  { background: rgba(16,185,129,.10); border-color: rgba(16,185,129,.2); color: #10b981; }
+.kpi-orange { background: rgba(245,158,11,.10); border-color: rgba(245,158,11,.2); color: #f59e0b; }
+.kpi-purple { background: rgba(139,92,246,.10); border-color: rgba(139,92,246,.2); color: #8b5cf6; }
+.kpi-cyan   { background: rgba(0,200,240,.12);  border-color: rgba(0,200,240,.22); color: var(--cyan); }
+.kpi-teal   { background: rgba(6,182,212,.10);  border-color: rgba(6,182,212,.2);  color: #06b6d4; }
+
+/* Light mode KPI */
+[data-theme="light"] .kpi-blue   { background: rgba(41,182,246,.08); }
+[data-theme="light"] .kpi-green  { background: rgba(16,185,129,.08); }
+[data-theme="light"] .kpi-orange { background: rgba(245,158,11,.08); }
+[data-theme="light"] .kpi-purple { background: rgba(139,92,246,.08); }
+[data-theme="light"] .kpi-cyan   { background: rgba(0,200,240,.08);  }
+[data-theme="light"] .kpi-teal   { background: rgba(6,182,212,.08);  }
+
 /* ─── STATS GRID ─────────────────────────────────────────── */
 .stats-grid {
   display: grid;

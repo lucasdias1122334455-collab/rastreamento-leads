@@ -2,6 +2,19 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ── iOS GLOBAL FIXES ────────────────────────────────────── */
+/* Prevent double-tap zoom on buttons/links */
+a, button, [role="button"] { touch-action: manipulation; }
+/* Remove iOS tap highlight flash */
+* { -webkit-tap-highlight-color: transparent; }
+/* Prevent iOS text size adjustment on rotate */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* Prevent iOS input zoom — all inputs must be at least 16px */
+input, textarea, select { font-size: 16px !important; }
+/* Smooth momentum scrolling on iOS */
+.content, .mob-home, .crm-ticket-list, .crm-messages, .crm-contact-panel,
+.leads-table, .modal-content { -webkit-overflow-scrolling: touch; }
+
 :root {
   --cyan:         #00d4b8;
   --cyan-hover:   #00b89e;
@@ -42,8 +55,13 @@ body {
   font-family: 'Inter', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
+  /* Use dvh with 100vh fallback for older iOS */
   height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   -webkit-font-smoothing: antialiased;
+  /* Prevent iOS pull-to-refresh breaking the app */
+  overscroll-behavior: none;
 }
 
 h1, h2, h3, .logo, .stat-value {
@@ -56,7 +74,10 @@ h1, h2, h3, .logo, .stat-value {
 ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted2); }
 
-.screen { height: 100vh; }
+.screen {
+  height: 100vh;
+  height: 100dvh;
+}
 .hidden { display: none !important; }
 
 /* ─── LOGIN ─────────────────────────────────────────────── */
@@ -1355,7 +1376,10 @@ nav { flex: 1; padding: 0 .625rem; display: flex; flex-direction: column; gap: 2
   position: fixed; inset: 0; z-index: 100;
   background: var(--bg); overflow-y: auto;
   display: flex; flex-direction: column;
-  padding-bottom: 2rem;
+  /* iOS safe area padding */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling: touch;
 }
 .mob-home-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -1387,7 +1411,12 @@ nav { flex: 1; padding: 0 .625rem; display: flex; flex-direction: column; gap: 2
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
   background: var(--surface); border-top: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
-  padding: .55rem 1.25rem calc(.55rem + env(safe-area-inset-bottom));
+  /* safe-area-inset-bottom for iPhone home bar */
+  padding: .55rem 1.25rem;
+  padding-bottom: calc(.55rem + env(safe-area-inset-bottom));
+  /* Prevent iOS scroll bleed */
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 .mob-home-btn {
   display: flex; align-items: center; gap: .4rem;
@@ -1402,8 +1431,13 @@ nav { flex: 1; padding: 0 .625rem; display: flex; flex-direction: column; gap: 2
   /* Sidebar hidden on mobile when using card home */
   .sidebar { display: none; }
 
-  /* Content takes full height minus bottom bar */
-  .content { padding: .875rem .875rem calc(3.5rem + env(safe-area-inset-bottom)); overflow-y: auto; flex: 1; height: 100dvh; }
+  /* Content takes full height minus bottom bar + iOS home bar */
+  .content {
+    padding: .875rem .875rem calc(4rem + env(safe-area-inset-bottom));
+    overflow-y: auto; flex: 1;
+    height: 100vh; height: 100dvh;
+    -webkit-overflow-scrolling: touch;
+  }
   .page h2 { font-size: 2rem; margin-bottom: .875rem; }
   .page h3 { font-size: 1.2rem; margin: 1.25rem 0 .625rem; }
   .page h2::after { display: none; }
@@ -1963,7 +1997,15 @@ select:focus {
 /* ─── LOGIN RESPONSIVE ───────────────────────────────── */
 @media (max-width: 768px) {
   .login-left { display: none; }
-  .login-right { width: 100%; border-left: none; }
+  .login-right {
+    width: 100%; border-left: none;
+    /* iOS: allow scroll when keyboard opens */
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+  /* Login screen needs to scroll on iOS when keyboard is open */
+  #login-screen { overflow-y: auto; align-items: flex-start; }
+  .login-card { margin: auto; width: 100%; max-width: 100%; }
 }
 
 /* Conv ad folders */
@@ -2197,7 +2239,8 @@ select:focus {
 ═══════════════════════════════════════════════════════════════════ */
 
 .crm-page {
-  padding: 0; display: flex; flex-direction: column; height: 100%; overflow: hidden;
+  padding: 0; display: flex; flex-direction: column;
+  height: 100%; height: 100dvh; overflow: hidden;
   background: #080c14;
   --crm-bg:       #080c14;
   --crm-surface:  #0d1320;

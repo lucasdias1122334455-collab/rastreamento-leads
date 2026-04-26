@@ -399,14 +399,23 @@ async function runImageAgent({ lead, client, instance, imageBase64, imageMime })
 
     if (!result) return;
 
-    if (result.isPaymentReceipt && result.value) {
-      // Comprovante confirmado — marca como convertido com valor real
+    if (result.isPaymentReceipt) {
+      // Valor extraído da imagem — fallback para productValue se não legível
+      const receiptValue = result.value && result.value > 0
+        ? result.value
+        : client.productValue ? parseFloat(client.productValue) : null;
+
+      const isValueValid = receiptValue && !isNaN(receiptValue) && receiptValue > 0;
+      const valueStr = isValueValid ? `R$ ${receiptValue.toFixed(2)}` : 'valor não identificado';
+
+      // Marca como convertido com valor e timestamp
       await prisma.lead.update({
         where: { id: lead.id },
         data: {
           status: 'converted',
           stage: 'action',
-          value: result.value,
+          convertedAt: new Date(),
+          ...(isValueValid ? { value: receiptValue } : {}),
         },
       });
 
@@ -415,19 +424,26 @@ async function runImageAgent({ lead, client, instance, imageBase64, imageMime })
           leadId: lead.id,
           type: 'note',
           direction: 'outbound',
-          content: `✅ Comprovante de pagamento recebido — R$ ${result.value.toFixed(2)} — Convertido automaticamente`,
-          metadata: JSON.stringify({ ai: true, receipt: true, value: result.value }),
+          content: `Comprovante recebido — ${valueStr} — Convertido automaticamente`,
+          metadata: JSON.stringify({ ai: true, receipt: true, value: isValueValid ? receiptValue : null }),
         },
       });
 
-      console.log(`[AI] Lead ${lead.phone} CONVERTIDO via comprovante — R$ ${result.value}`);
+      console.log(`[AI] Lead ${lead.phone} CONVERTIDO via comprovante — ${valueStr}`);
+
+      // Notifica o responsável (cliente do sistema)
+      if (client.phone && instance) {
+        const leadName = lead.name || lead.phone;
+        const notifMsg = `*Comprovante Recebido*\n\nLead: ${leadName}\nValor: ${valueStr}\n\nPagamento confirmado automaticamente.`;
+        await evolutionService.sendClientMessage(instance, client.phone, notifMsg).catch(() => {});
+      }
 
       // Dispara evento Purchase no Meta Pixel se configurado
-      if (client.pixelId && client.metaConversionsToken) {
+      if (client.pixelId && client.metaConversionsToken && isValueValid) {
         metaConversions.sendPurchaseEvent({
           pixelId: client.pixelId,
           accessToken: client.metaConversionsToken,
-          value: result.value,
+          value: receiptValue,
           phone: lead.phone,
           email: lead.email,
           name: lead.name,
@@ -435,9 +451,9 @@ async function runImageAgent({ lead, client, instance, imageBase64, imageMime })
         }).catch(() => {});
       }
 
-      // Responde confirmando o recebimento
+      // Responde ao lead confirmando o recebimento
       if (result.reply) {
-        await evolutionService.sendClientMessage(instance, lead.phone, result.reply);
+        await evolutionService.sendClientMessage(instance, lead.phone, result.reply).catch(() => {});
         await prisma.interaction.create({
           data: {
             leadId: lead.id,
@@ -451,7 +467,7 @@ async function runImageAgent({ lead, client, instance, imageBase64, imageMime })
 
     } else if (result.reply) {
       // Não era comprovante mas Claude quer responder algo
-      await evolutionService.sendClientMessage(instance, lead.phone, result.reply);
+      await evolutionService.sendClientMessage(instance, lead.phone, result.reply).catch(() => {});
       await prisma.interaction.create({
         data: {
           leadId: lead.id,

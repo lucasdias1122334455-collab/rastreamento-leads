@@ -2956,6 +2956,24 @@ select:focus {
 }
 .cp-notes-input:focus { border-color: var(--crm-cyan-border); }
 
+/* Kanban sub-tabs */
+.kanban-subtabs {
+  display: flex; gap: .375rem; padding: .625rem 1rem .25rem;
+  background: var(--crm-bg); flex-shrink: 0;
+}
+.kanban-subtab {
+  display: flex; align-items: center; gap: .35rem;
+  padding: .3rem .75rem; border-radius: 20px; border: 1px solid transparent;
+  font-size: .75rem; font-weight: 500; cursor: pointer;
+  color: var(--crm-muted); background: transparent;
+  transition: all .15s;
+}
+.kanban-subtab:hover { color: var(--crm-text); background: rgba(255,255,255,.04); }
+.kanban-subtab.active {
+  color: var(--cyan); background: rgba(0,200,240,.1);
+  border-color: rgba(0,200,240,.25);
+}
+
 .crm-kanban {
   display: flex; gap: 1rem; padding: 1.25rem;
   overflow-x: auto; height: 100%; align-items: flex-start; background: var(--crm-bg);

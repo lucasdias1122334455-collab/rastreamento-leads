@@ -2240,6 +2240,7 @@ async function crmLoadTickets() {
     crmRenderTickets();
     if (crmActiveTicket) crmLoadMessages(crmActiveTicket.id);
     crmRenderKanban();
+    if (_kanbanActiveView === 'tags') crmRenderTagKanban();
   } catch (_) {}
 }
 
@@ -2731,6 +2732,95 @@ function crmRenderKanban() {
   });
 }
 
+// ── KANBAN VIEW SWITCHER (Geral / Tags) ──
+let _kanbanActiveView = 'funnel';
+
+function switchKanbanView(view, btn) {
+  _kanbanActiveView = view;
+  document.querySelectorAll('.kanban-subtab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('kanban-view-funnel').classList.toggle('hidden', view !== 'funnel');
+  document.getElementById('kanban-view-tags').classList.toggle('hidden', view !== 'tags');
+  if (view === 'funnel') crmRenderKanban();
+  else crmRenderTagKanban();
+}
+
+function crmRenderTagKanban() {
+  const container = document.getElementById('kanban-view-tags');
+  if (!container) return;
+
+  // Collect all unique tags from visible tickets
+  const tagMap = {}; // tag -> [ticket, ...]
+  const noTag = [];
+
+  crmTickets.forEach(t => {
+    const rawTags = t.tags ? t.tags.split(',').map(s => s.trim()).filter(Boolean) : [];
+    if (rawTags.length === 0) {
+      noTag.push(t);
+    } else {
+      rawTags.forEach(tag => {
+        if (!tagMap[tag]) tagMap[tag] = [];
+        tagMap[tag].push(t);
+      });
+    }
+  });
+
+  const allTags = Object.keys(tagMap).sort();
+
+  // Build columns HTML
+  const makeCard = (t) => {
+    const name = t.name || t.phone || '—';
+    const preview = t.lastMessage ? t.lastMessage.slice(0, 40) : '';
+    const ts = t.lastMessageAt || t.createdAt;
+    const statusDot = { new:'#3b82f6', waiting:'#f59e0b', attending:'#00c8f0', resolved:'rgba(255,255,255,.3)' };
+    const dotColor = statusDot[t.crmStatus || 'new'] || '#3b82f6';
+    return `<div class="crm-kanban-card" onclick="crmSelectTicket(${t.id});switchCrmTab('chats',document.querySelector('[data-tab=chats]'))">
+      <div class="crm-kanban-card-name" style="display:flex;align-items:center;gap:5px">
+        <span style="width:7px;height:7px;border-radius:50%;background:${dotColor};flex-shrink:0"></span>
+        ${escapeHtml(name)}
+      </div>
+      ${preview ? `<div class="crm-kanban-card-preview">${escapeHtml(preview)}</div>` : ''}
+      <div class="crm-kanban-card-time">${ts ? crmFormatTime(ts) : ''}</div>
+    </div>`;
+  };
+
+  let html = '';
+
+  allTags.forEach((tag, i) => {
+    const tickets = tagMap[tag];
+    const color = TAG_COLORS[i % TAG_COLORS.length];
+    html += `<div class="crm-kanban-col">
+      <div class="crm-kanban-col-header" style="gap:.45rem">
+        <span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:.72rem;font-weight:600;background:${color}22;color:${color};border:1px solid ${color}44">${escapeHtml(tag)}</span>
+        <span class="crm-kanban-count">${tickets.length}</span>
+      </div>
+      <div class="crm-kanban-cards">
+        ${tickets.map(makeCard).join('') || '<div class="crm-kanban-empty">Vazio</div>'}
+      </div>
+    </div>`;
+  });
+
+  if (noTag.length > 0) {
+    html += `<div class="crm-kanban-col">
+      <div class="crm-kanban-col-header">
+        <span style="color:var(--crm-muted);font-size:.78rem">Sem tag</span>
+        <span class="crm-kanban-count">${noTag.length}</span>
+      </div>
+      <div class="crm-kanban-cards">
+        ${noTag.map(makeCard).join('')}
+      </div>
+    </div>`;
+  }
+
+  if (!html) {
+    html = `<div style="display:flex;align-items:center;justify-content:center;flex:1;color:var(--crm-muted);font-size:.875rem;padding:2rem">
+      Nenhum lead com tags. Adicione tags nos contatos para organizar aqui.
+    </div>`;
+  }
+
+  container.innerHTML = html;
+}
+
 // ── TAB SWITCHER ──
 function switchCrmTab(tab, btn) {
   document.querySelectorAll('.crm-tab').forEach(b => b.classList.remove('active'));
@@ -2738,10 +2828,13 @@ function switchCrmTab(tab, btn) {
   btn.classList.add('active');
   document.getElementById(`crm-tab-${tab}`).classList.remove('hidden');
 
+  if (tab === 'kanban') {
+    if (_kanbanActiveView === 'tags') crmRenderTagKanban();
+    else crmRenderKanban();
+  }
   if (tab === 'tasks')        loadCrmTasks();
   if (tab === 'appointments') {
     loadCrmAppointments();
-    // Limpa badge de notificação ao abrir a aba
     const badge = document.getElementById('crm-appt-tab-badge');
     if (badge) badge.classList.add('hidden');
   }

@@ -936,7 +936,20 @@
 
         <!-- ── TAB: KANBAN ────────────────────────────────── -->
         <div id="crm-tab-kanban" class="crm-tab-content hidden">
-          <div class="crm-kanban">
+          <!-- Kanban sub-tab switcher -->
+          <div class="kanban-subtabs">
+            <button class="kanban-subtab active" data-kview="funnel" onclick="switchKanbanView('funnel',this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="10" rx="1"/></svg>
+              Kanban Geral
+            </button>
+            <button class="kanban-subtab" data-kview="tags" onclick="switchKanbanView('tags',this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+              Kanban por Tags
+            </button>
+          </div>
+
+          <!-- View: Funil (status) -->
+          <div id="kanban-view-funnel" class="crm-kanban">
             <div class="crm-kanban-col">
               <div class="crm-kanban-col-header"><span class="crm-kanban-dot new"></span>Novo<span id="k-count-new" class="crm-kanban-count">0</span></div>
               <div class="crm-kanban-cards" id="k-col-new"></div>
@@ -954,6 +967,9 @@
               <div class="crm-kanban-cards" id="k-col-resolved"></div>
             </div>
           </div>
+
+          <!-- View: Tags -->
+          <div id="kanban-view-tags" class="crm-kanban hidden" style="min-width:max-content"></div>
         </div>
 
         <!-- ── TAB: TASKS ────────────────────────────────── -->

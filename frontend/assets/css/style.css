@@ -2432,6 +2432,11 @@ select:focus {
   border-radius: 10px; padding: .75rem .9rem; cursor: pointer; transition: border-color .12s, transform .1s;
 }
 .crm-kanban-card:hover { border-color: var(--crm-cyan-border); transform: translateY(-1px); }
+.crm-kanban-card[draggable="true"] { cursor: grab; }
+.crm-kanban-card[draggable="true"]:active { cursor: grabbing; }
+.crm-kanban-card.kanban-dragging { opacity: .35; transform: scale(.97); border-style: dashed; }
+.crm-kanban-cards.kanban-drag-over { background: rgba(0,212,184,.06); border-radius: 8px; outline: 2px dashed var(--crm-cyan-border); outline-offset: -4px; }
+.crm-kanban-empty { padding: .5rem; font-size: .78rem; color: var(--crm-muted); text-align: center; }
 .crm-kanban-card-name { font-size: .83rem; font-weight: 600; color: var(--crm-text); margin-bottom: 3px; }
 .crm-kanban-card-preview { font-size: .74rem; color: var(--crm-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .crm-kanban-card-time { font-size: .66rem; color: var(--crm-muted2); margin-top: 5px; }

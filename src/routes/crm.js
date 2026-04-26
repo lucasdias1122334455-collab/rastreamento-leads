@@ -181,7 +181,33 @@ router.post('/appointments', async (req, res) => {
       title, scheduledAt ? new Date(scheduledAt) : null, notes || null,
       leadId ? Number(leadId) : null, clientId ? Number(clientId) : null, detectedBy || 'manual'
     );
-    res.json(rows[0]);
+    const appt = rows[0];
+
+    // Mensagem automática para o lead confirmando o agendamento
+    if (leadId && scheduledAt) {
+      try {
+        const [lead] = await prisma.$queryRawUnsafe(
+          `SELECT l.*, c."instanceName" FROM leads l LEFT JOIN clients c ON c.id = l."clientId" WHERE l.id = $1`,
+          Number(leadId)
+        );
+        if (lead && lead.instanceName && lead.phone) {
+          const dt = new Date(scheduledAt);
+          const dtStr = dt.toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+          const leadName = lead.name ? lead.name.split(' ')[0] : 'olá';
+          const msg = `Olá ${leadName}! Seu agendamento foi confirmado:\n\n*${title || 'Reunião'}*\n${dtStr}${notes ? `\n\n${notes}` : ''}\n\nQualquer dúvida é só falar!`;
+          await evolutionService.sendClientMessage(lead.instanceName, lead.phone, msg);
+          // Salva a mensagem no histórico do lead
+          await prisma.$executeRawUnsafe(
+            `INSERT INTO interactions ("leadId", type, direction, content) VALUES ($1, 'message', 'outbound', $2)`,
+            Number(leadId), msg
+          );
+        }
+      } catch (notifErr) {
+        console.warn('[CRM] Falha ao notificar lead sobre agendamento:', notifErr.message);
+      }
+    }
+
+    res.json(appt);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -189,17 +215,51 @@ router.post('/appointments', async (req, res) => {
 router.patch('/appointments/:id/status', async (req, res) => {
   try {
     const { status, scheduledAt, notes } = req.body;
+    let updatedAppt;
     if (scheduledAt) {
-      await prisma.$executeRawUnsafe(
-        `UPDATE crm_appointments SET status=$1, "scheduledAt"=$2, notes=COALESCE($3,notes), "updatedAt"=NOW() WHERE id=$4`,
+      const rows = await prisma.$queryRawUnsafe(
+        `UPDATE crm_appointments SET status=$1, "scheduledAt"=$2, notes=COALESCE($3,notes), "updatedAt"=NOW() WHERE id=$4 RETURNING *`,
         status, new Date(scheduledAt), notes || null, Number(req.params.id)
       );
+      updatedAppt = rows[0];
     } else {
-      await prisma.$executeRawUnsafe(
-        `UPDATE crm_appointments SET status=$1, notes=COALESCE($2,notes), "updatedAt"=NOW() WHERE id=$3`,
+      const rows = await prisma.$queryRawUnsafe(
+        `UPDATE crm_appointments SET status=$1, notes=COALESCE($2,notes), "updatedAt"=NOW() WHERE id=$3 RETURNING *`,
         status, notes || null, Number(req.params.id)
       );
+      updatedAppt = rows[0];
     }
+
+    // Mensagem automática ao lead sobre cancelamento ou reagendamento
+    if (updatedAppt && updatedAppt.leadId) {
+      try {
+        const [lead] = await prisma.$queryRawUnsafe(
+          `SELECT l.*, c."instanceName" FROM leads l LEFT JOIN clients c ON c.id = l."clientId" WHERE l.id = $1`,
+          Number(updatedAppt.leadId)
+        );
+        if (lead && lead.instanceName && lead.phone) {
+          const leadName = lead.name ? lead.name.split(' ')[0] : 'olá';
+          let msg = '';
+          if (status === 'cancelled') {
+            msg = `Olá ${leadName}, seu agendamento *${updatedAppt.title || 'Reunião'}* foi cancelado.${notes ? `\n\nMotivo: ${notes}` : ''}\n\nQualquer dúvida é só falar!`;
+          } else if (status === 'confirmed' && scheduledAt) {
+            const dt = new Date(scheduledAt);
+            const dtStr = dt.toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            msg = `Olá ${leadName}! Seu agendamento foi *reagendado*:\n\n*${updatedAppt.title || 'Reunião'}*\n${dtStr}${notes ? `\n\n${notes}` : ''}\n\nQualquer dúvida é só falar!`;
+          }
+          if (msg) {
+            await evolutionService.sendClientMessage(lead.instanceName, lead.phone, msg);
+            await prisma.$executeRawUnsafe(
+              `INSERT INTO interactions ("leadId", type, direction, content) VALUES ($1, 'message', 'outbound', $2)`,
+              Number(updatedAppt.leadId), msg
+            );
+          }
+        }
+      } catch (notifErr) {
+        console.warn('[CRM] Falha ao notificar lead sobre alteração de agendamento:', notifErr.message);
+      }
+    }
+
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

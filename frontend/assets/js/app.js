@@ -2235,6 +2235,8 @@ function crmBackToList() {
 }
 
 // ── KANBAN ──
+let _kanbanDragId = null;
+
 function crmRenderKanban() {
   const cols = { new: [], waiting: [], attending: [], resolved: [] };
   crmTickets.forEach(t => {
@@ -2246,16 +2248,47 @@ function crmRenderKanban() {
     const count = document.getElementById(`k-count-${s}`);
     if (!col) return;
     count.textContent = cols[s].length;
+
+    // Drag-and-drop handlers on the column drop zone
+    col.ondragover = e => { e.preventDefault(); col.classList.add('kanban-drag-over'); };
+    col.ondragleave = () => col.classList.remove('kanban-drag-over');
+    col.ondrop = async e => {
+      e.preventDefault();
+      col.classList.remove('kanban-drag-over');
+      const id = Number(_kanbanDragId);
+      if (!id) return;
+      // Optimistic: update local state immediately
+      const ticket = crmTickets.find(t => t.id === id);
+      if (ticket && ticket.crmStatus !== s) {
+        ticket.crmStatus = s;
+        crmRenderKanban();
+        try {
+          await fetch(`/api/crm/tickets/${id}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${crmToken()}` },
+            body: JSON.stringify({ crmStatus: s }),
+          });
+        } catch (_) {
+          showToast('Erro ao mover card');
+          crmLoadTickets();
+        }
+      }
+    };
+
     col.innerHTML = cols[s].map(t => {
       const name = t.name || t.phone || '—';
       const preview = t.lastMessage ? t.lastMessage.slice(0, 40) : '';
       const ts = t.lastMessageAt || t.createdAt;
-      return `<div class="crm-kanban-card" onclick="crmSelectTicket(${t.id});switchCrmTab('chats',document.querySelector('[data-tab=chats]'))">
+      return `<div class="crm-kanban-card" draggable="true"
+        data-id="${t.id}"
+        ondragstart="_kanbanDragId='${t.id}';this.classList.add('kanban-dragging')"
+        ondragend="this.classList.remove('kanban-dragging')"
+        onclick="crmSelectTicket(${t.id});switchCrmTab('chats',document.querySelector('[data-tab=chats]'))">
         <div class="crm-kanban-card-name">${escapeHtml(name)}</div>
         ${preview ? `<div class="crm-kanban-card-preview">${escapeHtml(preview)}</div>` : ''}
         <div class="crm-kanban-card-time">${ts ? crmFormatTime(ts) : ''}</div>
       </div>`;
-    }).join('') || '<div style="padding:.5rem;font-size:.78rem;color:var(--muted);text-align:center">Vazio</div>';
+    }).join('') || '<div class="crm-kanban-empty">Vazio</div>';
   });
 }
 

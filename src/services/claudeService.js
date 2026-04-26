@@ -178,9 +178,16 @@ ${paymentLink
   ? `→ Informe R$ ${productValue} e combine a forma de pagamento (PIX preferencial)`
   : `→ Marque needsPriceAlert: true para acionar o responsável`}
 → Marque "converted": true
+→ Preencha "conversionValue" com o valor numérico da venda em reais
+
+DETECTAR O VALOR DA VENDA:
+Procure na conversa qualquer menção a valor monetário — ex: "R$ 49,90", "50 reais", "combo de 35", "pago 120", "pix de 80".
+- Se o lead confirmou comprar E mencionou valor → use esse valor em conversionValue
+- Se há um productValue configurado e o lead confirmou comprar → use ${productValue || 'o valor configurado'}
+- Se o valor não foi mencionado → conversionValue: null
 
 QUANDO NÃO SOUBER O PREÇO:
-→ Diga "Deixa eu confirmar o valor certinho pra você! 😊"
+→ Diga "Deixa eu confirmar o valor certinho pra você!"
 → Marque needsPriceAlert: true — NUNCA invente valores
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

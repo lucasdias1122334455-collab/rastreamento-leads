@@ -324,22 +324,60 @@ async function runAIAgent({ lead, client, instance }) {
       }
     }
 
-    // Intenção de compra → qualifica (conversão real vem do MP ou comprovante)
-    if (result.converted && !['converted', 'qualified'].includes(lead.status)) {
+    // Conversão detectada pela IA — salva valor e marca como convertido
+    if (result.converted && lead.status !== 'converted') {
+      const saleValue = result.conversionValue
+        ? parseFloat(result.conversionValue)
+        : client.productValue
+        ? parseFloat(client.productValue)
+        : null;
+
+      const isValueValid = saleValue && !isNaN(saleValue) && saleValue > 0;
+
       await prisma.lead.update({
         where: { id: lead.id },
-        data: { status: 'qualified', stage: 'decision' },
+        data: {
+          status: 'converted',
+          stage: 'action',
+          ...(isValueValid ? { value: saleValue, convertedAt: new Date() } : {}),
+        },
       });
+
+      const valueStr = isValueValid ? `R$ ${saleValue.toFixed(2)}` : 'valor não identificado';
       await prisma.interaction.create({
         data: {
           leadId: lead.id,
           type: 'note',
           direction: 'outbound',
-          content: `🎯 Lead demonstrou intenção de compra — aguardando confirmação de pagamento`,
-          metadata: JSON.stringify({ ai: true, purchaseIntent: true }),
+          content: `Venda confirmada — ${valueStr} — Convertido automaticamente pela IA`,
+          metadata: JSON.stringify({ ai: true, converted: true, value: isValueValid ? saleValue : null }),
         },
       });
-      console.log(`[AI] Lead ${lead.phone} qualificado — intenção de compra detectada`);
+
+      // Notifica o responsável com o valor
+      if (client.phone && instance && isValueValid) {
+        const leadName = lead.name || lead.phone;
+        const notifMsg = `*Venda Confirmada*\n\nLead: ${leadName}\nValor: R$ ${saleValue.toFixed(2)}\n\nAcesse o CRM para ver os detalhes.`;
+        await evolutionService.sendClientMessage(instance, client.phone, notifMsg).catch(() => {});
+      }
+
+      // Dispara Pixel se configurado
+      if (client.pixelId && client.metaConversionsToken && isValueValid) {
+        try {
+          const metaConversions = require('../services/metaConversionsService');
+          await metaConversions.sendPurchaseEvent({
+            pixelId: client.pixelId,
+            accessToken: client.metaConversionsToken,
+            value: saleValue,
+            currency: 'BRL',
+            phone: lead.phone,
+            email: lead.email,
+            clientWebsite: client.website,
+          });
+        } catch (_) {}
+      }
+
+      console.log(`[AI] Lead ${lead.phone} CONVERTIDO — ${valueStr}`);
     }
 
   } catch (err) {

@@ -14,25 +14,25 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── TEMA DARK / LIGHT ─────────────────────────────────────────────────────────
-function applyThemeIcons() {
-  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
-  const icon   = isDark ? '☀' : '☾';
-  const ti  = document.getElementById('theme-icon');
-  const mti = document.getElementById('mob-theme-icon');
-  if (ti)  ti.textContent  = icon;
-  if (mti) mti.textContent = icon;
-}
-
 function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const html    = document.documentElement;
+  const current = html.getAttribute('data-theme') || 'dark';
   const next    = current === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
+  html.setAttribute('data-theme', next);
   localStorage.setItem('closy-theme', next);
-  applyThemeIcons();
+  // update all toggle buttons
+  document.querySelectorAll('.theme-toggle-icon').forEach(el => {
+    el.textContent = next === 'dark' ? '☀' : '☾';
+  });
 }
 
-// Apply icons on load
-applyThemeIcons();
+// Sync icons whenever DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  const isDark = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
+  document.querySelectorAll('.theme-toggle-icon').forEach(el => {
+    el.textContent = isDark ? '☀' : '☾';
+  });
+});
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function escapeHtml(s) {

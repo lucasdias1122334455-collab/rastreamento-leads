@@ -139,6 +139,41 @@ input, textarea, select { font-size: 16px !important; }
 /* Light mode — scrollbar */
 [data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); }
 
+/* Light mode — hardcoded backgrounds */
+[data-theme="light"] .content { background: var(--bg); }
+[data-theme="light"] #app-screen { background: var(--bg); }
+[data-theme="light"] .page { background: var(--bg); color: var(--text); }
+[data-theme="light"] .stat-label { color: var(--muted); }
+[data-theme="light"] .stat-value { color: var(--text); }
+[data-theme="light"] .page-header h2,
+[data-theme="light"] .page h2,
+[data-theme="light"] .page h3 { color: var(--text); }
+[data-theme="light"] .filters input,
+[data-theme="light"] .filters select { background: #fff; color: var(--text); border-color: var(--border); }
+[data-theme="light"] .btn-sm,
+[data-theme="light"] .btn-edit { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+[data-theme="light"] .modal-content { background: #fff; color: var(--text); }
+[data-theme="light"] .modal-content label { color: var(--muted); }
+[data-theme="light"] .stuck-lead-item { background: var(--surface); border-color: var(--border); }
+[data-theme="light"] .interaction-item { border-color: var(--border); }
+[data-theme="light"] .status-badge { border: 1px solid var(--border); }
+[data-theme="light"] nav { background: var(--sidebar-bg); }
+
+/* Light mode — CRM chat */
+[data-theme="light"] .crm-msg-bubble { background: var(--crm-surface); color: var(--crm-text); }
+[data-theme="light"] .crm-msg.outbound .crm-msg-bubble { background: var(--crm-cyan-dim); color: var(--crm-text); }
+[data-theme="light"] .crm-ticket-item { background: var(--crm-surface); border-color: var(--crm-border); }
+[data-theme="light"] .crm-ticket-item:hover { background: var(--crm-surface2); }
+[data-theme="light"] .crm-topbar { background: var(--crm-surface); border-color: var(--crm-border); }
+[data-theme="light"] .crm-tab { color: var(--crm-muted); }
+[data-theme="light"] .crm-tab.active { color: var(--crm-cyan); }
+[data-theme="light"] .crm-send-area { background: var(--crm-surface); border-color: var(--crm-border); }
+[data-theme="light"] .crm-msg-input { background: var(--crm-bg); color: var(--crm-text); }
+[data-theme="light"] .crm-contact-panel { background: var(--crm-surface); border-color: var(--crm-border); }
+[data-theme="light"] .crm-kanban-col { background: var(--crm-surface); border-color: var(--crm-border); }
+[data-theme="light"] .crm-kanban-card { background: #fff; border-color: var(--crm-border); }
+[data-theme="light"] .crm-kanban-card:hover { border-color: var(--crm-cyan-border); }
+
 body {
   font-family: 'Inter', system-ui, sans-serif;
   background: var(--bg);

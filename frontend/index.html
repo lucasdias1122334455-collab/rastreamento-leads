@@ -101,8 +101,8 @@
         <a href="/launch.html" class="nav-item nav-admin hidden" target="_blank">Lançamento</a>
       </nav>
       <div class="sidebar-footer">
-        <button id="theme-toggle-btn" onclick="toggleTheme()" title="Alternar tema" style="background:none;border:1px solid var(--border);border-radius:8px;padding:.3rem .55rem;cursor:pointer;font-size:.8rem;color:var(--muted)">
-          <span id="theme-icon">☀</span>
+        <button onclick="toggleTheme()" title="Alternar tema" style="background:none;border:1px solid var(--border);border-radius:8px;padding:.3rem .55rem;cursor:pointer;font-size:.85rem;color:var(--muted);line-height:1">
+          <span class="theme-toggle-icon">☀</span>
         </button>
         <button id="profile-btn" class="profile-btn" title="Editar perfil"><span id="user-name"></span></button>
         <button id="logout-btn">Sair</button>
@@ -118,7 +118,7 @@
         </div>
         <div style="display:flex;align-items:center;gap:.6rem">
           <span id="mob-wa-indicator" class="wa-dot disconnected"></span>
-          <button onclick="toggleTheme()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:.3rem .55rem;cursor:pointer;font-size:.85rem;color:var(--muted)"><span id="mob-theme-icon">☀</span></button>
+          <button onclick="toggleTheme()" title="Alternar tema" style="background:none;border:1px solid var(--border);border-radius:8px;padding:.3rem .55rem;cursor:pointer;font-size:.85rem;color:var(--muted);line-height:1"><span class="theme-toggle-icon">☀</span></button>
           <button id="mob-logout-btn" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:.3rem .6rem;font-size:.72rem;cursor:pointer">Sair</button>
         </div>
       </div>

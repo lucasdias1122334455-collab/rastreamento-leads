@@ -1,69 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 160" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 145">
   <defs>
-    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%"   stop-color="#29b6f6"/>
       <stop offset="55%"  stop-color="#00e5ff"/>
       <stop offset="100%" stop-color="#00bcd4"/>
     </linearGradient>
-    <linearGradient id="logoGradShadow" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%"   stop-color="#0288d1" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="#006064" stop-opacity="0.5"/>
+    <linearGradient id="gs" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#0d4a7a" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#005060" stop-opacity="0.4"/>
     </linearGradient>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="3" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <filter id="shadow">
-      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#0090b8" flood-opacity="0.35"/>
+    <filter id="drop">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0070a8" flood-opacity="0.4"/>
     </filter>
   </defs>
 
-  <!-- Shadow layer (depth effect) -->
-  <text
-    x="210" y="105"
-    font-family="'Arial Black', 'Arial', sans-serif"
-    font-weight="900"
-    font-size="95"
-    text-anchor="middle"
-    fill="url(#logoGradShadow)"
-    transform="translate(3,5)"
-    letter-spacing="-2"
-  >CLOUSY</text>
+  <!-- Shadow layer -->
+  <text x="203" y="101" text-anchor="end"
+    font-family="'Arial Black','Arial','Helvetica Neue',sans-serif"
+    font-weight="900" font-size="92" fill="url(#gs)">CL</text>
+  <text x="218" y="101" text-anchor="start"
+    font-family="'Arial Black','Arial','Helvetica Neue',sans-serif"
+    font-weight="900" font-size="92" fill="url(#gs)">USY</text>
 
-  <!-- Main CLOUSY text -->
-  <text
-    x="210" y="105"
-    font-family="'Arial Black', 'Arial', sans-serif"
-    font-weight="900"
-    font-size="95"
-    text-anchor="middle"
-    fill="url(#logoGrad)"
-    filter="url(#shadow)"
-    letter-spacing="-2"
-  >CLOUSY</text>
+  <!-- "CL" -->
+  <text x="200" y="97" text-anchor="end"
+    font-family="'Arial Black','Arial','Helvetica Neue',sans-serif"
+    font-weight="900" font-size="92" fill="url(#g)" filter="url(#drop)">CL</text>
 
-  <!-- Play button overlay on the O (approximate center of O at ~x=175, y=65) -->
-  <!-- Circle ring on O -->
-  <circle cx="177" cy="62" r="28" fill="none" stroke="url(#logoGrad)" stroke-width="0" opacity="0"/>
-  <!-- White-ish circle inside O to create the play button look -->
-  <circle cx="177" cy="62" r="22" fill="#0b1a2a" opacity="0.55"/>
-  <!-- Play triangle -->
-  <polygon
-    points="168,50 168,74 193,62"
-    fill="url(#logoGrad)"
-    opacity="0.95"
-  />
-  <!-- Thin circle border around O -->
-  <circle cx="177" cy="62" r="25" fill="none" stroke="url(#logoGrad)" stroke-width="2.5" opacity="0.7"/>
+  <!-- O = circle ring + play button (centered at x=205, y=52) -->
+  <circle cx="205" cy="51" r="35" fill="none" stroke="url(#g)" stroke-width="7" filter="url(#drop)"/>
+  <!-- Play triangle: slightly right of center -->
+  <polygon points="195,37 195,65 222,51" fill="url(#g)"/>
+
+  <!-- "USY" -->
+  <text x="215" y="97" text-anchor="start"
+    font-family="'Arial Black','Arial','Helvetica Neue',sans-serif"
+    font-weight="900" font-size="92" fill="url(#g)" filter="url(#drop)">USY</text>
 
   <!-- CRM subtitle -->
-  <text
-    x="210" y="138"
-    font-family="'Arial Black', 'Arial', sans-serif"
-    font-weight="900"
-    font-size="28"
-    text-anchor="middle"
-    fill="#00bcd4"
-    letter-spacing="12"
-  >CRM</text>
+  <text x="200" y="128"
+    font-family="'Arial Black','Arial','Helvetica Neue',sans-serif"
+    font-weight="900" font-size="25" fill="#00bcd4" letter-spacing="12" text-anchor="middle">CRM</text>
 </svg>

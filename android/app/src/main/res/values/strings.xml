@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Closy CRM</string>
-    <string name="title_activity_main">Closy CRM</string>
+    <string name="app_name">Clousy CRM</string>
+    <string name="title_activity_main">Clousy CRM</string>
     <string name="package_name">com.yidevibe.crm</string>
     <string name="custom_url_scheme">com.yidevibe.crm</string>
 </resources>

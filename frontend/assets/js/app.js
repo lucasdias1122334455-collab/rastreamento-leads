@@ -4,6 +4,15 @@ let currentUser = null;
 let currentPage = 1;
 let waStatusInterval = null;
 
+// ─── PWA: Service Worker ──────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log('[PWA] Service Worker registrado'))
+      .catch(() => {});
+  });
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function escapeHtml(s) {
   if (s == null) return '';

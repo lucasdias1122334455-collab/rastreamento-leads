@@ -1151,25 +1151,36 @@ async function loadConvAds() {
       container.innerHTML = '<p class="conv-empty">Nenhuma conversa ainda.</p>';
       return;
     }
-    const sourceIcon = (src) => src === 'whatsapp_meta' ? '📢' : src === 'manual' ? '✍️' : src === 'instagram' ? '📸' : src === 'website' ? '🛒' : src === 'whatsapp_group' ? '👥' : '📱';
+    const sourceIcon = (src) => {
+      const icons = {
+        whatsapp_meta:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>`,
+        manual:         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
+        instagram:      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>`,
+        website:        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
+        whatsapp_group: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+      };
+      return icons[src] || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>`;
+    };
+    const abandonedIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`;
+    const groupIcon    = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
     container.innerHTML = groups.map(g => {
       if (g.isAbandoned) {
         return `
-          <div class="conv-ad-item conv-ad-abandoned" onclick="selectConvAd('${encodeURIComponent('__abandoned__')}', this, '🛒 Carrinho Abandonado')">
-            <div class="conv-ad-title">🛒 Carrinho Abandonado</div>
+          <div class="conv-ad-item conv-ad-abandoned" onclick="selectConvAd('${encodeURIComponent('__abandoned__')}', this, 'Carrinho Abandonado')">
+            <div class="conv-ad-title">${abandonedIcon} Carrinho Abandonado</div>
             <div class="conv-ad-meta">${g.total} leads · recuperar agora</div>
           </div>`;
       }
       if (g.isGroups) {
         return `
-          <div class="conv-ad-item conv-ad-groups" onclick="selectConvAd('${encodeURIComponent('__groups__')}', this, '👥 Grupos WhatsApp')">
-            <div class="conv-ad-title">👥 Grupos WhatsApp</div>
+          <div class="conv-ad-item conv-ad-groups" onclick="selectConvAd('${encodeURIComponent('__groups__')}', this, 'Grupos WhatsApp')">
+            <div class="conv-ad-title">${groupIcon} Grupos WhatsApp</div>
             <div class="conv-ad-meta">${g.total} grupo${g.total !== 1 ? 's' : ''} · ${g.new} com mensagens novas</div>
           </div>`;
       }
       return `
         <div class="conv-ad-item" onclick="selectConvAd('${encodeURIComponent(g.key)}', this, '${g.key.replace(/'/g, "\\'")}')">
-          <div class="conv-ad-title">${sourceIcon(g.source)} ${g.key}</div>
+          <div class="conv-ad-title">${sourceIcon(g.source)} ${escapeHtml(g.key)}</div>
           <div class="conv-ad-meta">${g.total} leads · ${g.converted} convertidos</div>
         </div>`;
     }).join('');

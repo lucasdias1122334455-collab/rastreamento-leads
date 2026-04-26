@@ -94,10 +94,16 @@ el('login-form').addEventListener('submit', async (e) => {
     currentUser = data.user;
     localStorage.setItem('token', token);
     el('user-name').textContent = data.user.name;
+    const mobName = document.getElementById('mob-user-name');
+    if (mobName) mobName.textContent = data.user.name.split(' ')[0];
     applyUserRole(data.user.role);
     hide('login-screen');
     show('app-screen');
-    navigateTo('dashboard');
+    if (isMobile()) {
+      show('mob-home');
+    } else {
+      navigateTo('dashboard');
+    }
     startWAStatusPolling();
   } catch (err) {
     el('login-error').textContent = err.message;
@@ -108,6 +114,39 @@ el('login-form').addEventListener('submit', async (e) => {
 el('logout-btn').addEventListener('click', logout);
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
+
+const PAGE_LABELS = {
+  dashboard: 'Dashboard', leads: 'Leads', clients: 'Clientes',
+  whatsapp: 'WhatsApp', conversations: 'Conversas', conversions: 'Conversões',
+  'meta-stats': 'Meta Ads', users: 'Usuários', analyst: 'Analista IA',
+  reports: 'Relatórios', tracking: 'Links', crm: 'CRM',
+};
+
+function isMobile() { return window.innerWidth <= 768; }
+
+function mobileNavigate(page) {
+  // Hide mobile home, show page content
+  const mobHome = document.getElementById('mob-home');
+  const mobBar  = document.getElementById('mob-bottom-bar');
+  const label   = document.getElementById('mob-page-label');
+  if (mobHome) mobHome.classList.add('hidden');
+  if (mobBar)  mobBar.classList.remove('hidden');
+  if (label)   label.textContent = PAGE_LABELS[page] || page;
+  navigateTo(page);
+}
+
+function mobileGoHome() {
+  const mobHome = document.getElementById('mob-home');
+  const mobBar  = document.getElementById('mob-bottom-bar');
+  if (mobHome) mobHome.classList.remove('hidden');
+  if (mobBar)  mobBar.classList.add('hidden');
+  // Hide all pages
+  document.querySelectorAll('.page').forEach((p) => p.classList.add('hidden'));
+  document.querySelectorAll('.nav-item').forEach((a) => a.classList.remove('active'));
+  // Stop CRM timers
+  if (crmPollTimer)      { clearInterval(crmPollTimer); crmPollTimer = null; }
+  if (crmApptNotifTimer) { clearInterval(crmApptNotifTimer); crmApptNotifTimer = null; }
+}
 
 function navigateTo(page) {
   document.querySelectorAll('.page').forEach((p) => p.classList.add('hidden'));
@@ -641,7 +680,9 @@ function applyWAStatus({ status, qrCode }) {
   el('wa-status-text').textContent = labels[status] || status;
 
   const dot = el('wa-indicator');
-  dot.className = `wa-dot ${status === 'connected' ? 'connected' : 'disconnected'}`;
+  if (dot) dot.className = `wa-dot ${status === 'connected' ? 'connected' : 'disconnected'}`;
+  const mobDot = document.getElementById('mob-wa-indicator');
+  if (mobDot) mobDot.className = `wa-dot ${status === 'connected' ? 'connected' : 'disconnected'}`;
 
   if (qrCode) {
     el('qr-image').src = qrCode;
@@ -1365,13 +1406,23 @@ if (token) {
     if (!user) return;
     currentUser = user;
     el('user-name').textContent = user.name;
+    const mobName = document.getElementById('mob-user-name');
+    if (mobName) mobName.textContent = user.name.split(' ')[0];
     applyUserRole(user.role);
     hide('login-screen');
     show('app-screen');
-    navigateTo('dashboard');
+    if (isMobile()) {
+      show('mob-home');
+    } else {
+      navigateTo('dashboard');
+    }
     startWAStatusPolling();
   }).catch(logout);
 }
+
+// Mobile logout buttons
+document.getElementById('mob-logout-btn')?.addEventListener('click', logout);
+document.getElementById('mob-logout-btn2')?.addEventListener('click', logout);
 
 // ===================== AI ANALYST PAGE =====================
 let analystPageHistory = [];

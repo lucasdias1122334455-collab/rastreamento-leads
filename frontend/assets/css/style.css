@@ -1350,16 +1350,63 @@ nav { flex: 1; padding: 0 .625rem; display: flex; flex-direction: column; gap: 2
 }
 
 /* ─── RESPONSIVE MOBILE ──────────────────────────────────── */
+/* ── MOBILE HOME SCREEN ──────────────────────────────────── */
+.mob-home {
+  position: fixed; inset: 0; z-index: 100;
+  background: var(--bg); overflow-y: auto;
+  display: flex; flex-direction: column;
+  padding-bottom: 2rem;
+}
+.mob-home-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: var(--bg); z-index: 10;
+}
+.mob-home-brand { display: flex; align-items: center; gap: .5rem; }
+.mob-home-greeting { padding: 1.25rem 1.25rem .5rem; }
+.mob-cards-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: .75rem; padding: .75rem 1rem 1rem;
+}
+.mob-card {
+  display: flex; flex-direction: column; align-items: center;
+  gap: .55rem; padding: 1rem .5rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; cursor: pointer; transition: transform .12s, border-color .12s;
+  font-size: .72rem; font-weight: 600; color: var(--text); text-align: center;
+}
+.mob-card:active { transform: scale(.94); border-color: var(--cyan-border); }
+.mob-card-icon {
+  width: 48px; height: 48px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+.mob-card-icon svg { width: 22px; height: 22px; }
+
+/* ── MOBILE BOTTOM BAR ───────────────────────────────────── */
+.mob-bottom-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+  background: var(--surface); border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .55rem 1.25rem calc(.55rem + env(safe-area-inset-bottom));
+}
+.mob-home-btn {
+  display: flex; align-items: center; gap: .4rem;
+  background: var(--cyan-dim); border: 1px solid var(--cyan-border);
+  color: var(--cyan); border-radius: 10px; padding: .45rem .9rem;
+  font-size: .78rem; font-weight: 700; cursor: pointer;
+}
+
 @media (max-width: 768px) {
   #app-screen { flex-direction: column; height: 100dvh; }
 
-  .sidebar {
-    width: 100%; height: auto; flex-direction: row;
-    padding: 0; align-items: center;
-    position: sticky; top: 0; z-index: 50;
-    border-right: none; border-bottom: 1px solid var(--border);
-  }
-  .sidebar::after { display: none; }
+  /* Sidebar hidden on mobile when using card home */
+  .sidebar { display: none; }
+
+  /* Content takes full height minus bottom bar */
+  .content { padding: .875rem .875rem calc(3.5rem + env(safe-area-inset-bottom)); overflow-y: auto; flex: 1; height: 100dvh; }
+  .page h2 { font-size: 2rem; margin-bottom: .875rem; }
+  .page h3 { font-size: 1.2rem; margin: 1.25rem 0 .625rem; }
+  .page h2::after { display: none; }
   .sidebar-header { padding: .625rem .875rem; border-bottom: none; flex-shrink: 0; }
   .logo { font-size: 1.1rem; }
   #wa-indicator { display: none; }
@@ -1379,18 +1426,7 @@ nav { flex: 1; padding: 0 .625rem; display: flex; flex-direction: column; gap: 2
     background: rgba(0,212,184,0.08);
     color: var(--cyan);
   }
-  .sidebar-footer {
-    flex-direction: row; align-items: center; padding: .4rem .625rem;
-    gap: .4rem; flex-shrink: 0; border-top: none; border-left: 1px solid var(--border); margin-top: 0;
-  }
-  #user-name  { display: none; }
-  #logout-btn { font-size: .68rem; padding: .3rem .5rem; }
-  .profile-btn { font-size: .72rem; }
-
-  .content { padding: .875rem; overflow-y: auto; flex: 1; }
-  .page h2 { font-size: 2rem; margin-bottom: .875rem; }
-  .page h3 { font-size: 1.2rem; margin: 1.25rem 0 .625rem; }
-  .page h2::after { display: none; }
+  /* sidebar fully hidden — see new mob-home above */
 
   .stats-grid { grid-template-columns: repeat(2, 1fr); gap: .625rem; }
   .stat-card { padding: .875rem 1rem; }

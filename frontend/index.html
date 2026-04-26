@@ -90,6 +90,108 @@
       </div>
     </aside>
 
+    <!-- ── MOBILE HOME SCREEN (card grid) ─────────────────────── -->
+    <div id="mob-home" class="mob-home hidden">
+      <div class="mob-home-header">
+        <div class="mob-home-brand">
+          <div class="sidebar-logo-icon" style="width:32px;height:32px;font-size:.9rem">C</div>
+          <span class="logo" style="font-size:1.4rem">Closy CRM</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:.6rem">
+          <span id="mob-wa-indicator" class="wa-dot disconnected"></span>
+          <button id="mob-logout-btn" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:.3rem .6rem;font-size:.72rem;cursor:pointer">Sair</button>
+        </div>
+      </div>
+      <div class="mob-home-greeting">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.15rem">Olá,</div>
+        <div class="logo" id="mob-user-name" style="font-size:1.6rem">—</div>
+      </div>
+      <div class="mob-cards-grid">
+        <button class="mob-card" onclick="mobileNavigate('dashboard')">
+          <div class="mob-card-icon" style="background:rgba(0,212,184,.12);color:#00d4b8">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </div>
+          <span>Dashboard</span>
+        </button>
+        <button class="mob-card" onclick="mobileNavigate('crm')">
+          <div class="mob-card-icon" style="background:rgba(59,130,246,.12);color:#3b82f6">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <span>CRM</span>
+        </button>
+        <button class="mob-card" onclick="mobileNavigate('leads')">
+          <div class="mob-card-icon" style="background:rgba(16,185,129,.12);color:#10b981">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <span>Leads</span>
+        </button>
+        <button class="mob-card" onclick="mobileNavigate('conversations')">
+          <div class="mob-card-icon" style="background:rgba(245,158,11,.12);color:#f59e0b">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          </div>
+          <span>Conversas</span>
+        </button>
+        <button class="mob-card" onclick="mobileNavigate('conversions')">
+          <div class="mob-card-icon" style="background:rgba(239,68,68,.12);color:#ef4444">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <span>Conversões</span>
+        </button>
+        <button class="mob-card" onclick="mobileNavigate('meta-stats')">
+          <div class="mob-card-icon" style="background:rgba(139,92,246,.12);color:#8b5cf6">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <span>Meta Ads</span>
+        </button>
+        <button class="mob-card" onclick="mobileNavigate('reports')">
+          <div class="mob-card-icon" style="background:rgba(6,182,212,.12);color:#06b6d4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </div>
+          <span>Relatórios</span>
+        </button>
+        <button class="mob-card" onclick="mobileNavigate('whatsapp')">
+          <div class="mob-card-icon" style="background:rgba(34,197,94,.12);color:#22c55e">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 3h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 10.6a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </div>
+          <span>WhatsApp</span>
+        </button>
+        <button class="mob-card" onclick="mobileNavigate('analyst')">
+          <div class="mob-card-icon" style="background:rgba(236,72,153,.12);color:#ec4899">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <span>Analista IA</span>
+        </button>
+        <button class="mob-card" onclick="mobileNavigate('clients')">
+          <div class="mob-card-icon" style="background:rgba(251,191,36,.12);color:#fbbf24">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          </div>
+          <span>Clientes</span>
+        </button>
+        <button class="mob-card" onclick="mobileNavigate('tracking')">
+          <div class="mob-card-icon" style="background:rgba(99,102,241,.12);color:#6366f1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          </div>
+          <span>Links</span>
+        </button>
+        <button class="mob-card nav-admin hidden" onclick="mobileNavigate('users')">
+          <div class="mob-card-icon" style="background:rgba(156,163,175,.12);color:#9ca3af">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+          </div>
+          <span>Usuários</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── MOBILE BOTTOM BAR (back button) ──────────────────── -->
+    <div id="mob-bottom-bar" class="mob-bottom-bar hidden">
+      <button onclick="mobileGoHome()" class="mob-home-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Início
+      </button>
+      <span id="mob-page-label" style="font-size:.75rem;color:var(--muted);font-weight:600"></span>
+      <button id="mob-logout-btn2" style="background:none;border:none;color:var(--muted);font-size:.72rem;cursor:pointer;padding:.3rem .5rem">Sair</button>
+    </div>
+
     <main class="content">
       <!-- Dashboard -->
       <section id="page-dashboard" class="page">

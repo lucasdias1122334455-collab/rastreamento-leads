@@ -1,4 +1,4 @@
-const CACHE_NAME = 'yide-vibe-v1';
+const CACHE_NAME = 'closy-crm-v3';
 
 // Arquivos essenciais para funcionar offline
 const STATIC_ASSETS = [

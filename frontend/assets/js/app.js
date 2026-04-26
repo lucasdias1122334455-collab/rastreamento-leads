@@ -1073,7 +1073,11 @@ async function selectConvClient(clientId, btn) {
   el('conv-leads-list').innerHTML = '<p class="conv-empty">← Selecione uma pasta</p>';
   el('conv-messages').innerHTML = '<p class="conv-empty" style="margin-top:3rem">← Selecione um lead</p>';
   el('conv-leads-header').textContent = 'Selecione uma pasta';
-  el('conv-chat-header').textContent = 'Conversa';
+  if (el('conv-chat-header-text')) el('conv-chat-header-text').textContent = 'Conversa';
+  if (el('conv-wa-status')) el('conv-wa-status').textContent = '';
+  if (el('conv-wa-avatar')) el('conv-wa-avatar').textContent = '?';
+  if (el('conv-input-bar')) el('conv-input-bar').style.display = 'none';
+  if (el('conv-view-lead-btn')) el('conv-view-lead-btn').style.display = 'none';
   el('conv-chat-info').classList.add('hidden');
   convActiveLeadId = null;
   await loadConvAds();
@@ -1138,6 +1142,10 @@ async function selectConvAd(encodedKey, el_clicked, label) {
   if (el('conv-leads-list')) el('conv-leads-list').innerHTML = '<p class="conv-empty">Carregando...</p>';
   if (el('conv-messages')) el('conv-messages').innerHTML = '<p class="conv-empty" style="margin-top:3rem">← Selecione um lead</p>';
   if (el('conv-chat-header-text')) el('conv-chat-header-text').textContent = 'Conversa';
+  if (el('conv-wa-status')) el('conv-wa-status').textContent = '';
+  if (el('conv-wa-avatar')) el('conv-wa-avatar').textContent = '?';
+  if (el('conv-input-bar')) el('conv-input-bar').style.display = 'none';
+  if (el('conv-view-lead-btn')) el('conv-view-lead-btn').style.display = 'none';
   if (el('conv-chat-info')) el('conv-chat-info').classList.add('hidden');
   convActiveLeadId = null;
   if (isMobile()) convMobileShow('leads');
@@ -1181,98 +1189,196 @@ async function selectConvLead(id, el_clicked) {
   convPollTimer = setInterval(() => { if (convActiveLeadId === id) renderConvChat(id); }, 5000);
 }
 
+function _convInitials(name) {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name[0].toUpperCase();
+}
+
+function _convFmtTime(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function _convFmtDate(dateStr) {
+  const d = new Date(dateStr);
+  const today = new Date();
+  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return 'Hoje';
+  if (d.toDateString() === yesterday.toDateString()) return 'Ontem';
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
 async function renderConvChat(id) {
   try {
     const lead = await apiFetch(`/conversations/lead/${id}`);
-
     const isGroupLead = lead.phone?.startsWith('grp_');
 
-    // Info do lead
-    if (el('conv-chat-header-text')) el('conv-chat-header-text').textContent = lead.name || lead.phone;
-    const info = el('conv-chat-info');
-    if (!info) return;
-    info.classList.remove('hidden');
+    // ── Avatar ──
+    const avatarEl = el('conv-wa-avatar');
+    const nameEl = el('conv-chat-header-text');
+    const statusEl = el('conv-wa-status');
+    const inputBar = el('conv-input-bar');
+    const viewBtn = el('conv-view-lead-btn');
+
+    const displayName = lead.name || lead.phone || 'Lead';
+    if (nameEl) nameEl.textContent = displayName;
+    if (avatarEl) {
+      if (isGroupLead) { avatarEl.textContent = '👥'; avatarEl.style.fontSize = '1.2rem'; }
+      else { avatarEl.textContent = _convInitials(displayName); avatarEl.style.fontSize = ''; }
+    }
 
     let phoneDisplay = lead.phone || '—';
-    if (lead.phone?.startsWith('ig_'))    phoneDisplay = '📸 Instagram DM';
-    else if (lead.phone?.startsWith('brendi_')) phoneDisplay = '🛒 Brendi';
-    else if (lead.phone?.startsWith('grp_'))    phoneDisplay = '👥 Grupo WhatsApp';
+    if (lead.phone?.startsWith('ig_'))      phoneDisplay = 'Instagram DM';
+    else if (lead.phone?.startsWith('brendi_')) phoneDisplay = 'Brendi';
+    else if (lead.phone?.startsWith('grp_'))    phoneDisplay = 'Grupo WhatsApp';
+    if (statusEl) statusEl.textContent = phoneDisplay;
 
-    info.innerHTML = `
-      <div class="conv-chat-info-item">📞 <strong>${phoneDisplay}</strong></div>
-      ${lead.client ? `<div class="conv-chat-info-item">🏢 <strong>${lead.client.name}</strong></div>` : ''}
-      <div class="conv-chat-info-item">${statusBadge(lead.status)}</div>
-      ${!isGroupLead ? `<div class="conv-chat-info-item" style="gap:4px">
-        💰 <input type="number" id="conv-lead-value" value="${lead.value || ''}" placeholder="R$ valor" step="0.01" min="0"
-          style="width:90px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:var(--text);padding:3px 7px;font-size:12px;outline:none"
-          onkeydown="if(event.key==='Enter')saveConvLeadValue(${lead.id})">
-        <button class="btn-sm" style="background:rgba(62,207,207,0.2);border:1px solid rgba(62,207,207,0.4);color:#3ecfcf;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" onclick="saveConvLeadValue(${lead.id})">✓</button>
-      </div>` : ''}
-      <div class="conv-chat-info-item" style="margin-left:auto">
-        <button class="btn-sm btn-primary" onclick="navigateTo('leads');setTimeout(()=>openLeadModal(${lead.id}),300)">Ver Lead</button>
-      </div>
-    `;
+    // Show/hide input bar (not for group leads or IG/Brendi)
+    const canSend = !lead.phone?.startsWith('ig_') && !lead.phone?.startsWith('brendi_');
+    if (inputBar) inputBar.style.display = canSend ? 'flex' : 'none';
 
-    // Mensagens
+    // View lead button
+    if (viewBtn) {
+      viewBtn.style.display = 'flex';
+      viewBtn.onclick = () => { navigateTo('leads'); setTimeout(() => openLeadModal(lead.id), 300); };
+    }
+
+    // ── Info bar ──
+    const info = el('conv-chat-info');
+    if (info) {
+      info.classList.remove('hidden');
+      info.innerHTML = `
+        <div class="conv-chat-info-item">${statusBadge(lead.status)}</div>
+        ${lead.client ? `<div class="conv-chat-info-item">🏢 <strong>${lead.client.name}</strong></div>` : ''}
+        ${!isGroupLead ? `<div class="conv-chat-info-item" style="display:flex;align-items:center;gap:4px">
+          💰 <input type="number" id="conv-lead-value" value="${lead.value || ''}" placeholder="R$ valor" step="0.01" min="0"
+            style="width:90px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:var(--text);padding:3px 7px;font-size:12px;outline:none"
+            onkeydown="if(event.key==='Enter')saveConvLeadValue(${lead.id})">
+          <button class="btn-sm" style="background:rgba(62,207,207,0.2);border:1px solid rgba(62,207,207,0.4);color:#3ecfcf;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer" onclick="saveConvLeadValue(${lead.id})">✓</button>
+        </div>` : ''}
+      `;
+    }
+
+    // ── Messages ──
     const convMsgs = el('conv-messages');
     if (!convMsgs) return;
+
     if (!lead.interactions.length) {
       convMsgs.innerHTML = '<p class="conv-empty" style="margin-top:3rem;text-align:center">Nenhuma mensagem ainda.</p>';
       return;
     }
 
-    convMsgs.innerHTML = lead.interactions.map(i => {
+    let lastDateLabel = null;
+    const html = lead.interactions.map(i => {
       const dir = i.direction === 'outbound' ? 'outbound' : i.type === 'note' ? 'system' : 'inbound';
-      let content = i.content;
-      const time = new Date(i.createdAt).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+      const content = i.content;
+      const timeStr = _convFmtTime(i.createdAt);
+      const dateLabel = _convFmtDate(i.createdAt);
       const isConversion = content.includes('Comprovante de pagamento recebido') || content.includes('Pagamento aprovado');
 
-      // Extrai metadados de grupo
+      // Date separator
+      let sep = '';
+      if (dateLabel !== lastDateLabel) {
+        sep = `<div class="conv-date-sep">${dateLabel}</div>`;
+        lastDateLabel = dateLabel;
+      }
+
+      // Group sender name
       let groupSenderName = null;
       if (isGroupLead && dir === 'inbound') {
-        try {
-          const meta = JSON.parse(i.metadata || '{}');
-          groupSenderName = meta.participantName || meta.participant || null;
-        } catch (_) {}
+        try { const meta = JSON.parse(i.metadata || '{}'); groupSenderName = meta.participantName || meta.participant || null; } catch (_) {}
       }
 
-      // Detecta comprovante de pagamento
+      // Detect receipt / media
       const isReceipt = content.toLowerCase().includes('comprovante') && i.direction === 'inbound';
-      const isImage = !isReceipt && (content === '[mídia]' || content === '[imagem]' || content.includes('[imagem]'));
-
-      let bubble = '';
+      let bubbleContent = '';
       if (isReceipt) {
-        bubble = `
-          <a href="/comprovante-teste.html" target="_blank" class="conv-receipt-card">
-            <div class="conv-receipt-preview">
-              <div class="conv-receipt-icon">🧾</div>
-              <div class="conv-receipt-info">
-                <div class="conv-receipt-title">Comprovante de Pagamento</div>
-                <div class="conv-receipt-sub">PIX • R$ 150,00 • Toque para ver</div>
-              </div>
+        bubbleContent = `<a href="/comprovante-teste.html" target="_blank" class="conv-receipt-card">
+          <div class="conv-receipt-preview">
+            <div class="conv-receipt-icon">🧾</div>
+            <div class="conv-receipt-info">
+              <div class="conv-receipt-title">Comprovante de Pagamento</div>
+              <div class="conv-receipt-sub">PIX • Toque para ver</div>
             </div>
-          </a>`;
+          </div></a>`;
       } else if (content === '[mídia]' || content === '[imagem]') {
-        bubble = '📷 Mídia recebida';
+        bubbleContent = '📷 <em style="opacity:.7">Mídia recebida</em>';
       } else {
-        bubble = content;
+        bubbleContent = content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       }
 
-      return `
+      // System message (note)
+      if (dir === 'system') {
+        return `${sep}<div class="conv-msg-wrap system"><div class="conv-msg system"><em>${content}</em></div></div>`;
+      }
+
+      // Regular bubble
+      const isOutbound = dir === 'outbound';
+      const tick = isOutbound ? `<span class="conv-msg-tick">✓✓</span>` : '';
+      const sender = groupSenderName
+        ? `<div class="conv-msg-sender">${groupSenderName}</div>`
+        : (isOutbound ? `<div class="conv-msg-sender" style="font-size:.68rem;color:#53bdeb;margin-bottom:.2rem;text-transform:none;letter-spacing:0">Operador</div>` : '');
+
+      return `${sep}<div class="conv-msg-wrap ${dir}">
         <div class="conv-msg ${dir} ${isConversion ? 'conv-msg-converted' : ''}">
-          ${dir === 'system' ? `<em>${content}</em>` : `
-            ${groupSenderName ? `<div class="conv-msg-group-sender">${groupSenderName}</div>` : dir === 'outbound' ? '<div class="conv-msg-sender">Agente IA</div>' : ''}
-            ${bubble}
-          `}
-          <div class="conv-msg-time">${time}</div>
+          ${sender}${bubbleContent}
+          <div class="conv-msg-footer">
+            <span class="conv-msg-time">${timeStr}</span>
+            ${tick}
+          </div>
         </div>
-      `;
+      </div>`;
     }).join('');
 
-    // Rola para o final
-    const msgs = el('conv-messages');
-    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    convMsgs.innerHTML = html;
+    convMsgs.scrollTop = convMsgs.scrollHeight;
   } catch (err) { console.error(err); }
+}
+
+// ── Send message from conversations page ──────────────────────────────────────
+async function sendConvMessage() {
+  if (!convActiveLeadId) return;
+  const textarea = el('conv-input-text');
+  if (!textarea) return;
+  const msg = textarea.value.trim();
+  if (!msg) return;
+
+  // Optimistic UI: append bubble immediately
+  const convMsgs = el('conv-messages');
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const wrap = document.createElement('div');
+  wrap.className = 'conv-msg-wrap outbound';
+  wrap.innerHTML = `<div class="conv-msg outbound">
+    ${msg.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}
+    <div class="conv-msg-footer"><span class="conv-msg-time">${timeStr}</span><span class="conv-msg-tick sent">✓</span></div>
+  </div>`;
+  if (convMsgs) { convMsgs.appendChild(wrap); convMsgs.scrollTop = convMsgs.scrollHeight; }
+
+  textarea.value = '';
+  textarea.style.height = '';
+  textarea.rows = 1;
+
+  try {
+    await apiFetch('/crm/send', { method: 'POST', body: JSON.stringify({ leadId: convActiveLeadId, message: msg }) });
+    // Update tick to double-check
+    const tick = wrap.querySelector('.conv-msg-tick');
+    if (tick) { tick.textContent = '✓✓'; tick.classList.remove('sent'); }
+  } catch (err) {
+    wrap.querySelector('.conv-msg')?.classList.add('conv-msg-error');
+    showToast('Erro ao enviar mensagem');
+  }
+}
+
+function convInputKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendConvMessage(); }
+}
+
+function convInputResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
 
 async function saveConvLeadValue(leadId) {

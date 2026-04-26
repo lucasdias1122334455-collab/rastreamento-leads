@@ -499,12 +499,32 @@
           </div>
           <!-- Coluna 3: Conversa -->
           <div class="conv-chat" id="conv-chat-col">
-            <div class="conv-col-header" id="conv-chat-header">
+            <!-- WhatsApp-style header -->
+            <div class="conv-wa-header" id="conv-chat-header">
               <button class="conv-back-btn" onclick="convMobileBack('leads')" title="Voltar">‹</button>
-              <span id="conv-chat-header-text">Conversa</span>
+              <div class="conv-wa-avatar" id="conv-wa-avatar">?</div>
+              <div class="conv-wa-header-info">
+                <div class="conv-wa-name" id="conv-chat-header-text">Conversa</div>
+                <div class="conv-wa-status" id="conv-wa-status"></div>
+              </div>
+              <div class="conv-wa-actions">
+                <button class="conv-wa-action-btn" id="conv-view-lead-btn" onclick="" title="Ver lead" style="display:none">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
             </div>
+            <!-- Lead info bar (collapsible) -->
             <div id="conv-chat-info" class="conv-chat-info hidden"></div>
-            <div id="conv-messages" class="conv-messages"><p class="conv-empty" style="margin-top:3rem">← Selecione um lead</p></div>
+            <!-- Messages area with WhatsApp background -->
+            <div id="conv-messages" class="conv-messages conv-wa-bg"><p class="conv-empty" style="margin-top:3rem">← Selecione um lead</p></div>
+            <!-- Input bar -->
+            <div class="conv-input-bar" id="conv-input-bar" style="display:none">
+              <textarea id="conv-input-text" class="conv-input-textarea" placeholder="Digite uma mensagem..." rows="1"
+                onkeydown="convInputKeydown(event)" oninput="convInputResize(this)"></textarea>
+              <button class="conv-send-btn" onclick="sendConvMessage()" title="Enviar">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+              </button>
+            </div>
           </div>
         </div>
       </section>

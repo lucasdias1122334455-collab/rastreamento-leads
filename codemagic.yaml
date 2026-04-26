@@ -1,4 +1,6 @@
 workflows:
+
+  # ── ANDROID ────────────────────────────────────────────────────────────────
   android-build:
     name: Closy CRM - Android APK
     max_build_duration: 30
@@ -21,6 +23,69 @@ workflows:
 
     artifacts:
       - android/app/build/outputs/apk/debug/app-debug.apk
+
+    publishing:
+      email:
+        recipients:
+          - lucasdias1122334455@gmail.com
+        notify:
+          success: true
+          failure: true
+
+  # ── iOS ────────────────────────────────────────────────────────────────────
+  ios-build:
+    name: Closy CRM - iOS IPA
+    max_build_duration: 60
+    environment:
+      node: 22
+      xcode: latest
+      cocoapods: default
+      # ⚠️  No Codemagic UI: vá em Teams → Signing identities
+      # e adicione seu Apple Distribution Certificate + Provisioning Profile
+      ios_signing:
+        distribution_type: ad_hoc        # instala em dispositivos via TestFlight/link
+        bundle_identifier: com.yidevibe.crm
+      vars:
+        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
+        APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY
+
+    scripts:
+      - name: Install Node dependencies
+        script: npm install --ignore-scripts
+
+      - name: Add iOS platform (se não existir)
+        script: |
+          if [ ! -d "ios" ]; then
+            npx cap add ios
+          fi
+
+      - name: Sync Capacitor iOS
+        script: npx cap sync ios
+
+      - name: Install CocoaPods
+        script: |
+          cd ios/App
+          pod install --repo-update
+
+      - name: Set app version
+        script: |
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "1.0.0")
+          BUILD_NUM=$((GITHUB_RUN_NUMBER + 1))
+          agvtool new-marketing-version ${LATEST_TAG#v}
+          agvtool new-version -all ${BUILD_NUM:-1}
+        working_directory: ios/App
+
+      - name: Build IPA
+        script: |
+          xcode-project build-ipa \
+            --workspace ios/App/App.xcworkspace \
+            --scheme App \
+            --config Release
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
 
     publishing:
       email:

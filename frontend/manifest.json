@@ -1,6 +1,6 @@
 {
-  "name": "Closy CRM",
-  "short_name": "Closy CRM",
+  "name": "Clousy CRM",
+  "short_name": "Clousy CRM",
   "description": "Gestão de leads, IA de vendas e CRM",
   "start_url": "/",
   "display": "standalone",

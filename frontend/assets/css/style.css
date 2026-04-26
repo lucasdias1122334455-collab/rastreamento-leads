@@ -256,6 +256,13 @@ h1, h2, h3, .logo, .stat-value {
   gap: .75rem;
 }
 
+.login-logo-img {
+  height: 56px;
+  width: auto;
+  display: block;
+  /* SVG already transparent, no filter needed */
+}
+
 .login-logo-icon {
   width: 36px;
   height: 36px;
@@ -486,6 +493,13 @@ h1, h2, h3, .logo, .stat-value {
   align-items: center;
   gap: .6rem;
   flex: 1;
+}
+
+.sidebar-logo-img {
+  height: 36px;
+  width: auto;
+  display: block;
+  max-width: 160px;
 }
 
 .sidebar-logo-icon {

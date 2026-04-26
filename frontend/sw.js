@@ -1,4 +1,4 @@
-const CACHE_NAME = 'closy-crm-v6';
+const CACHE_NAME = 'closy-crm-v7';
 
 const STATIC_ASSETS = [
   '/',
@@ -6,6 +6,7 @@ const STATIC_ASSETS = [
   '/assets/js/app.js',
   '/assets/icons/icon-192.png',
   '/assets/icons/icon-512.png',
+  '/assets/icons/logo.svg',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js',
 ];
 

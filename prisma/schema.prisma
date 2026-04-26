@@ -82,6 +82,7 @@ model Lead {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  convertedAt  DateTime?
   assignedTo   User?         @relation(fields: [assignedToId], references: [id])
   client       Client?       @relation(fields: [clientId], references: [id])
   interactions Interaction[]

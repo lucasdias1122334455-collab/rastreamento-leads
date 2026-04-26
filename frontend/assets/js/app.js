@@ -1510,15 +1510,18 @@ const BASE_URL = window.location.origin;
 async function loadTrackingLinks() {
   const tbody = document.getElementById('tracking-links-tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,0.3);padding:2rem">Carregando...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:rgba(255,255,255,0.3);padding:2rem">Carregando...</td></tr>';
   try {
     const rows = await apiFetch('/tracking/api/links');
     if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,0.3);padding:2rem">Nenhum link criado ainda. Clique em "+ Novo Link" para começar.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:rgba(255,255,255,0.3);padding:2rem">Nenhum link criado ainda. Clique em "+ Novo Link" para começar.</td></tr>';
       return;
     }
     tbody.innerHTML = rows.map(r => {
       const link = `${BASE_URL}/rastrear/${r.slug}`;
+      const convs = Number(r.conversions) || 0;
+      const revenue = Number(r.revenue) || 0;
+      const cvr = r.clicks > 0 ? ((convs / r.clicks) * 100).toFixed(1) : '0.0';
       return `<tr>
         <td><strong>${r.campaign}</strong></td>
         <td>
@@ -1529,6 +1532,8 @@ async function loadTrackingLinks() {
         </td>
         <td style="font-size:12px;color:rgba(255,255,255,0.5);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.destination}">${r.destination}</td>
         <td style="color:#00d4aa;font-weight:600">${r.clicks}</td>
+        <td style="color:#a78bfa;font-weight:600">${convs} <span style="font-size:10px;color:rgba(255,255,255,0.3)">(${cvr}%)</span></td>
+        <td style="color:#f59e0b;font-weight:600">${revenue > 0 ? 'R$ ' + revenue.toLocaleString('pt-BR', {minimumFractionDigits:2}) : '—'}</td>
         <td style="font-size:12px;color:rgba(255,255,255,0.4)">${r.clientName || '—'}</td>
         <td style="display:flex;gap:.4rem">
           <button onclick="editTrackingLink(${r.id},'${r.campaign.replace(/'/g,"\\'")}','${r.destination.replace(/'/g,"\\'")}',${r.clientId||'null'})" style="background:rgba(108,99,255,0.12);border:1px solid rgba(108,99,255,0.25);color:#a89fff;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:11px">Editar</button>
@@ -1537,7 +1542,7 @@ async function loadTrackingLinks() {
       </tr>`;
     }).join('');
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#ff6b6b;padding:2rem">Erro: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#ff6b6b;padding:2rem">Erro: ${err.message}</td></tr>`;
   }
 }
 

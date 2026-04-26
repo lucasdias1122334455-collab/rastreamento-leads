@@ -125,9 +125,32 @@
         <!-- ── VENDAS ── -->
         <div class="nav-section-label">Vendas</div>
         <a href="#" class="nav-item" data-page="crm" style="display:flex;align-items:center;gap:.55rem">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;opacity:.75"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          CRM
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;opacity:.75"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Chats
         </a>
+        <!-- CRM sub-nav (visible when Chats is active) -->
+        <div id="crm-subnav" class="crm-subnav hidden">
+          <a class="nav-subitem active" data-crm-tab="chats" onclick="switchCrmTabFromNav('chats',this)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Atendimentos
+          </a>
+          <a class="nav-subitem" data-crm-tab="kanban" onclick="switchCrmTabFromNav('kanban',this)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="11" rx="1"/><rect x="17" y="3" width="5" height="14" rx="1"/></svg>
+            Kanban
+          </a>
+          <a class="nav-subitem" data-crm-tab="tasks" onclick="switchCrmTabFromNav('tasks',this)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            Tarefas
+          </a>
+          <a class="nav-subitem" data-crm-tab="appointments" onclick="switchCrmTabFromNav('appointments',this)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Agendamentos
+          </a>
+          <a class="nav-subitem" data-crm-tab="quick-replies" onclick="switchCrmTabFromNav('quick-replies',this)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            Respostas Rápidas
+          </a>
+        </div>
         <a href="#" class="nav-item" data-page="leads" style="display:flex;align-items:center;gap:.55rem">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;opacity:.75"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
           Leads
@@ -230,7 +253,7 @@
           <div class="mob-card-icon" style="background:rgba(59,130,246,.12);color:#3b82f6">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           </div>
-          <span>CRM</span>
+          <span>Chats</span>
         </button>
         <button class="mob-card" onclick="mobileNavigate('leads')">
           <div class="mob-card-icon" style="background:rgba(16,185,129,.12);color:#10b981">
@@ -312,7 +335,7 @@
 
         <!-- KPIs em Tempo Real -->
         <div class="kpi-header">
-          <h3 style="margin:0;font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">📊 Indicadores em Tempo Real</h3>
+          <h3 style="margin:0;font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:flex;align-items:center;gap:.4rem"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:.6"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Indicadores em Tempo Real</h3>
           <select id="kpi-client-filter" onchange="loadKpis()" style="font-size:.75rem;padding:.25rem .5rem;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
             <option value="">Todos os clientes</option>
           </select>
@@ -607,7 +630,7 @@
       </section>
 
       <!-- Conversas -->
-      <section id="page-conversations" class="page hidden" style="padding:0;height:100vh;display:flex;flex-direction:column">
+      <section id="page-conversations" class="page hidden" style="padding:0;display:flex;flex-direction:column">
         <div class="conv-client-bar" id="conv-client-bar">
           <button class="conv-client-btn active" data-client-id="" onclick="selectConvClient('', this)">Todos</button>
         </div>

@@ -175,6 +175,15 @@ function navigateTo(page) {
   show(`page-${page}`);
   document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
 
+  // Flush mode: full-height pages don't need content padding/scroll
+  const content = document.querySelector('.content');
+  const flushPages = ['conversations', 'crm'];
+  if (content) content.classList.toggle('page-flush', flushPages.includes(page));
+
+  // CRM sub-nav in sidebar
+  const crmSubnav = document.getElementById('crm-subnav');
+  if (crmSubnav) crmSubnav.classList.toggle('hidden', page !== 'crm');
+
   if (page === 'dashboard') { loadDashboard(); loadFunnel(); loadKpis(); populateKpiClientFilter(); }
   if (page === 'leads') { loadClientFilter(); loadLeads(1); }
   if (page === 'clients') loadClients();
@@ -189,6 +198,29 @@ function navigateTo(page) {
   // Stop CRM polling when leaving the page
   if (page !== 'crm' && crmPollTimer) { clearInterval(crmPollTimer); crmPollTimer = null; }
   if (page !== 'crm' && crmApptNotifTimer) { clearInterval(crmApptNotifTimer); crmApptNotifTimer = null; }
+}
+
+// Called from sidebar sub-nav items
+function switchCrmTabFromNav(tab, btn) {
+  // Update sub-nav active state
+  document.querySelectorAll('.nav-subitem').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // Sync with horizontal tab buttons (for mobile / keyboard access)
+  const tabBtn = document.querySelector(`.crm-tab[data-tab="${tab}"]`);
+  if (tabBtn) switchCrmTab(tab, tabBtn);
+  else {
+    // Fallback: manually show the right content
+    document.querySelectorAll('.crm-tab-content').forEach(c => c.classList.add('hidden'));
+    const tabEl = document.getElementById(`crm-tab-${tab}`);
+    if (tabEl) tabEl.classList.remove('hidden');
+    if (tab === 'tasks')        loadCrmTasks();
+    if (tab === 'appointments') loadCrmAppointments();
+    if (tab === 'quick-replies') loadCrmQuickReplies();
+    if (tab === 'kanban') {
+      if (_kanbanActiveView === 'tags') crmRenderTagKanban();
+      else crmRenderKanban();
+    }
+  }
 }
 
 document.querySelectorAll('.nav-item').forEach((a) => {
@@ -2825,8 +2857,12 @@ function crmRenderTagKanban() {
 function switchCrmTab(tab, btn) {
   document.querySelectorAll('.crm-tab').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.crm-tab-content').forEach(c => c.classList.add('hidden'));
-  btn.classList.add('active');
-  document.getElementById(`crm-tab-${tab}`).classList.remove('hidden');
+  if (btn) btn.classList.add('active');
+  document.getElementById(`crm-tab-${tab}`)?.classList.remove('hidden');
+  // Sync sidebar sub-nav
+  document.querySelectorAll('.nav-subitem[data-crm-tab]').forEach(b => {
+    b.classList.toggle('active', b.dataset.crmTab === tab);
+  });
 
   if (tab === 'kanban') {
     if (_kanbanActiveView === 'tags') crmRenderTagKanban();

@@ -1,0 +1,24 @@
+{
+  "appId": "com.yidevibe.crm",
+  "appName": "Yide Vibe",
+  "webDir": "frontend",
+  "server": {
+    "androidScheme": "https",
+    "hostname": "rastreamento-leads-production.up.railway.app",
+    "url": "https://rastreamento-leads-production.up.railway.app",
+    "cleartext": false
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  },
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#0a0a0f"
+  },
+  "ios": {
+    "backgroundColor": "#0a0a0f",
+    "contentInset": "automatic"
+  }
+}

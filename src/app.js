@@ -238,9 +238,11 @@ app.listen(PORT, async () => {
         "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
       )
     `);
-    // CRM — agendamentos: status + updatedAt
+    // CRM — agendamentos: status + updatedAt + lembretes
     await prisma.$executeRawUnsafe(`ALTER TABLE crm_appointments ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'confirmed'`);
     await prisma.$executeRawUnsafe(`ALTER TABLE crm_appointments ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE crm_appointments ADD COLUMN IF NOT EXISTS "reminder24Sent" BOOLEAN NOT NULL DEFAULT false`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE crm_appointments ADD COLUMN IF NOT EXISTS "reminder1Sent" BOOLEAN NOT NULL DEFAULT false`);
     // CRM — respostas rápidas
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS crm_quick_replies (
@@ -301,6 +303,58 @@ app.listen(PORT, async () => {
       }
     } catch (_) {}
   }, 60000);
+
+  // ─── Appointment reminder scheduler ─────────────────────────────────────────
+  // A cada 5 min: verifica agendamentos próximos e envia lembrete via WhatsApp
+  setInterval(async () => {
+    try {
+      // Lembrete 24h antes
+      const appts24 = await dbForScheduler.$queryRawUnsafe(`
+        SELECT a.*, l.phone as "leadPhone", l.name as "leadName", c."instanceName"
+        FROM crm_appointments a
+        LEFT JOIN leads l ON l.id = a."leadId"
+        LEFT JOIN clients c ON c.id = a."clientId"
+        WHERE a.status = 'confirmed'
+          AND a."reminder24Sent" = false
+          AND a."scheduledAt" IS NOT NULL
+          AND a."scheduledAt" > NOW() + INTERVAL '23 hours 55 minutes'
+          AND a."scheduledAt" <= NOW() + INTERVAL '24 hours 5 minutes'
+      `);
+      for (const a of appts24) {
+        if (a.instanceName && a.leadPhone) {
+          const dt = new Date(a.scheduledAt).toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+          const nome = a.leadName ? a.leadName.split(' ')[0] : 'olá';
+          const msg = `Olá ${nome}! 🔔 Lembrando que amanhã você tem um agendamento:\n\n*${a.title}*\n📅 ${dt}${a.notes ? `\n\n${a.notes}` : ''}\n\nQualquer dúvida é só falar!`;
+          try { await evolutionSvc.sendClientMessage(a.instanceName, a.leadPhone, msg); } catch (_) {}
+        }
+        await dbForScheduler.$executeRawUnsafe(`UPDATE crm_appointments SET "reminder24Sent"=true WHERE id=$1`, a.id);
+        console.log(`[CRM] Lembrete 24h enviado: agendamento ${a.id} — ${a.leadName || a.leadPhone}`);
+      }
+
+      // Lembrete 1h antes
+      const appts1 = await dbForScheduler.$queryRawUnsafe(`
+        SELECT a.*, l.phone as "leadPhone", l.name as "leadName", c."instanceName"
+        FROM crm_appointments a
+        LEFT JOIN leads l ON l.id = a."leadId"
+        LEFT JOIN clients c ON c.id = a."clientId"
+        WHERE a.status = 'confirmed'
+          AND a."reminder1Sent" = false
+          AND a."scheduledAt" IS NOT NULL
+          AND a."scheduledAt" > NOW() + INTERVAL '55 minutes'
+          AND a."scheduledAt" <= NOW() + INTERVAL '65 minutes'
+      `);
+      for (const a of appts1) {
+        if (a.instanceName && a.leadPhone) {
+          const dt = new Date(a.scheduledAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+          const nome = a.leadName ? a.leadName.split(' ')[0] : 'olá';
+          const msg = `⏰ ${nome}, daqui a 1 hora é o seu agendamento!\n\n*${a.title}*\n📅 ${dt}${a.notes ? `\n\n${a.notes}` : ''}\n\nTe esperamos! 😊`;
+          try { await evolutionSvc.sendClientMessage(a.instanceName, a.leadPhone, msg); } catch (_) {}
+        }
+        await dbForScheduler.$executeRawUnsafe(`UPDATE crm_appointments SET "reminder1Sent"=true WHERE id=$1`, a.id);
+        console.log(`[CRM] Lembrete 1h enviado: agendamento ${a.id} — ${a.leadName || a.leadPhone}`);
+      }
+    } catch (e) { console.error('[CRM Reminder]', e.message); }
+  }, 5 * 60000); // a cada 5 minutos
 
   // ─── Silence follow-up scheduler ─────────────────────────────────────────────
   // Every 6 hours: check leads that sent the last inbound message > X hours ago

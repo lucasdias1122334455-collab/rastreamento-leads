@@ -10,10 +10,20 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "db:seed": "node prisma/seed.js"
+    "db:seed": "node prisma/seed.js",
+    "cap:add:android": "npx cap add android",
+    "cap:add:ios": "npx cap add ios",
+    "cap:sync": "npx cap sync",
+    "cap:open:android": "npx cap open android",
+    "cap:open:ios": "npx cap open ios"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.89.0",
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
+    "@capacitor/ios": "^8.3.1",
+    "@capacitor/push-notifications": "^8.0.3",
     "@prisma/client": "^5.10.0",
     "@whiskeysockets/baileys": "^6.7.4",
     "axios": "^1.15.0",

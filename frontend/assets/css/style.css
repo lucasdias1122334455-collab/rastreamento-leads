@@ -506,6 +506,74 @@ h1, h2, h3, .logo, .stat-value {
   max-width: 160px;
 }
 
+/* ── Logo composited (HTML/CSS — font-independent) ── */
+.app-logo-inline {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.sidebar-logo-icon-svg {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 6px rgba(41,182,246,0.4));
+}
+.sidebar-logo-wordmark {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  gap: 0;
+}
+.sidebar-logo-name {
+  font-size: .95rem;
+  font-weight: 900;
+  letter-spacing: .05em;
+  background: linear-gradient(135deg, #29b6f6, #00e5ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.sidebar-logo-crm {
+  font-size: .5rem;
+  font-weight: 700;
+  letter-spacing: .25em;
+  color: #00bcd4;
+  opacity: .75;
+  -webkit-text-fill-color: #00bcd4;
+}
+
+/* Login logo */
+.app-logo-login { gap: .75rem; }
+.login-logo-icon-svg {
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 12px rgba(41,182,246,0.5));
+}
+.login-logo-wordmark {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+  gap: .15rem;
+}
+.login-logo-name {
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: .06em;
+  background: linear-gradient(135deg, #29b6f6, #00e5ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.login-logo-crm {
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .3em;
+  color: #00bcd4;
+  -webkit-text-fill-color: #00bcd4;
+  opacity: .8;
+}
+
 .sidebar-logo-icon {
   width: 28px;
   height: 28px;

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'closy-crm-v11';
+const CACHE_NAME = 'closy-crm-v12';
 
 const STATIC_ASSETS = [
   '/',

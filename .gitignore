@@ -4,6 +4,4 @@ dev.db
 dev.db-journal
 whatsapp-auth/
 prisma/migrations/
-android/
-ios/
 ios/

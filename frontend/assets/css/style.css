@@ -51,6 +51,94 @@ input, textarea, select { font-size: 16px !important; }
   --gradient-h:   linear-gradient(135deg, #00e8cc, #00d4b8);
 }
 
+/* ── LIGHT MODE ─────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg:           #f4f7f7;
+  --bg-alt:       #edf2f2;
+  --surface:      #ffffff;
+  --surface-2:    #f0f5f5;
+  --surface-3:    #e8efef;
+  --border:       rgba(0, 160, 140, 0.18);
+  --border-light: rgba(0, 160, 140, 0.09);
+  --sidebar-bg:   #ffffff;
+  --sidebar-text: #3a6060;
+  --text:         #0d1515;
+  --muted:        #4a6868;
+  --muted2:       #7a9898;
+  --shadow:       0 4px 24px rgba(0,0,0,.10);
+  --shadow-lg:    0 16px 48px rgba(0,0,0,.15);
+  --cyan-dim:     rgba(0, 180, 160, 0.10);
+  --cyan-border:  rgba(0, 180, 160, 0.22);
+}
+
+[data-theme="light"] body { background: var(--bg); color: var(--text); }
+
+/* Light mode — CRM scoped vars */
+[data-theme="light"] .crm-page {
+  --crm-bg:          #f4f7f7;
+  --crm-surface:     #ffffff;
+  --crm-surface2:    #f0f5f5;
+  --crm-border:      rgba(0, 140, 120, 0.14);
+  --crm-border2:     rgba(0, 140, 120, 0.07);
+  --crm-muted:       rgba(0,0,0,0.42);
+  --crm-muted2:      rgba(0,0,0,0.28);
+  --crm-text:        rgba(0,0,0,0.88);
+  background:        #f4f7f7;
+}
+
+/* Light mode — login background */
+[data-theme="light"] #login-screen {
+  background:
+    radial-gradient(ellipse 70% 80% at -5% 50%, rgba(0,212,184,0.08) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 110% 50%, rgba(0,212,184,0.05) 0%, transparent 55%),
+    #f4f7f7;
+}
+[data-theme="light"] .login-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 40px rgba(0,0,0,.08);
+}
+[data-theme="light"] .login-field input {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+/* Light mode — sidebar */
+[data-theme="light"] .sidebar { background: var(--sidebar-bg); border-right-color: var(--border); }
+[data-theme="light"] .nav-item { color: var(--muted); }
+[data-theme="light"] .nav-item.active,
+[data-theme="light"] .nav-item:hover { color: var(--cyan); background: var(--cyan-dim); }
+[data-theme="light"] .sidebar-logo-icon { background: var(--surface-3); color: var(--cyan); }
+
+/* Light mode — cards, tables, modals */
+[data-theme="light"] .stat-card,
+[data-theme="light"] .card,
+[data-theme="light"] .modal-content,
+[data-theme="light"] .client-card { background: #fff; border-color: var(--border); color: var(--text); }
+[data-theme="light"] .leads-table thead tr { background: var(--surface-2); }
+[data-theme="light"] .leads-table tbody tr:hover { background: var(--surface-2); }
+[data-theme="light"] .leads-table td,
+[data-theme="light"] .leads-table th { border-color: var(--border-light); color: var(--text); }
+
+/* Light mode — mobile home */
+[data-theme="light"] .mob-home { background: var(--bg); }
+[data-theme="light"] .mob-home-header { background: var(--bg); }
+[data-theme="light"] .mob-card { background: #fff; border-color: var(--border); color: var(--text); }
+[data-theme="light"] .mob-bottom-bar { background: rgba(255,255,255,.92); border-color: var(--border); }
+
+/* Light mode — inputs globally */
+[data-theme="light"] input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+/* Light mode — scrollbar */
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); }
+
 body {
   font-family: 'Inter', system-ui, sans-serif;
   background: var(--bg);

@@ -13,6 +13,27 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// ── TEMA DARK / LIGHT ─────────────────────────────────────────────────────────
+function applyThemeIcons() {
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const icon   = isDark ? '☀' : '☾';
+  const ti  = document.getElementById('theme-icon');
+  const mti = document.getElementById('mob-theme-icon');
+  if (ti)  ti.textContent  = icon;
+  if (mti) mti.textContent = icon;
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next    = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('closy-theme', next);
+  applyThemeIcons();
+}
+
+// Apply icons on load
+applyThemeIcons();
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function escapeHtml(s) {
   if (s == null) return '';

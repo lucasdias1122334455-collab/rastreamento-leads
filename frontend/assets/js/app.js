@@ -1403,6 +1403,61 @@ function convInputKeydown(e) {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendConvMessage(); }
 }
 
+async function sendConvMedia(input) {
+  if (!convActiveLeadId || !input.files || !input.files[0]) return;
+  const file = input.files[0];
+  input.value = ''; // reset so same file can be re-selected
+
+  const MAX_MB = 16;
+  if (file.size > MAX_MB * 1024 * 1024) { showToast(`Arquivo muito grande (máx ${MAX_MB}MB)`); return; }
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const dataUrl = e.target.result;
+    const base64 = dataUrl.split(',')[1];
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
+
+    // Optimistic preview
+    const convMsgs = el('conv-messages');
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const wrap = document.createElement('div');
+    wrap.className = 'conv-msg-wrap outbound';
+
+    let mediaHtml = '';
+    if (isImage) {
+      mediaHtml = `<img src="${dataUrl}" class="conv-msg-media" alt="${file.name}">`;
+    } else if (isVideo) {
+      mediaHtml = `<video src="${dataUrl}" class="conv-msg-media" controls></video>`;
+    } else {
+      mediaHtml = `<div class="conv-msg-media-doc">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span>${file.name}</span>
+      </div>`;
+    }
+
+    wrap.innerHTML = `<div class="conv-msg outbound">
+      ${mediaHtml}
+      <div class="conv-msg-footer"><span class="conv-msg-time">${timeStr}</span><span class="conv-msg-tick sent">✓</span></div>
+    </div>`;
+    if (convMsgs) { convMsgs.appendChild(wrap); convMsgs.scrollTop = convMsgs.scrollHeight; }
+
+    try {
+      await apiFetch('/crm/send-media', {
+        method: 'POST',
+        body: JSON.stringify({ leadId: convActiveLeadId, base64, mimetype: file.type, filename: file.name, caption: '' }),
+      });
+      const tick = wrap.querySelector('.conv-msg-tick');
+      if (tick) { tick.textContent = '✓✓'; tick.classList.remove('sent'); }
+    } catch (err) {
+      wrap.querySelector('.conv-msg')?.classList.add('conv-msg-error');
+      showToast('Erro ao enviar arquivo');
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
 function convInputResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';

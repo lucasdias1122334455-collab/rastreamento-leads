@@ -1619,6 +1619,30 @@ nav { flex: 1; padding: .5rem .625rem .625rem; display: flex; flex-direction: co
 .conv-send-btn:hover  { background: #00c49a; }
 .conv-send-btn:active { transform: scale(.93); }
 
+.conv-attach-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color .15s, background .15s;
+}
+.conv-attach-btn:hover { color: var(--cyan); background: rgba(0,200,240,0.08); }
+
+/* Media preview bubble */
+.conv-msg-media { max-width: 240px; border-radius: 8px; display: block; margin-bottom: .35rem; }
+.conv-msg-media-doc {
+  display: flex; align-items: center; gap: .5rem;
+  background: rgba(255,255,255,0.06); border-radius: 8px; padding: .5rem .75rem;
+  font-size: .82rem; margin-bottom: .35rem;
+}
+
 .conv-back-btn { display: none; }
 
 /* ─── BAR CHART ──────────────────────────────────────────── */

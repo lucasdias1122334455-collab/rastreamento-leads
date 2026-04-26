@@ -600,6 +600,10 @@
             <div id="conv-messages" class="conv-messages conv-wa-bg"><p class="conv-empty" style="margin-top:3rem">← Selecione um lead</p></div>
             <!-- Input bar -->
             <div class="conv-input-bar" id="conv-input-bar" style="display:none">
+              <input type="file" id="conv-file-input" accept="image/*,video/*,application/pdf,.doc,.docx,.xls,.xlsx" style="display:none" onchange="sendConvMedia(this)">
+              <button class="conv-attach-btn" onclick="document.getElementById('conv-file-input').click()" title="Anexar arquivo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+              </button>
               <textarea id="conv-input-text" class="conv-input-textarea" placeholder="Digite uma mensagem..." rows="1"
                 onkeydown="convInputKeydown(event)" oninput="convInputResize(this)"></textarea>
               <button class="conv-send-btn" onclick="sendConvMessage()" title="Enviar">

@@ -94,6 +94,22 @@ async function sendAudioMessage(instanceName, phone, audioBase64) {
   }, { headers });
 }
 
+async function sendClientMedia(instanceName, phone, base64, mimetype, filename, caption) {
+  const number = phone.replace(/\D/g, '');
+  const mediatype = mimetype.startsWith('image/') ? 'image'
+    : mimetype.startsWith('video/') ? 'video'
+    : mimetype.startsWith('audio/') ? 'audio'
+    : 'document';
+  await axios.post(`${BASE_URL}/message/sendMedia/${instanceName}`, {
+    number,
+    mediatype,
+    mimetype,
+    media: base64,
+    fileName: filename,
+    caption: caption || '',
+  }, { headers });
+}
+
 async function getGroupInfo(instanceName, groupJid) {
   try {
     const { data } = await axios.get(
@@ -138,5 +154,5 @@ module.exports = {
   getStatus, getQRCode, sendMessage, disconnectInstance,
   createClientInstance, getClientQRCode, getClientStatus, deleteClientInstance,
   sendClientMessage, getMediaBase64, getGroupInfo, sendAudioMessage,
-  fetchProfilePicture,
+  sendClientMedia, fetchProfilePicture,
 };

@@ -225,6 +225,41 @@ router.post('/send', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ─── SEND MEDIA ──────────────────────────────────────────────────────────────
+router.post('/send-media', async (req, res) => {
+  try {
+    const { leadId, base64, mimetype, filename, caption } = req.body;
+    if (!leadId || !base64 || !mimetype) return res.status(400).json({ error: 'Campos obrigatórios: leadId, base64, mimetype' });
+
+    const [lead] = await prisma.$queryRawUnsafe(
+      `SELECT l.*, c."instanceName" FROM leads l LEFT JOIN clients c ON c.id = l."clientId" WHERE l.id = $1`,
+      Number(leadId)
+    );
+    if (!lead) return res.status(404).json({ error: 'Lead não encontrado' });
+
+    // Salva interação no banco
+    const contentPreview = caption || filename || mimetype;
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO interactions ("leadId", type, direction, content) VALUES ($1, 'media', 'outbound', $2)`,
+      Number(leadId), contentPreview
+    );
+    if (!lead.crmStatus || lead.crmStatus === 'new') {
+      await prisma.$executeRawUnsafe(`UPDATE leads SET "crmStatus"='attending' WHERE id=$1`, Number(leadId));
+    }
+
+    // Envia via WhatsApp
+    if (lead.instanceName) {
+      try {
+        await evolutionService.sendClientMedia(lead.instanceName, lead.phone, base64, mimetype, filename || 'arquivo', caption || '');
+      } catch (sendErr) {
+        console.warn(`[CRM] Falha ao enviar mídia WA para ${lead.phone}:`, sendErr.message);
+      }
+    }
+
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ─── TASKS ───────────────────────────────────────────────────────────────────
 router.get('/tasks', async (req, res) => {
   try {

@@ -483,7 +483,7 @@
         </div>
 
         <!-- Ads Table -->
-        <div class="card" style="padding:1.25rem;overflow-x:auto">
+        <div class="card" style="padding:1.25rem;overflow-x:auto;margin-bottom:1.5rem">
           <h4 style="margin:0 0 1rem;font-size:14px;color:rgba(255,255,255,0.6);font-weight:500;text-transform:uppercase;letter-spacing:.05em">Performance por Anúncio</h4>
           <table class="leads-table" id="report-ads-table">
             <thead>
@@ -502,6 +502,31 @@
               <tr><td colspan="8" style="text-align:center;color:rgba(255,255,255,0.3);padding:2rem">Clique em "Atualizar" para carregar os dados</td></tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Performance por Operador -->
+        <div class="card" style="padding:1.25rem;overflow-x:auto;margin-bottom:1.5rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <h4 style="margin:0;font-size:14px;color:rgba(255,255,255,0.6);font-weight:500;text-transform:uppercase;letter-spacing:.05em">Performance por Operador</h4>
+            <select id="perf-days" onchange="loadPerformanceReport()" style="padding:5px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(30,30,50,1);color:#fff;font-size:12px">
+              <option value="7">Últimos 7 dias</option>
+              <option value="30" selected>Últimos 30 dias</option>
+              <option value="90">Últimos 90 dias</option>
+            </select>
+          </div>
+          <table class="leads-table">
+            <thead><tr><th>Operador</th><th>Tickets</th><th>Conversões</th><th>CVR</th><th>Receita (R$)</th><th>Msgs Enviadas</th></tr></thead>
+            <tbody id="report-perf-tbody">
+              <tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,0.3);padding:2rem">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Previsão de Receita -->
+        <div class="card" style="padding:1.25rem;margin-bottom:1.5rem">
+          <h4 style="margin:0 0 1rem;font-size:14px;color:rgba(255,255,255,0.6);font-weight:500;text-transform:uppercase;letter-spacing:.05em">Previsão de Receita (Pipeline)</h4>
+          <div id="report-forecast-total" style="font-size:1.8rem;font-weight:700;color:#00d4b8;margin-bottom:1rem">R$ —</div>
+          <div id="report-forecast-stages" style="display:flex;gap:1rem;flex-wrap:wrap"></div>
         </div>
       </section>
 
@@ -629,17 +654,45 @@
             <!-- Contact panel (right) -->
             <div class="crm-contact-panel hidden" id="crm-contact-panel">
               <div class="crm-contact-header">
-                <h4>Informações do Contato</h4>
+                <h4>Perfil do Contato</h4>
                 <button onclick="crmToggleContact()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem">✕</button>
               </div>
               <div class="crm-contact-body">
-                <div class="crm-contact-field"><label>Nome</label><span id="cp-name">—</span></div>
-                <div class="crm-contact-field"><label>Telefone</label><span id="cp-phone">—</span></div>
+                <!-- Avatar + nome editável -->
+                <div class="cp-avatar-row">
+                  <div class="cp-avatar" id="cp-avatar">?</div>
+                  <div class="cp-avatar-info">
+                    <input class="cp-inline-input cp-name-input" id="cp-name-input" placeholder="Nome do contato" onblur="crmSaveProfile()" />
+                    <span id="cp-phone" style="font-size:.75rem;color:var(--crm-muted)">—</span>
+                  </div>
+                </div>
+
+                <!-- Tags -->
+                <div class="cp-section-label">Tags</div>
+                <div class="cp-tags-row" id="cp-tags-row"></div>
+                <div class="cp-tag-add-row">
+                  <input class="cp-tag-input" id="cp-tag-input" placeholder="Nova tag..." onkeydown="if(event.key==='Enter')crmAddTag()" />
+                  <button class="cp-tag-btn" onclick="crmAddTag()">+</button>
+                  <button class="cp-tag-btn cp-tag-auto" onclick="crmAutoTag()" title="Gerar tags com IA">IA</button>
+                </div>
+
+                <!-- Dados pessoais -->
+                <div class="cp-section-label">Dados</div>
+                <div class="crm-contact-field"><label>Aniversário</label><input type="date" class="cp-inline-input" id="cp-birthday" onblur="crmSaveProfile()" /></div>
+                <div class="crm-contact-field"><label>Profissão</label><input class="cp-inline-input" id="cp-profession" placeholder="Ex: médico, vendedor..." onblur="crmSaveProfile()" /></div>
+                <div class="crm-contact-field"><label>Produto/Serviço</label><input class="cp-inline-input" id="cp-contracted" placeholder="Produto contratado" onblur="crmSaveProfile()" /></div>
                 <div class="crm-contact-field"><label>Origem</label><span id="cp-source">—</span></div>
-                <div class="crm-contact-field"><label>Status</label><span id="cp-status">—</span></div>
+                <div class="crm-contact-field"><label>Responsável</label><span id="cp-assigned">—</span></div>
+
+                <!-- Atividade -->
+                <div class="cp-section-label">Atividade</div>
                 <div class="crm-contact-field"><label>Última mensagem</label><span id="cp-last">—</span></div>
                 <div class="crm-contact-field"><label>Sem resposta há</label><span id="cp-silence" style="color:var(--warning)">—</span></div>
                 <div class="crm-contact-field"><label>Cliente</label><span id="cp-client">—</span></div>
+
+                <!-- Anotações -->
+                <div class="cp-section-label">Anotações</div>
+                <textarea class="cp-notes-input" id="cp-notes" placeholder="Anotações sobre o lead..." rows="3" onblur="crmSaveProfile()"></textarea>
               </div>
               <div class="crm-contact-actions">
                 <button class="btn-sm btn-primary" style="width:100%" onclick="openCrmTaskModal()">Nova Tarefa</button>
@@ -823,6 +876,16 @@
             </div>
             <label class="ai-toggle-label" style="margin-left:auto">
               <input type="checkbox" id="client-ai-enabled" />
+              <span class="ai-toggle-track"></span>
+            </label>
+          </div>
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem 0;border-bottom:1px solid rgba(255,255,255,0.06)">
+            <div>
+              <div style="font-weight:600;font-size:.9rem">Rodízio de Atendimento</div>
+              <span class="cm-section-sub">Distribui novos leads automaticamente entre os operadores do cliente</span>
+            </div>
+            <label class="ai-toggle-label" style="margin-left:auto">
+              <input type="checkbox" id="client-rotation-enabled" />
               <span class="ai-toggle-track"></span>
             </label>
           </div>

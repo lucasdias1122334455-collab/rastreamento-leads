@@ -253,6 +253,16 @@ app.listen(PORT, async () => {
         "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
       )
     `);
+    // Perfil completo do lead
+    await prisma.$executeRawUnsafe(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS birthday DATE DEFAULT NULL`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS profession TEXT DEFAULT NULL`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS "contractedProduct" TEXT DEFAULT NULL`);
+    // Tags já existem como campo TEXT — garantir que existe
+    await prisma.$executeRawUnsafe(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS tags TEXT DEFAULT NULL`);
+    // Rodízio de atendimento — índice por cliente
+    await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "rotationIndex" INTEGER DEFAULT 0`);
+    // Rodízio habilitado por cliente
+    await prisma.$executeRawUnsafe(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS "rotationEnabled" BOOLEAN DEFAULT false`);
     console.log('[DB] Tabelas criadas com sucesso.');
   } catch (e) {
     console.error('[DB] Erro ao criar tabelas:', e.message);
@@ -324,7 +334,7 @@ app.listen(PORT, async () => {
         if (a.instanceName && a.leadPhone) {
           const dt = new Date(a.scheduledAt).toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
           const nome = a.leadName ? a.leadName.split(' ')[0] : 'olá';
-          const msg = `Olá ${nome}! 🔔 Lembrando que amanhã você tem um agendamento:\n\n*${a.title}*\n📅 ${dt}${a.notes ? `\n\n${a.notes}` : ''}\n\nQualquer dúvida é só falar!`;
+          const msg = `Olá ${nome}! Lembrando que amanhã você tem um agendamento:\n\n*${a.title}*\n${dt}${a.notes ? `\n\n${a.notes}` : ''}\n\nQualquer dúvida é só falar!`;
           try { await evolutionSvc.sendClientMessage(a.instanceName, a.leadPhone, msg); } catch (_) {}
         }
         await dbForScheduler.$executeRawUnsafe(`UPDATE crm_appointments SET "reminder24Sent"=true WHERE id=$1`, a.id);
@@ -347,41 +357,83 @@ app.listen(PORT, async () => {
         if (a.instanceName && a.leadPhone) {
           const dt = new Date(a.scheduledAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
           const nome = a.leadName ? a.leadName.split(' ')[0] : 'olá';
-          const msg = `⏰ ${nome}, daqui a 1 hora é o seu agendamento!\n\n*${a.title}*\n📅 ${dt}${a.notes ? `\n\n${a.notes}` : ''}\n\nTe esperamos! 😊`;
+          const msg = `${nome}, daqui a 1 hora é o seu agendamento!\n\n*${a.title}*\n${dt}${a.notes ? `\n\n${a.notes}` : ''}\n\nTe esperamos!`;
           try { await evolutionSvc.sendClientMessage(a.instanceName, a.leadPhone, msg); } catch (_) {}
         }
         await dbForScheduler.$executeRawUnsafe(`UPDATE crm_appointments SET "reminder1Sent"=true WHERE id=$1`, a.id);
         console.log(`[CRM] Lembrete 1h enviado: agendamento ${a.id} — ${a.leadName || a.leadPhone}`);
       }
     } catch (e) { console.error('[CRM Reminder]', e.message); }
-  }, 5 * 60000); // a cada 5 minutos
+  }, 5 * 60000);
 
-  // ─── Silence follow-up scheduler ─────────────────────────────────────────────
-  // Every 6 hours: check leads that sent the last inbound message > X hours ago
-  // and haven't received a reply yet. Logs to console (team notified via dashboard).
-  // Full auto-send can be enabled per client in future.
-  setInterval(async () => {
+  // ─── Follow-up automático após 3 dias sem resposta ───────────────────────────
+  const evolutionForFollowup = require('./services/evolutionService');
+  const runFollowupScheduler = async () => {
     try {
-      const silent = await dbForScheduler.$queryRawUnsafe(`
-        SELECT l.id, l.name, l.phone, l."crmStatus",
-               last_i."createdAt" as "lastAt", last_i.direction,
-               c."instanceName", c.name as "clientName"
+      const stale = await dbForScheduler.$queryRawUnsafe(`
+        SELECT
+          l.id, l.name, l.phone, l."crmStatus", l."clientId",
+          c."instanceName", c.name as "clientName",
+          last_in."createdAt"  as "lastInboundAt",
+          last_out."createdAt" as "lastOutboundAt"
         FROM leads l
         LEFT JOIN clients c ON c.id = l."clientId"
         LEFT JOIN LATERAL (
-          SELECT "createdAt", direction FROM interactions
-          WHERE "leadId" = l.id ORDER BY "createdAt" DESC LIMIT 1
-        ) last_i ON true
-        WHERE last_i.direction = 'inbound'
-          AND last_i."createdAt" < NOW() - INTERVAL '24 hours'
-          AND (l."crmStatus" IS NULL OR l."crmStatus" NOT IN ('resolved'))
-          AND l."clientId" IS NOT NULL
+          SELECT "createdAt" FROM interactions
+          WHERE "leadId" = l.id AND direction = 'inbound'
+          ORDER BY "createdAt" DESC LIMIT 1
+        ) last_in ON true
+        LEFT JOIN LATERAL (
+          SELECT "createdAt" FROM interactions
+          WHERE "leadId" = l.id AND direction = 'outbound'
+          ORDER BY "createdAt" DESC LIMIT 1
+        ) last_out ON true
+        WHERE c."instanceName" IS NOT NULL
+          AND l.status NOT IN ('converted', 'lost', 'disqualified')
+          AND (l."crmStatus" IS NULL OR l."crmStatus" NOT IN ('resolved', 'waiting'))
+          AND last_in."createdAt" IS NOT NULL
+          AND last_in."createdAt" < NOW() - INTERVAL '3 days'
+          AND (last_out."createdAt" IS NULL OR last_out."createdAt" < NOW() - INTERVAL '3 days')
       `);
-      if (silent.length > 0) {
-        console.log(`[CRM] ${silent.length} leads sem resposta há +24h`);
+
+      if (stale.length > 0) {
+        console.log(`[FollowUp] ${stale.length} lead(s) sem resposta há +3 dias — iniciando follow-up`);
       }
-    } catch (_) {}
-  }, 6 * 3600000);
+
+      for (const lead of stale) {
+        try {
+          // Move para Aguardando
+          await dbForScheduler.$executeRawUnsafe(
+            `UPDATE leads SET "crmStatus"='waiting', "updatedAt"=NOW() WHERE id=$1`,
+            Number(lead.id)
+          );
+
+          // Monta mensagem de follow-up
+          const firstName = lead.name ? lead.name.split(' ')[0] : 'olá';
+          const msg = `Olá ${firstName}, tudo bem? Notei que faz alguns dias que não conversamos.\n\nAinda posso te ajudar com algo? Estou à disposição!`;
+
+          // Envia pelo WhatsApp
+          await evolutionForFollowup.sendClientMessage(lead.instanceName, lead.phone, msg);
+
+          // Salva no histórico de interações
+          await dbForScheduler.$executeRawUnsafe(
+            `INSERT INTO interactions ("leadId", type, direction, content, metadata) VALUES ($1, 'message', 'outbound', $2, $3)`,
+            Number(lead.id), msg, JSON.stringify({ ai: false, followUp: true, auto: true })
+          );
+
+          console.log(`[FollowUp] Lead ${lead.phone} (${lead.name || '—'}) movido para Aguardando + mensagem enviada`);
+        } catch (leadErr) {
+          console.warn(`[FollowUp] Falha no lead ${lead.phone}:`, leadErr.message);
+        }
+      }
+    } catch (err) {
+      console.error('[FollowUp] Erro no scheduler:', err.message);
+    }
+  };
+
+  // Roda imediatamente no boot e depois a cada 6 horas
+  runFollowupScheduler();
+  setInterval(runFollowupScheduler, 6 * 3600000);
 });
 
 module.exports = app;

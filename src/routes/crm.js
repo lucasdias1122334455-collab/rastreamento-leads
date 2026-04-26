@@ -37,7 +37,9 @@ router.get('/tickets', async (req, res) => {
     const tickets = await prisma.$queryRawUnsafe(`
       SELECT
         l.id, l.name, l.phone, l.source, l."crmStatus", l."clientId", l."createdAt", l."updatedAt",
+        l.tags, l.birthday, l.profession, l."contractedProduct", l."assignedToId",
         c.name as "clientName",
+        u.name as "assignedToName",
         last_i.content as "lastMessage",
         last_i."createdAt" as "lastMessageAt",
         last_i.direction as "lastDirection",
@@ -46,6 +48,7 @@ router.get('/tickets', async (req, res) => {
          AND i2."createdAt" > COALESCE(l."crmReadAt", '1970-01-01')) as unread
       FROM leads l
       LEFT JOIN clients c ON c.id = l."clientId"
+      LEFT JOIN users u ON u.id = l."assignedToId"
       LEFT JOIN LATERAL (
         SELECT content, "createdAt", direction FROM interactions
         WHERE "leadId" = l.id ORDER BY "createdAt" DESC LIMIT 1
@@ -70,6 +73,123 @@ router.put('/tickets/:id/read', async (req, res) => {
   try {
     await prisma.$executeRawUnsafe(`UPDATE leads SET "crmReadAt"=NOW() WHERE id=$1`, Number(req.params.id));
     res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── PERFIL DO LEAD (birthday, profession, contractedProduct, tags) ───────────
+router.patch('/tickets/:id/profile', async (req, res) => {
+  try {
+    const { name, birthday, profession, contractedProduct, tags, notes } = req.body;
+    const fields = [];
+    const vals = [];
+    let idx = 1;
+    if (name !== undefined)              { fields.push(`name=$${idx++}`);                    vals.push(name); }
+    if (birthday !== undefined)          { fields.push(`birthday=$${idx++}`);                vals.push(birthday ? new Date(birthday) : null); }
+    if (profession !== undefined)        { fields.push(`profession=$${idx++}`);              vals.push(profession); }
+    if (contractedProduct !== undefined) { fields.push(`"contractedProduct"=$${idx++}`);    vals.push(contractedProduct); }
+    if (tags !== undefined)              { fields.push(`tags=$${idx++}`);                    vals.push(tags); }
+    if (notes !== undefined)             { fields.push(`notes=$${idx++}`);                   vals.push(notes); }
+    if (!fields.length) return res.json({ ok: true });
+    fields.push(`"updatedAt"=NOW()`);
+    vals.push(Number(req.params.id));
+    await prisma.$executeRawUnsafe(
+      `UPDATE leads SET ${fields.join(',')} WHERE id=$${idx}`,
+      ...vals
+    );
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── AUTO-TAG VIA IA ──────────────────────────────────────────────────────────
+router.post('/tickets/:id/autotag', async (req, res) => {
+  try {
+    const [lead] = await prisma.$queryRawUnsafe(
+      `SELECT l.*, c."aiScript" FROM leads l LEFT JOIN clients c ON c.id = l."clientId" WHERE l.id = $1`,
+      Number(req.params.id)
+    );
+    if (!lead) return res.status(404).json({ error: 'Lead não encontrado' });
+
+    // Últimas 20 mensagens da conversa
+    const msgs = await prisma.$queryRawUnsafe(
+      `SELECT direction, content FROM interactions WHERE "leadId"=$1 ORDER BY "createdAt" DESC LIMIT 20`,
+      Number(req.params.id)
+    );
+    const history = msgs.reverse().map(m => `${m.direction === 'inbound' ? 'Lead' : 'Atendente'}: ${m.content}`).join('\n');
+
+    const Anthropic = require('@anthropic-ai/sdk');
+    const ai = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const resp = await ai.messages.create({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 200,
+      messages: [{
+        role: 'user',
+        content: `Analise esta conversa de vendas e gere até 4 tags curtas (1-3 palavras) em português que descrevem o lead. Retorne APENAS um JSON array de strings, sem explicação.\n\nConversa:\n${history}`
+      }]
+    });
+    let tags = [];
+    try {
+      const text = resp.content[0].text.trim();
+      const match = text.match(/\[.*\]/s);
+      if (match) tags = JSON.parse(match[0]);
+    } catch (_) {}
+
+    const existingTags = lead.tags ? lead.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+    const merged = [...new Set([...existingTags, ...tags])].slice(0, 6);
+    const tagsStr = merged.join(',');
+
+    await prisma.$executeRawUnsafe(`UPDATE leads SET tags=$1, "updatedAt"=NOW() WHERE id=$2`, tagsStr, Number(req.params.id));
+    res.json({ tags: merged });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── RELATÓRIO DE PERFORMANCE POR OPERADOR ────────────────────────────────────
+router.get('/reports/performance', async (req, res) => {
+  try {
+    const { clientId, days = 30 } = req.query;
+    const cf = clientId ? `AND l."clientId" = ${Number(clientId)}` : '';
+    const rows = await prisma.$queryRawUnsafe(`
+      SELECT
+        u.id, u.name, u.email,
+        COUNT(DISTINCT l.id)::int                                              as tickets,
+        COUNT(DISTINCT CASE WHEN l.status='converted' THEN l.id END)::int     as conversions,
+        COALESCE(SUM(CASE WHEN l.status='converted' THEN l.value END), 0)::float as revenue,
+        COUNT(DISTINCT i.id)::int                                              as messages_sent
+      FROM users u
+      LEFT JOIN leads l ON l."assignedToId" = u.id
+        AND l."createdAt" > NOW() - INTERVAL '${Number(days)} days' ${cf}
+      LEFT JOIN interactions i ON i."leadId" = l.id AND i.direction = 'outbound'
+      WHERE u.active = true
+      GROUP BY u.id, u.name, u.email
+      ORDER BY conversions DESC, revenue DESC
+    `);
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── PREVISÃO DE RECEITA ──────────────────────────────────────────────────────
+router.get('/reports/forecast', async (req, res) => {
+  try {
+    const { clientId } = req.query;
+    const cf = clientId ? `AND l."clientId" = ${Number(clientId)}` : '';
+    // Probabilidade por estágio do funil
+    const rows = await prisma.$queryRawUnsafe(`
+      SELECT
+        l.stage,
+        COUNT(*)::int as count,
+        COALESCE(SUM(l.value), 0)::float as total_value,
+        COALESCE(AVG(l.value), 0)::float as avg_value
+      FROM leads l
+      WHERE l.status NOT IN ('converted','lost','disqualified') ${cf}
+      GROUP BY l.stage
+    `);
+    const probabilities = { awareness: 0.10, interest: 0.30, decision: 0.60, action: 0.85 };
+    const forecast = rows.map(r => ({
+      ...r,
+      probability: probabilities[r.stage] || 0.10,
+      weighted: (Number(r.total_value) || Number(r.count) * 100) * (probabilities[r.stage] || 0.10),
+    }));
+    const totalWeighted = forecast.reduce((s, r) => s + r.weighted, 0);
+    res.json({ stages: forecast, totalForecast: totalWeighted });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

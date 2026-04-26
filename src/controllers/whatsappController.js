@@ -148,8 +148,26 @@ async function webhook(req, res) {
     // Busca ou cria o lead
     let lead = await prisma.lead.findUnique({ where: { phone } });
     if (!lead) {
+      // Rodízio de atendimento: distribui entre operadores do cliente
+      let assignedToId = null;
+      if (client && client.rotationEnabled) {
+        try {
+          const operators = await prisma.$queryRawUnsafe(
+            `SELECT u.id FROM users u INNER JOIN user_clients uc ON uc."userId"=u.id WHERE uc."clientId"=$1 AND u.active=true ORDER BY u.id`,
+            Number(clientId)
+          );
+          if (operators.length > 0) {
+            const idx = (Number(client.rotationIndex || 0)) % operators.length;
+            assignedToId = operators[idx].id;
+            await prisma.$executeRawUnsafe(
+              `UPDATE clients SET "rotationIndex"=$1 WHERE id=$2`,
+              (idx + 1) % operators.length, Number(clientId)
+            );
+          }
+        } catch (_) {}
+      }
       lead = await prisma.lead.create({
-        data: { phone, name: pushName, source: 'whatsapp', status: 'new', stage: 'awareness', clientId },
+        data: { phone, name: pushName, source: 'whatsapp', status: 'new', stage: 'awareness', clientId, ...(assignedToId ? { assignedToId } : {}) },
       });
     } else {
       const updates = {};

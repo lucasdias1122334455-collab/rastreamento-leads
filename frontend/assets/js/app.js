@@ -516,6 +516,7 @@ function openClientModal(client = null) {
   if (el('client-ai-enabled-label')) el('client-ai-enabled-label').textContent = aiEnabled ? 'IA ativada' : 'IA desativada';
   el('client-ai-fields').style.display = aiEnabled ? 'block' : 'none';
   el('client-voice-enabled').checked = Boolean(client?.voiceEnabled);
+  if (el('client-rotation-enabled')) el('client-rotation-enabled').checked = Boolean(client?.rotationEnabled);
   el('client-payment-link').value = client?.paymentLink || '';
   el('client-ai-script').value = client?.aiScript || '';
   // Campos Pixel
@@ -550,6 +551,7 @@ el('client-form').addEventListener('submit', async (e) => {
     mpAccessToken: el('client-mp-token').value || null,
     aiEnabled: el('client-ai-enabled').checked,
     voiceEnabled: el('client-voice-enabled').checked,
+    rotationEnabled: el('client-rotation-enabled')?.checked || false,
     aiScript: el('client-ai-script').value || null,
     paymentLink: el('client-payment-link').value || null,
     website: el('client-website').value || null,
@@ -1683,6 +1685,10 @@ async function loadReports() {
   const token = localStorage.getItem('token');
   const headers = { 'Authorization': `Bearer ${token}` };
 
+  // Load CRM-specific reports in parallel (non-blocking)
+  loadPerformanceReport();
+  loadForecastReport();
+
   try {
     const [sumRes, dailyRes, adsRes, funnelRes, chanRes] = await Promise.all([
       fetch('/api/reports/summary'  + q, { headers }),
@@ -1832,13 +1838,61 @@ async function exportReportsCSV() {
 }
 
 function printReports() {
-  // Marca a data de impressão no elemento para aparecer no rodapé via CSS attr()
   const section = document.getElementById('page-reports');
   if (section) {
     const now = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
     section.setAttribute('data-print-date', now);
   }
   window.print();
+}
+
+async function loadPerformanceReport() {
+  const days = document.getElementById('perf-days')?.value || 30;
+  const clientId = document.getElementById('report-client')?.value;
+  const params = new URLSearchParams({ days });
+  if (clientId) params.set('clientId', clientId);
+  try {
+    const res = await fetch(`/api/crm/reports/performance?${params}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+    const rows = await res.json();
+    const tbody = document.getElementById('report-perf-tbody');
+    if (!tbody) return;
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,.3);padding:1.5rem">Nenhum dado</td></tr>'; return; }
+    tbody.innerHTML = rows.map(r => {
+      const cvr = r.tickets > 0 ? ((r.conversions / r.tickets) * 100).toFixed(1) : '0.0';
+      const rev = Number(r.revenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+      return `<tr>
+        <td><strong>${escapeHtml(r.name)}</strong><br><span style="font-size:.72rem;color:var(--muted)">${escapeHtml(r.email)}</span></td>
+        <td>${r.tickets}</td>
+        <td>${r.conversions}</td>
+        <td>${cvr}%</td>
+        <td>R$ ${rev}</td>
+        <td>${r.messages_sent}</td>
+      </tr>`;
+    }).join('');
+  } catch (_) {
+    const tbody = document.getElementById('report-perf-tbody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:rgba(255,100,100,.6);padding:1rem">Erro ao carregar</td></tr>';
+  }
+}
+
+async function loadForecastReport() {
+  const clientId = document.getElementById('report-client')?.value;
+  const params = clientId ? `?clientId=${clientId}` : '';
+  try {
+    const res = await fetch(`/api/crm/reports/forecast${params}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+    const data = await res.json();
+    const totalEl = document.getElementById('report-forecast-total');
+    if (totalEl) totalEl.textContent = `R$ ${Number(data.totalForecast || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+    const stagesEl = document.getElementById('report-forecast-stages');
+    if (!stagesEl) return;
+    const labels = { awareness: 'Consciência', interest: 'Interesse', decision: 'Decisão', action: 'Ação' };
+    stagesEl.innerHTML = (data.stages || []).map(s => `
+      <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:.9rem 1.2rem;min-width:150px">
+        <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.3rem">${labels[s.stage] || s.stage}</div>
+        <div style="font-size:1.1rem;font-weight:700;color:#00d4b8">R$ ${Number(s.weighted || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:.2rem">${s.count} lead${s.count !== 1 ? 's' : ''} · ${Math.round(s.probability * 100)}% prob.</div>
+      </div>`).join('');
+  } catch (_) {}
 }
 
 function renderChannelsTable(rows) {
@@ -2107,12 +2161,35 @@ function crmPopulateContact(t) {
     whatsapp_group: 'Grupo WhatsApp', instagram: 'Instagram',
     website: 'Site', mercadopago: 'Mercado Pago', manual: 'Manual',
   };
-  document.getElementById('cp-name').textContent   = t.name || '—';
+
+  // Avatar
+  const avatar = document.getElementById('cp-avatar');
+  if (avatar) {
+    const initials = (t.name || t.phone || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+    avatar.textContent = initials;
+  }
+
+  // Campos editáveis
+  const nameInput = document.getElementById('cp-name-input');
+  if (nameInput) nameInput.value = t.name || '';
   document.getElementById('cp-phone').textContent  = t.phone || '—';
   document.getElementById('cp-source').textContent = sourceLabels[t.source] || t.source || '—';
   document.getElementById('cp-client').textContent = t.clientName || '—';
-  const statusLabels = { new: 'Novo', waiting: 'Aguardando', attending: 'Atendendo', resolved: 'Resolvido' };
-  document.getElementById('cp-status').textContent = statusLabels[t.crmStatus] || '—';
+  document.getElementById('cp-assigned').textContent = t.assignedToName || 'Não atribuído';
+
+  // Dados pessoais
+  const bd = document.getElementById('cp-birthday');
+  if (bd) bd.value = t.birthday ? t.birthday.split('T')[0] : '';
+  const prof = document.getElementById('cp-profession');
+  if (prof) prof.value = t.profession || '';
+  const contracted = document.getElementById('cp-contracted');
+  if (contracted) contracted.value = t.contractedProduct || '';
+  const notes = document.getElementById('cp-notes');
+  if (notes) notes.value = t.notes || '';
+
+  // Tags
+  crmRenderTags(t.tags ? t.tags.split(',').filter(Boolean) : []);
+
   const lastAt = t.lastMessageAt || t.updatedAt;
   document.getElementById('cp-last').textContent = lastAt ? new Date(lastAt).toLocaleString('pt-BR') : '—';
 
@@ -2120,14 +2197,95 @@ function crmPopulateContact(t) {
   const sil = document.getElementById('cp-silence');
   if (t.lastMessageAt && t.lastDirection === 'inbound') {
     const h = (Date.now() - new Date(t.lastMessageAt).getTime()) / 3600000;
-    if (h > 1) {
-      sil.textContent = h < 24 ? `${Math.round(h)}h` : `${Math.floor(h/24)}d ${Math.round(h%24)}h`;
-    } else {
-      sil.textContent = 'Recente';
-    }
+    sil.textContent = h < 1 ? 'Recente' : h < 24 ? `${Math.round(h)}h` : `${Math.floor(h/24)}d ${Math.round(h%24)}h`;
   } else {
     sil.textContent = '—';
   }
+}
+
+// ── TAGS ──
+const TAG_COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#84cc16'];
+function crmRenderTags(tags) {
+  const row = document.getElementById('cp-tags-row');
+  if (!row) return;
+  row.innerHTML = tags.map((tag, i) => {
+    const color = TAG_COLORS[i % TAG_COLORS.length];
+    return `<span class="crm-tag" style="background:${color}22;color:${color};border-color:${color}44">
+      ${escapeHtml(tag.trim())}
+      <button onclick="crmRemoveTag('${escapeHtml(tag.trim())}')" style="background:none;border:none;color:inherit;cursor:pointer;padding:0 0 0 3px;line-height:1">×</button>
+    </span>`;
+  }).join('');
+}
+
+function crmGetCurrentTags() {
+  if (!crmActiveTicket) return [];
+  return crmActiveTicket.tags ? crmActiveTicket.tags.split(',').filter(Boolean) : [];
+}
+
+function crmAddTag() {
+  const input = document.getElementById('cp-tag-input');
+  const val = input?.value.trim();
+  if (!val || !crmActiveTicket) return;
+  input.value = '';
+  const tags = crmGetCurrentTags();
+  if (tags.includes(val)) return;
+  tags.push(val);
+  crmActiveTicket.tags = tags.join(',');
+  crmRenderTags(tags);
+  crmSaveProfile();
+}
+
+function crmRemoveTag(tag) {
+  if (!crmActiveTicket) return;
+  const tags = crmGetCurrentTags().filter(t => t !== tag);
+  crmActiveTicket.tags = tags.join(',');
+  crmRenderTags(tags);
+  crmSaveProfile();
+}
+
+async function crmAutoTag() {
+  if (!crmActiveTicket) return;
+  const btn = document.querySelector('.cp-tag-auto');
+  if (btn) btn.textContent = '...';
+  try {
+    const res = await fetch(`/api/crm/tickets/${crmActiveTicket.id}/autotag`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${crmToken()}` },
+    });
+    const data = await res.json();
+    if (data.tags) {
+      crmActiveTicket.tags = data.tags.join(',');
+      crmRenderTags(data.tags);
+      showToast(`${data.tags.length} tags geradas pela IA`);
+    }
+  } catch (_) { showToast('Erro ao gerar tags'); }
+  finally { if (btn) btn.textContent = 'IA'; }
+}
+
+async function crmSaveProfile() {
+  if (!crmActiveTicket) return;
+  const payload = {
+    name: document.getElementById('cp-name-input')?.value.trim() || null,
+    birthday: document.getElementById('cp-birthday')?.value || null,
+    profession: document.getElementById('cp-profession')?.value.trim() || null,
+    contractedProduct: document.getElementById('cp-contracted')?.value.trim() || null,
+    tags: crmActiveTicket.tags || null,
+    notes: document.getElementById('cp-notes')?.value.trim() || null,
+  };
+  try {
+    await fetch(`/api/crm/tickets/${crmActiveTicket.id}/profile`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${crmToken()}` },
+      body: JSON.stringify(payload),
+    });
+    // Update local copy
+    Object.assign(crmActiveTicket, payload);
+    // Update name in ticket list
+    if (payload.name) {
+      const ticket = crmTickets.find(t => t.id === crmActiveTicket.id);
+      if (ticket) ticket.name = payload.name;
+    }
+  } catch (_) {}
 }
 
 async function loadCpTasks(leadId) {
@@ -2293,13 +2451,20 @@ function crmRenderKanban() {
       const name = t.name || t.phone || '—';
       const preview = t.lastMessage ? t.lastMessage.slice(0, 40) : '';
       const ts = t.lastMessageAt || t.createdAt;
+      const tagList = t.tags ? t.tags.split(',').filter(Boolean).slice(0,3) : [];
+      const tagHtml = tagList.map((tag, i) => {
+        const color = TAG_COLORS[i % TAG_COLORS.length];
+        return `<span style="background:${color}22;color:${color};border:1px solid ${color}44;border-radius:4px;padding:1px 5px;font-size:.65rem">${escapeHtml(tag.trim())}</span>`;
+      }).join('');
+      const assignee = t.assignedToName ? `<span style="font-size:.65rem;color:var(--crm-muted2);margin-left:auto">${escapeHtml(t.assignedToName.split(' ')[0])}</span>` : '';
       return `<div class="crm-kanban-card" draggable="true"
         data-id="${t.id}"
         ondragstart="_kanbanDragId='${t.id}';this.classList.add('kanban-dragging')"
         ondragend="this.classList.remove('kanban-dragging')"
         onclick="crmSelectTicket(${t.id});switchCrmTab('chats',document.querySelector('[data-tab=chats]'))">
-        <div class="crm-kanban-card-name">${escapeHtml(name)}</div>
+        <div class="crm-kanban-card-name">${escapeHtml(name)}${assignee}</div>
         ${preview ? `<div class="crm-kanban-card-preview">${escapeHtml(preview)}</div>` : ''}
+        ${tagHtml ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:5px">${tagHtml}</div>` : ''}
         <div class="crm-kanban-card-time">${ts ? crmFormatTime(ts) : ''}</div>
       </div>`;
     }).join('') || '<div class="crm-kanban-empty">Vazio</div>';

@@ -70,7 +70,7 @@ self.addEventListener('fetch', (event) => {
 // Recebe notificações push
 self.addEventListener('push', (event) => {
   const data = event.data?.json() || {};
-  const title = data.title || 'Yide Vibe';
+  const title = data.title || 'Closy CRM';
   const options = {
     body: data.body || 'Nova notificação',
     icon: '/assets/icons/icon-192.png',

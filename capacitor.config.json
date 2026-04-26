@@ -1,6 +1,6 @@
 {
   "appId": "com.yidevibe.crm",
-  "appName": "Yide Vibe",
+  "appName": "Closy CRM",
   "webDir": "frontend",
   "server": {
     "androidScheme": "https",

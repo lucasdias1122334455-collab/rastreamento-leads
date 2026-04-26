@@ -49,14 +49,17 @@ router.get('/api/links', authenticate, async (req, res) => {
     const { clientId } = req.query;
     const filter = clientId ? `WHERE tl."clientId" = ${Number(clientId)}` : '';
     const rows = await prisma.$queryRawUnsafe(`
-      SELECT tl.*, c.name as "clientName",
-        (SELECT COUNT(*) FROM leads l
+      SELECT
+        tl.id, tl.slug, tl.campaign, tl.destination, tl."clientId", tl."createdAt",
+        tl.clicks::int as clicks,
+        c.name as "clientName",
+        (SELECT COUNT(*)::int FROM leads l
          WHERE l."clientId" = tl."clientId"
            AND l.status = 'converted'
            AND l.tags IS NOT NULL
            AND l.tags::text LIKE '%tracking_link%'
            AND l.tags::text LIKE '%' || tl.campaign || '%') as conversions,
-        (SELECT COALESCE(SUM(l.value), 0) FROM leads l
+        (SELECT COALESCE(SUM(l.value), 0)::float FROM leads l
          WHERE l."clientId" = tl."clientId"
            AND l.status = 'converted'
            AND l.tags IS NOT NULL

@@ -1,6 +1,6 @@
 {
   "appId": "com.yidevibe.crm",
-  "appName": "Closy CRM",
+  "appName": "Clousy CRM",
   "webDir": "frontend",
   "server": {
     "androidScheme": "https",
